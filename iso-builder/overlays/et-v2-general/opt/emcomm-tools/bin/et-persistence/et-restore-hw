@@ -66,7 +66,7 @@ fi
 
 if [[ -f "$BT_TAR" ]]; then
     HAS_BT=true
-    BT_COUNT=$(tar tf "$BT_TAR" 2>/dev/null | grep -c '^./[^/]*/[^/]*/$' || true)
+    BT_COUNT=$(tar tf "$BT_TAR" 2>/dev/null | grep -c '/' || true)
 fi
 
 if ! $HAS_WIFI && ! $HAS_BT; then
@@ -138,16 +138,78 @@ if $HAS_BT; then
     rm -rf "$BT_DEST"
     mkdir -p "$BT_DEST"
 
-    tar xf "$BT_TAR" -C "$BT_DEST" 2>/dev/null
-    chown -R root:bluetooth "$BT_DEST/" 2>/dev/null
-    chmod -R 700 "$BT_DEST/" 2>/dev/null
-
-    # Restart bluetooth service to load restored pairings
-    systemctl restart bluetooth 2>/dev/null
+    # Make sure bluetooth is running so we can get adapter MAC
+    systemctl start bluetooth 2>/dev/null
     sleep 2
 
-    BT_RESTORED=$(find "$BT_DEST" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | wc -l)
-    log "Bluetooth restore complete: $BT_RESTORED devices"
+    # Get local adapter MAC — try hciconfig first, then bluetoothctl
+    ADAPTER_MAC=$(hciconfig 2>/dev/null | grep -oP '(?<=BD Address: )[0-9A-F:]+' | head -1)
+    if [[ -z "$ADAPTER_MAC" ]]; then
+        ADAPTER_MAC=$(bluetoothctl list 2>/dev/null | grep -oP '([0-9A-F]{2}:){5}[0-9A-F]{2}' | head -1)
+    fi
+
+    if [[ -z "$ADAPTER_MAC" ]]; then
+        warn "Cannot determine local Bluetooth adapter MAC — restore skipped."
+        warn "Make sure Bluetooth is enabled and try again."
+    else
+        log "Local adapter: $ADAPTER_MAC"
+        ADAPTER_DIR="$BT_DEST/$ADAPTER_MAC"
+        mkdir -p "$ADAPTER_DIR"
+
+        # Extract tar into a temp dir, then flatten into ADAPTER_DIR
+        # The tar contains ./<saved-adapter-MAC>/... so we strip that top level
+        BT_EXTRACT_TMP=$(mktemp -d)
+        tar xf "$BT_TAR" -C "$BT_EXTRACT_TMP" 2>/dev/null
+
+        # Find the adapter MAC directory inside the tar (any MAC-shaped dir)
+        INNER_ADAPTER_DIR=""
+        for entry in "$BT_EXTRACT_TMP"/*/; do
+            entry_name=$(basename "$entry")
+            if echo "$entry_name" | grep -qP '^[0-9A-F]{2}(:[0-9A-F]{2}){5}$'; then
+                INNER_ADAPTER_DIR="$entry"
+                break
+            fi
+        done
+
+        if [[ -n "$INNER_ADAPTER_DIR" ]]; then
+            # Move everything from inside the saved adapter dir into ADAPTER_DIR
+            cp -a "$INNER_ADAPTER_DIR/." "$ADAPTER_DIR/" 2>/dev/null || true
+        else
+            # Tar was already flat — copy directly
+            cp -a "$BT_EXTRACT_TMP/." "$ADAPTER_DIR/" 2>/dev/null || true
+        fi
+
+        rm -rf "$BT_EXTRACT_TMP"
+
+        chown -R root:bluetooth "$BT_DEST/" 2>/dev/null
+        chmod -R 700 "$BT_DEST/" 2>/dev/null
+
+        # Hard-reset the BT adapter so the chip reinitializes with the restored
+        # IR/ER identity roots from settings — a simple daemon restart is not
+        # enough because the controller was already initialized with new keys
+        systemctl stop bluetooth 2>/dev/null
+        sleep 1
+        hciconfig hci0 down 2>/dev/null || true
+        sleep 1
+        hciconfig hci0 up 2>/dev/null || true
+        sleep 1
+        systemctl start bluetooth 2>/dev/null
+        sleep 2
+        bluetoothctl power on 2>/dev/null || true
+
+        BT_RESTORED=$(find "$ADAPTER_DIR" -mindepth 2 -maxdepth 2 -name "info" -type f 2>/dev/null | wc -l)
+        log "Bluetooth restore complete: $BT_RESTORED devices under $ADAPTER_MAC"
+
+        # Mark all restored devices as trusted so they can auto-connect
+        for dev_dir in "$ADAPTER_DIR"/*/; do
+            dev_mac=$(basename "$dev_dir")
+            # Skip non-MAC entries like cache/
+            if echo "$dev_mac" | grep -qP '^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$'; then
+                bluetoothctl trust "$dev_mac" 2>/dev/null || true
+                log "  Trusted: $dev_mac"
+            fi
+        done
+    fi
 fi
 
 # --- Summary ---
@@ -158,5 +220,9 @@ if [[ $WIFI_RESTORED -gt 0 ]]; then
 fi
 if [[ $BT_RESTORED -gt 0 ]]; then
     log "Restored $BT_RESTORED Bluetooth devices"
+    echo ""
+    warn "NOTE: Android phones use secure BT keys that do not survive a restore."
+    warn "If an Android device refuses to connect, remove and re-pair it once."
+    warn "Kenwood HTs and other classic BT devices restore without re-pairing."
 fi
 echo ""

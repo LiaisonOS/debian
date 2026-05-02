@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>et-repeater Répertoire de répéteurs — Blog LiaisonOS</title>
+  <meta name="description" content="et-repeater est un répertoire de répéteurs entièrement hors ligne intégré à LiaisonOS — importez vos exports CSV de RepeaterBook, filtrez par bande et mode, programmez votre radio en un clic et laissez le mode Tracker trier votre liste en déplacement.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 1rem 0; }
+    .feature-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .feature-card-icon { font-size: 20px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 4px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    .article-photo {
+      width: 100%; background: #16231a;
+      border: 1px solid rgba(125,232,176,0.12); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2rem; overflow: hidden;
+    }
+    .article-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+    .article-photo-placeholder {
+      font-size: 12px; color: #3a6a4a; font-family: 'IBM Plex Mono', monospace;
+      text-align: center; padding: 3rem;
+    }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index_fr.html">Accueil</a>
+    <a href="../download_fr.html">Télécharger</a>
+    <a href="index_fr.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="et-repeater.html" class="lang-link">🇨🇦 EN</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index_fr.html">← Retour au Blog</a>
+  <div class="article-meta">
+    <span class="article-date">2026-03-19</span>
+    <span class="article-tag">Répéteurs &amp; VHF/UHF</span>
+  </div>
+  <h1 class="article-title">et-repeater — <span>Répertoire de répéteurs</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">Importez vos résultats RepeaterBook, filtrez par bande et mode, programmez votre radio en un clic et laissez le mode Tracker trier votre liste en déplacement.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.2.3</p>
+</div>
+
+<div style="max-width:720px; margin:0 auto; padding:0 2rem;">
+  <div class="article-photo">
+    <img src="imgs/repeater-list.png" alt="et-repeater Répertoire de répéteurs">
+  </div>
+</div>
+
+<div class="article-body">
+
+  <h2>Votre liste de répéteurs, <span>hors ligne</span></h2>
+  <p><a href="https://www.repeaterbook.com">RepeaterBook</a> est la base de données de répéteurs la plus complète disponible — mais c'est un site web. Sur le terrain, en route ou lors d'une activation d'urgence, vous n'avez peut-être pas accès à internet quand vous en avez le plus besoin. et-repeater résout ce problème en vous permettant d'importer vos résultats de recherche RepeaterBook en CSV et de les conserver localement, prêts à utiliser n'importe où.</p>
+  <p>Une fois importée, votre liste de répéteurs est entièrement disponible hors ligne — aucun compte, aucune clé API, aucune connectivité requise.</p>
+
+  <h2>Importer depuis <span>RepeaterBook</span></h2>
+  <p>Le flux de travail est simple : rendez-vous sur <a href="https://www.repeaterbook.com">repeaterbook.com</a>, recherchez des répéteurs dans votre région ou dans toute région que vous prévoyez de visiter, et exportez les résultats en fichier CSV. et-repeater importe ce fichier directement — aucune conversion nécessaire.</p>
+  <p>Les importations multiples sont fusionnées automatiquement. Vous pouvez enrichir votre répertoire local au fil du temps en important différentes régions, et et-repeater garde tout organisé sans doublons.</p>
+
+  <div class="note">
+    <strong>Conseil :</strong> Avant un voyage ou un événement, recherchez les répéteurs de la région sur RepeaterBook, exportez le CSV et importez-le dans et-repeater. Vous aurez un répertoire local complet prêt avant de partir de chez vous.
+  </div>
+
+  <h2>Filtrer et <span>trier</span></h2>
+  <p>Une fois vos répéteurs importés, et-repeater vous permet de réduire la liste à exactement ce dont vous avez besoin :</p>
+  <ul>
+    <li><strong>Bande</strong> — 10m, 6m, 2m, 1,25m, 70cm</li>
+    <li><strong>Mode</strong> — FM, DMR, D-STAR, YSF, P25, NXDN</li>
+    <li><strong>Distance maximale</strong> — afficher uniquement les répéteurs dans un rayon défini autour de votre position</li>
+  </ul>
+  <p>La liste est automatiquement triée par distance depuis votre position actuelle — les répéteurs les plus proches en premier. Votre position est extraite de votre configuration utilisateur LiaisonOS (coordonnées GPS ou locator Maidenhead).</p>
+
+  <h2>Programmez votre radio <span>en un clic</span></h2>
+  <p>Sélectionnez n'importe quel répéteur dans la liste et cliquez sur <strong>Régler</strong> — et-repeater programme votre radio via CAT instantanément : fréquence de sortie, mode FM, tonalité CTCSS et décalage de répéteur sont tous réglés en une seule opération. Aucune saisie manuelle sur le clavier de la radio, aucun risque d'entrer la mauvaise tonalité.</p>
+  <p>Cela fonctionne avec n'importe quelle radio compatible CAT configurée dans LiaisonOS.</p>
+
+  <h2>Mode <span>Tracker</span></h2>
+  <p>Lorsque vous êtes en déplacement — en route vers un site terrain, en voyage dans une nouvelle région ou en exploitation depuis un véhicule — le mode Tracker maintient votre liste de répéteurs à jour. Il relit périodiquement votre position GPS et retrie la liste par distance, de sorte que les répéteurs les plus proches de là où vous vous trouvez en ce moment apparaissent toujours en tête.</p>
+  <p>Aucun rafraîchissement manuel nécessaire. Activez le mode Tracker et votre répertoire reste orienté vers votre position actuelle tout au long du trajet.</p>
+
+  <h2>Favoris</h2>
+  <p>Marquez n'importe quel répéteur comme favori pour y accéder rapidement. Les favoris sont conservés entre les sessions et survivent aux importations — l'ajout de nouvelles données CSV ne supprime jamais un répéteur que vous avez mis en favori.</p>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">Disponible dans LiaisonOS 2.2.3 et versions ultérieures &middot; Fonctionnalité développée par VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>

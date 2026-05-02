@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>et-repeater Repeater Directory — LiaisonOS Blog</title>
+  <meta name="description" content="et-repeater is a fully offline repeater directory built into LiaisonOS — import RepeaterBook CSV exports, filter by band and mode, program your radio with one click, and track nearby repeaters as you move.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 1rem 0; }
+    .feature-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .feature-card-icon { font-size: 20px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 4px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    .article-photo {
+      width: 100%; background: #16231a;
+      border: 1px solid rgba(125,232,176,0.12); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2rem; overflow: hidden;
+    }
+    .article-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+    .article-photo-placeholder {
+      font-size: 12px; color: #3a6a4a; font-family: 'IBM Plex Mono', monospace;
+      text-align: center; padding: 3rem;
+    }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Home</a>
+    <a href="../download.html">Download</a>
+    <a href="index.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="et-repeater_fr.html" class="lang-link">🇫🇷 FR</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index.html">← Back to Blog</a>
+  <div class="article-meta">
+    <span class="article-date">2026-03-19</span>
+    <span class="article-tag">Repeaters &amp; VHF/UHF</span>
+  </div>
+  <h1 class="article-title">et-repeater — <span>Repeater Directory</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">Import your RepeaterBook search results, filter by band and mode, program your radio in one click, and let Tracker mode keep your list sorted as you move.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.2.3</p>
+</div>
+
+<div style="max-width:720px; margin:0 auto; padding:0 2rem;">
+  <div class="article-photo">
+    <img src="imgs/repeater-list.png" alt="et-repeater Repeater Directory">
+  </div>
+</div>
+
+<div class="article-body">
+
+  <h2>Your repeater list, <span>offline</span></h2>
+  <p><a href="https://www.repeaterbook.com">RepeaterBook</a> is the most complete repeater database available — but it is a website. In the field, on the road, or during an emergency activation, you may not have internet access when you need it most. et-repeater solves this by letting you import your RepeaterBook search results as a CSV file and keeping them locally, ready to use anywhere.</p>
+  <p>Once imported, your repeater list is fully available offline — no account, no API key, no connectivity required.</p>
+
+  <h2>Importing from <span>RepeaterBook</span></h2>
+  <p>The workflow is simple: go to <a href="https://www.repeaterbook.com">repeaterbook.com</a>, search for repeaters in your area or any region you plan to visit, and export the results as a CSV file. et-repeater imports that file directly — no conversion needed.</p>
+  <p>Multiple imports are merged automatically. You can build up your local directory over time by importing different regions, and et-repeater keeps everything organized without duplicates.</p>
+
+  <div class="note">
+    <strong>Tip:</strong> Before a trip or an event, search RepeaterBook for the region, export the CSV, and import it into et-repeater. You will have a complete local repeater directory ready before you leave home.
+  </div>
+
+  <h2>Filter and <span>sort</span></h2>
+  <p>Once your repeaters are imported, et-repeater lets you narrow the list to exactly what you need:</p>
+  <ul>
+    <li><strong>Band</strong> — 10m, 6m, 2m, 1.25m, 70cm</li>
+    <li><strong>Mode</strong> — FM, DMR, D-STAR, YSF, P25, NXDN</li>
+    <li><strong>Max distance</strong> — show only repeaters within a set radius of your position</li>
+  </ul>
+  <p>The list is automatically sorted by distance from your current position — closest repeaters first. Your position is taken from your LiaisonOS user configuration (GPS coordinates or Maidenhead grid square).</p>
+
+  <h2>Program your radio <span>in one click</span></h2>
+  <p>Select any repeater in the list and click <strong>Set</strong> — et-repeater programs your radio via CAT instantly: output frequency, FM mode, CTCSS tone, and repeater offset are all set in one operation. No manual entry on the radio keypad, no risk of entering the wrong tone.</p>
+  <p>This works with any CAT-capable radio configured in LiaisonOS.</p>
+
+  <h2>Tracker <span>mode</span></h2>
+  <p>When you are on the move — driving to a field site, travelling through a new region, or operating from a vehicle — Tracker mode keeps your repeater list current. It periodically re-reads your GPS position and re-sorts the list by distance, so the repeaters closest to where you are right now always appear at the top.</p>
+  <p>No manual refresh needed. Enable Tracker mode and your directory stays oriented to your current location throughout the trip.</p>
+
+  <h2>Favorites</h2>
+  <p>Mark any repeater as a favorite to pin it for quick access. Favorites are preserved across sessions and survive imports — adding new CSV data never removes a repeater you have starred.</p>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">Available in LiaisonOS 2.2.3 and later &middot; Feature developed by VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>

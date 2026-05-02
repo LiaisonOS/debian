@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>et-logger Field Logger — LiaisonOS Blog</title>
+  <meta name="description" content="et-logger is a fully offline POTA field logger built into LiaisonOS — with pre-loaded parks, park-to-park tracking, CAT control, and a built-in voice keyer.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    h3 { font-size: 14px; font-weight: 500; color: #c8e8d8; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    code {
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      background: #16231a; border: 1px solid rgba(125,232,176,0.15);
+      border-radius: 4px; padding: 1px 6px; color: #7de8b0;
+    }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 1rem 0; }
+    .feature-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .feature-card-icon { font-size: 20px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 4px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    .article-photo {
+      width: 100%; background: #16231a;
+      border: 1px solid rgba(125,232,176,0.12); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2rem; overflow: hidden;
+    }
+    .article-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+    .article-photo-placeholder {
+      font-size: 12px; color: #3a6a4a; font-family: 'IBM Plex Mono', monospace;
+      text-align: center; padding: 3rem;
+    }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Home</a>
+    <a href="../download.html">Download</a>
+    <a href="index.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="et-logger_fr.html" class="lang-link">🇫🇷 FR</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index.html">← Back to Blog</a>
+  <div class="article-meta">
+    <span class="article-date">2026-04-01</span>
+    <span class="article-tag">Field Operating &amp; POTA</span>
+  </div>
+  <h1 class="article-title">et-logger — <span>Field Logger</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">A fully offline POTA field logger with pre-loaded parks, park-to-park tracking, CAT control, and a built-in voice keyer — ready for the field right out of the box.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.2.3</p>
+</div>
+
+<div style="max-width:720px; margin:0 auto; padding:0 2rem;">
+  <div class="article-photo">
+    <img src="imgs/logger-qso.png" alt="et-logger Field Logger">
+  </div>
+</div>
+
+<div class="article-body">
+
+  <h2>Built for <span>POTA in the field</span></h2>
+  <p>Parks on the Air activations happen in places where internet connectivity is rare or non-existent. Most logging software assumes you are at a desk with a reliable connection — et-logger assumes you are under a tree with a portable antenna and a battery.</p>
+  <p>Every park in the POTA database is pre-loaded into LiaisonOS. There is nothing to download, no lookup service to call, no signal required. Open et-logger, select your park, and start logging.</p>
+
+  <h2>Key <span>features</span></h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-card-icon">🌲</div>
+      <div class="feature-card-title">All POTA parks pre-loaded</div>
+      <div class="feature-card-desc">The complete POTA park database is included in LiaisonOS — searchable by name, reference, or grid square, fully offline.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🔁</div>
+      <div class="feature-card-title">Park-to-park tracking</div>
+      <div class="feature-card-desc">P2P QSOs are flagged automatically. When the station you work is also activating a park, et-logger records it as a park-to-park contact.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">📻</div>
+      <div class="feature-card-title">CAT control</div>
+      <div class="feature-card-desc">Frequency and mode are logged automatically from your radio via CAT. No manual entry — change bands and et-logger follows.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🎙️</div>
+      <div class="feature-card-title">Built-in voice keyer</div>
+      <div class="feature-card-desc">Send pre-recorded CQ calls with a single click. Works with any rig — no built-in keyer required on the radio itself.</div>
+    </div>
+  </div>
+
+  <h2>The <span>voice keyer</span></h2>
+  <p>For operators using older rigs without a built-in voice keyer, running CQ for hours during a POTA activation is tiring. et-logger includes a <strong>CQ voice keyer</strong> that plays a pre-recorded audio clip through your radio's audio input with one click — or on a repeating timer so you can focus on listening.</p>
+  <p>Record your CQ call once, save it, and et-logger handles the rest. PTT is keyed automatically via CAT before playback and released when the clip ends. No extra hardware, no foot switch required.</p>
+
+  <div class="note">
+    <strong>Tip:</strong> Record a few seconds of silence at the end of your CQ clip to give stations time to come back before the next transmission.
+  </div>
+
+  <h2>Park-to-park <span>QSO tracking</span></h2>
+  <p>Park-to-park contacts are one of the most rewarding parts of POTA — and one of the most tedious to track manually. When you log a QSO in et-logger and the other station is also activating a park, simply enter their park reference and the contact is automatically flagged as P2P in your log.</p>
+  <p>At the end of your activation, your ADIF export includes the P2P information in the correct fields for upload to the POTA website — no editing required.</p>
+
+  <h2>Fully <span>offline</span></h2>
+  <p>et-logger does not require any internet connection at any point during an activation. Park lookups, callsign logging, frequency capture via CAT, voice keyer playback — everything runs locally. When you get home, export your log as ADIF and upload to the POTA website.</p>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">Available in LiaisonOS 2.2.3 and later &middot; Feature developed by VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>

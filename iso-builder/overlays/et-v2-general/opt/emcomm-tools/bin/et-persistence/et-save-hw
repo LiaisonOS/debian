@@ -1,0 +1,131 @@
+#!/bin/bash
+#
+# Author  : Sylvain Deguire (VA2OPS)
+# Date    : May 2026
+# Purpose : Save WiFi and Bluetooth configs to USB persistence
+#           Standalone version of the hardware save from et-persistence-save.
+#           Useful for quick testing on a new machine without running a full save.
+#
+# Usage   : sudo et-save-hw
+# Note    : Requires root for reading system dirs
+#
+
+set -e
+
+# --- Colors ---
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log()  { echo -e "${GREEN}[et-save-hw]${NC} $1"; }
+warn() { echo -e "${YELLOW}[et-save-hw]${NC} $1"; }
+err()  { echo -e "${RED}[et-save-hw]${NC} $1"; }
+
+# --- Must run as root ---
+if [[ $EUID -ne 0 ]]; then
+    err "This script must be run as root (sudo et-save-hw)"
+    exit 1
+fi
+
+# --- Detect real user ---
+if [[ -n "$SUDO_USER" ]]; then
+    REAL_USER="$SUDO_USER"
+else
+    REAL_USER=$(who | grep -E "tty|:0" | head -1 | awk '{print $1}')
+    [[ -z "$REAL_USER" ]] && REAL_USER=$(whoami)
+fi
+
+# --- Detect USB persistence ---
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DETECT_SCRIPT="${SCRIPT_DIR}/et-persistence-detect"
+if [[ ! -x "$DETECT_SCRIPT" ]]; then
+    err "Persistence detect script not found: $DETECT_SCRIPT"
+    exit 1
+fi
+
+PERSISTENCE_PATH=$(su - "$REAL_USER" -c "$DETECT_SCRIPT" 2>/dev/null | tail -1) || true
+
+if [[ -z "$PERSISTENCE_PATH" ]]; then
+    err "No USB persistence drive found."
+    err "Insert a USB drive with LiaisonOS et-config folder and try again."
+    exit 1
+fi
+
+log "Found persistence at: $PERSISTENCE_PATH"
+echo ""
+
+mkdir -p "${PERSISTENCE_PATH}/configs/wifi"
+mkdir -p "${PERSISTENCE_PATH}/configs/bluetooth"
+
+# --- Save WiFi ---
+echo -e "${BLUE}=== WiFi ===${NC}"
+WIFI_SRC="/etc/NetworkManager/system-connections"
+WIFI_DEST="${PERSISTENCE_PATH}/configs/wifi"
+WIFI_SAVED=0
+WIFI_SKIPPED=0
+
+if [[ -d "$WIFI_SRC" ]]; then
+    for wifi_file in "$WIFI_SRC"/*.nmconnection; do
+        [[ ! -f "$wifi_file" ]] && continue
+        filename=$(basename "$wifi_file")
+
+        # Skip NM-created numbered duplicates
+        if [[ "$filename" =~ \ [0-9]+\.nmconnection$ ]]; then
+            log "⏭ Skipping duplicate: $filename"
+            continue
+        fi
+
+        wifi_content=$(cat "$wifi_file" 2>/dev/null | grep -v "^interface-name=")
+        if [[ -n "$wifi_content" ]]; then
+            echo "$wifi_content" > "${WIFI_DEST}/${filename}"
+            ((WIFI_SAVED++)) || true
+            conn_id=$(grep "^id=" "$wifi_file" | cut -d= -f2)
+            log "  + $conn_id"
+        else
+            warn "  ⏭ Skipped (empty): $filename"
+            ((WIFI_SKIPPED++)) || true
+        fi
+    done
+
+    chown -R :"et-data" "$WIFI_DEST/" 2>/dev/null || true
+    chmod -R g+rwX "$WIFI_DEST/" 2>/dev/null || true
+
+    if [[ $WIFI_SAVED -gt 0 ]]; then
+        log "✓ Saved: $WIFI_SAVED WiFi networks"
+    else
+        warn "No WiFi connections saved"
+    fi
+else
+    warn "NetworkManager connections directory not found"
+fi
+
+# --- Save Bluetooth ---
+echo ""
+echo -e "${BLUE}=== Bluetooth ===${NC}"
+BT_SRC="/var/lib/bluetooth"
+BT_DEST="${PERSISTENCE_PATH}/configs/bluetooth"
+
+if [[ -d "$BT_SRC" ]] && [[ -n "$(ls -A "$BT_SRC" 2>/dev/null)" ]]; then
+    BT_DEVICE_COUNT=$(find "$BT_SRC" -name "info" -type f 2>/dev/null | wc -l)
+    if [[ "$BT_DEVICE_COUNT" -eq 0 ]]; then
+        warn "No complete Bluetooth pairings found (no info files) — skipping"
+    else
+        BT_TMP="/tmp/et-bt-backup.tar"
+        tar cf "$BT_TMP" -C "$BT_SRC" . 2>/dev/null
+        chown "$REAL_USER" "$BT_TMP" 2>/dev/null
+        if cp "$BT_TMP" "$BT_DEST/bt-pairings.tar" 2>/dev/null; then
+            log "✓ Saved: $BT_DEVICE_COUNT Bluetooth devices [tar archive]"
+        else
+            err "Failed to copy Bluetooth tar to USB"
+        fi
+        rm -f "$BT_TMP"
+    fi
+else
+    warn "No Bluetooth data found in $BT_SRC"
+fi
+
+echo ""
+echo -e "${GREEN}=== Done ===${NC}"
+echo ""

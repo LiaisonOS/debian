@@ -1,0 +1,4 @@
+# et-synching — allow Bluetooth GPS sync without password
+# rfcomm: connect/release RFCOMM Bluetooth serial
+# date/hwclock: sync system time from GPS
+%dialout ALL=(ALL) NOPASSWD: /usr/bin/rfcomm, /bin/date, /sbin/hwclock, /bin/ln, /bin/rm, /opt/emcomm-tools/bin/et-gps-sync, /bin/systemctl

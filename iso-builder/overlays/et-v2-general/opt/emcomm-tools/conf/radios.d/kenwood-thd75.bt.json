@@ -9,7 +9,8 @@
   "bluetooth": {
     "deviceName": "TH-D75",
     "channel": "2",
-    "mac": ""
+    "mac": "",
+    "gps_offset": 0
   },
   "notes": [
     "Menu > Configuration > Bluetooth > On",

@@ -47,6 +47,7 @@ thunderbird-l10n-fr
 python3-flask
 python3-werkzeug
 python3-webview
+python3-serial
 python3-pip
 chirp
 qasmixer

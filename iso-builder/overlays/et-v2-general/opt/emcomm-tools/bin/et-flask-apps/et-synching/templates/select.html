@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Bluetooth GPS Sync — LiaisonOS</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #e0e0e0; min-height: 100vh; }
+        .container { max-width: 600px; margin: 0 auto; padding: 2rem 1.5rem; }
+        h1 { font-size: 1.3rem; color: #FFA500; margin-bottom: 0.3rem; }
+        .subtitle { font-size: 0.85rem; color: #9e9e9e; margin-bottom: 2rem; }
+        .device-list { margin-bottom: 1.5rem; }
+        .device-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: #252525; border: 1px solid #333; border-radius: 6px; margin-bottom: 0.5rem; cursor: pointer; transition: border-color 0.2s; }
+        .device-item:hover { border-color: #FFA500; }
+        .device-item input[type="radio"] { accent-color: #FFA500; width: 16px; height: 16px; }
+        .device-name { font-size: 0.95rem; color: #e0e0e0; }
+        .device-mac { font-size: 0.78rem; color: #666; font-family: monospace; margin-left: auto; }
+        .device-item.last-used .device-mac::after { content: ' ✓ last used'; color: #FFA500; }
+        .no-devices { padding: 1rem; background: #252525; border-radius: 6px; color: #9e9e9e; font-size: 0.88rem; text-align: center; }
+        .mode-section { margin-bottom: 2rem; }
+        .mode-section h3 { font-size: 0.9rem; color: #9e9e9e; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .mode-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .mode-card { padding: 1rem; background: #252525; border: 2px solid #333; border-radius: 8px; cursor: pointer; transition: border-color 0.2s; }
+        .mode-card:hover { border-color: #FFA500; }
+        .mode-card.selected { border-color: #FFA500; background: #2a2a1a; }
+        .mode-card h4 { font-size: 0.95rem; color: #e8e8e8; margin-bottom: 0.4rem; }
+        .mode-card p { font-size: 0.8rem; color: #9e9e9e; line-height: 1.5; }
+        .mode-card .icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+        .btn { padding: 0.7rem 2rem; background: #FFA500; color: #1a1a1a; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; }
+        .btn:hover { background: #ff8c00; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .back { font-size: 0.82rem; color: #666; text-decoration: none; margin-right: 1rem; }
+        .back:hover { color: #9e9e9e; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Select Device</h1>
+        <div class="subtitle">Choose your Android device and connection mode</div>
+
+        <div class="device-list">
+            {% if devices %}
+                {% for d in devices %}
+                <label class="device-item {% if d.mac == last_mac %}last-used{% endif %}">
+                    <input type="radio" name="device" value="{{ d.mac }}"
+                           {% if d.mac == last_mac %}checked{% endif %}>
+                    <span class="device-name">{{ d.name }}</span>
+                    <span class="device-mac">{{ d.mac }}</span>
+                </label>
+                {% endfor %}
+            {% else %}
+                <div class="no-devices">No paired Bluetooth devices found.<br>Pair your Android device first via system Bluetooth settings.</div>
+            {% endif %}
+        </div>
+
+        <div class="mode-section">
+            <h3>Connection Mode</h3>
+            <div class="mode-cards">
+                <div class="mode-card selected" id="card-sync" onclick="selectMode('sync')">
+                    <div class="icon">⏱</div>
+                    <h4>Sync Time &amp; Grid</h4>
+                    <p>Connect, read one GPS fix, update system clock and grid location, then disconnect.</p>
+                </div>
+                <div class="mode-card" id="card-gps" onclick="selectMode('gps')">
+                    <div class="icon">📡</div>
+                    <h4>Use as GPS</h4>
+                    <p>Stay connected as a live GPS device. Enables GPS tracking in the dashboard.</p>
+                </div>
+            </div>
+        </div>
+
+        <a href="/instructions" class="back">← Back</a>
+        <button class="btn" id="connect-btn" onclick="startConnect()" disabled>Connect</button>
+    </div>
+
+<script>
+    let selectedMode = 'sync';
+
+    function updateConnectBtn() {
+        const mac = getSelectedMac();
+        document.getElementById('connect-btn').disabled = !mac;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('input[name="device"]').forEach(function(radio) {
+            radio.addEventListener('change', updateConnectBtn);
+        });
+        updateConnectBtn();
+    });
+
+    function selectMode(mode) {
+        selectedMode = mode;
+        document.getElementById('card-sync').classList.toggle('selected', mode === 'sync');
+        document.getElementById('card-gps').classList.toggle('selected', mode === 'gps');
+    }
+
+    function getSelectedMac() {
+        const radio = document.querySelector('input[name="device"]:checked');
+        return radio ? radio.value : null;
+    }
+
+    function startConnect() {
+        const mac = getSelectedMac();
+        if (!mac) { alert('Please select a device.'); return; }
+        window.location.href = `/action?mac=${encodeURIComponent(mac)}&mode=${selectedMode}`;
+    }
+</script>
+</body>
+</html>

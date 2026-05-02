@@ -678,18 +678,23 @@ plymouth_msg "LiaisonOS: Saving Bluetooth pairings..."
 BT_SRC="/var/lib/bluetooth"
 BT_DEST="${PERSISTENCE_PATH}/configs/bluetooth"
 if [[ -d "$BT_SRC" ]] && [[ -n "$(sudo ls -A "$BT_SRC" 2>/dev/null)" ]]; then
-    # Save as tar archive — BT dirs use MAC addresses with colons (AA:BB:CC:DD:EE:FF)
-    # which FAT32/exFAT cannot store as filenames
-    BT_TMP="/tmp/et-bt-backup.tar"
-    sudo tar cf "$BT_TMP" -C "$BT_SRC" . 2>/dev/null
-    sudo chown "$REAL_USER" "$BT_TMP" 2>/dev/null
-    if cp "$BT_TMP" "$BT_DEST/bt-pairings.tar" 2>/dev/null; then
-        BT_COUNT=$(tar tf "$BT_TMP" 2>/dev/null | grep -c '^./[^/]*/[^/]*/$' || true)
-        log "✓ Saved: Bluetooth pairings ($BT_COUNT devices) [tar archive]"
+    # Count actual paired devices — must have an 'info' file (keys + metadata)
+    BT_DEVICE_COUNT=$(sudo find "$BT_SRC" -name "info" -type f 2>/dev/null | wc -l)
+    if [[ "$BT_DEVICE_COUNT" -eq 0 ]]; then
+        log "⚠ No complete Bluetooth pairings found (no info files) — skipping"
     else
-        log "⚠ Failed to save Bluetooth pairings (copy error)"
+        # Save as tar archive — BT dirs use MAC addresses with colons (AA:BB:CC:DD:EE:FF)
+        # which FAT32/exFAT cannot store as filenames
+        BT_TMP="/tmp/et-bt-backup.tar"
+        sudo tar cf "$BT_TMP" -C "$BT_SRC" . 2>/dev/null
+        sudo chown "$REAL_USER" "$BT_TMP" 2>/dev/null
+        if cp "$BT_TMP" "$BT_DEST/bt-pairings.tar" 2>/dev/null; then
+            log "✓ Saved: Bluetooth pairings ($BT_DEVICE_COUNT devices) [tar archive]"
+        else
+            log "⚠ Failed to save Bluetooth pairings (copy error)"
+        fi
+        rm -f "$BT_TMP"
     fi
-    rm -f "$BT_TMP"
 else
     log "⚠ No Bluetooth pairings found"
 fi

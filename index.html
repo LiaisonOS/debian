@@ -36,6 +36,14 @@
     }
     .lang-link:hover { background: #1f4432; color: #7de8b0; }
 
+    /* ANNOUNCEMENT BANNER */
+    .announce-bar {
+      background: #16231a; border-bottom: 1px solid rgba(125,232,176,0.18);
+      padding: 0.6rem 2rem; text-align: center; font-size: 13px; color: #9dbfad;
+    }
+    .announce-bar a { color: #7de8b0; font-weight: 500; text-decoration: none; }
+    .announce-bar a:hover { color: #a8f0cc; }
+
     /* HERO */
     .hero-section {
       max-width: 760px; margin: 0 auto; padding: 4rem 2rem 3rem;
@@ -189,6 +197,11 @@
 </head>
 <body class="lang-en">
 
+<div class="announce-bar">
+  <span class="il il-en">📰 New — <a href="blog/index.html">LiaisonOS Blog</a> is live — in-depth articles on features, tools and workflows.</span>
+  <span class="il il-fr">📰 Nouveau — Le <a href="blog/index_fr.html">Blog LiaisonOS</a> est en ligne — articles détaillés sur les fonctionnalités, outils et flux de travail.</span>
+</div>
+
 <nav>
   <a class="nav-logo" href="https://liaisonos.com">
     <div class="nav-logo-icon">
@@ -203,6 +216,7 @@
   <div class="nav-links">
     <a href="index.html" class="active"><span class="il il-en">Home</span><span class="il il-fr">Accueil</span></a>
     <a href="download.html"><span class="il il-en">Download</span><span class="il il-fr">Télécharger</span></a>
+    <a href="blog/index.html">Blog</a>
     <a href="https://va2ops.ca">VA2OPS</a>
     <a href="index_fr.html" class="lang-link">🇫🇷 FR</a>
   </div>
@@ -233,7 +247,7 @@
   </div>
 
   <div class="badges">
-    <span class="badge"><span>v2.2.5</span></span>
+    <span class="badge"><span>v2.2.6</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Ms-PL <span>License</span></span>
@@ -341,33 +355,41 @@
   <!-- WHATS NEW -->
   <div class="section">
     <div class="lang-en">
-      <h2 class="section-title">What's new <span class="new-badge">v2.2.5</span></h2>
+      <h2 class="section-title">What's new <span class="new-badge">v2.2.6</span></h2>
       <div class="card">
-        <h3>Map Downloads — Cloudflare R2</h3>
-        <p>Map tilesets now download with real-time progress showing byte counter and percentage per tileset. VARA HF now defaults to 500 Hz bandwidth. et-predict-app default map location updated.</p>
+        <h3>Bluetooth GPS Sync</h3>
+        <p>Sync your system clock and Maidenhead grid square directly from a Bluetooth GPS source — Android phone with the LiaisonGPS app, or a Kenwood TH-D74/TH-D75. No internet required.</p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>Bluetooth &amp; WiFi Save/Restore</h3>
+        <p>Bluetooth pairings and WiFi credentials are now saved and restored as part of USB persistence — reconnect to known devices and networks automatically after every boot.</p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>Previous — v2.2.5</h3>
+        <p>Map tilesets now download with real-time progress showing byte counter and percentage per tileset. VARA HF now defaults to 500 Hz bandwidth.</p>
       </div>
       <div class="card" style="margin-top: 8px;">
         <h3>Previous — v2.2.4</h3>
         <p>QtTermTCP BBS Directory — filterable list of known BBS stations with automatic band/VARA/UTC filtering, QSY on select, station editor, and local SQLite storage.</p>
       </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Previous — v2.2.3</h3>
-        <p><strong>Bug fix</strong> — A script error in v2.2.2 corrupted several overlay files (wrapper-rigctld.sh, wrapper-gpsd.sh, et-audio, et-log, radio audio profiles), breaking rigctld, gpsd and et-supervisor on startup. All affected files have been restored.</p>
-      </div>
     </div>
     <div class="lang-fr">
-      <h2 class="section-title">Nouveautés <span class="new-badge">v2.2.5</span></h2>
+      <h2 class="section-title">Nouveautés <span class="new-badge">v2.2.6</span></h2>
       <div class="card">
-        <h3>Téléchargement des cartes — Cloudflare R2</h3>
-        <p>Les tuiles de carte se téléchargent maintenant avec une progression en temps réel affichant le compteur d'octets et le pourcentage par tuile. VARA HF passe à 500 Hz par défaut. Position par défaut de et-predict-app mise à jour.</p>
+        <h3>Synchronisation GPS Bluetooth</h3>
+        <p>Synchronisez votre horloge système et votre locator Maidenhead directement depuis une source GPS Bluetooth — téléphone Android avec l'app LiaisonGPS, ou un Kenwood TH-D74/TH-D75.</p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>Sauvegarde/restauration Bluetooth &amp; WiFi</h3>
+        <p>Les jumelages Bluetooth et les identifiants WiFi sont maintenant sauvegardés et restaurés dans la persistance USB — reconnexion automatique aux appareils et réseaux connus à chaque démarrage.</p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>Précédente — v2.2.5</h3>
+        <p>Les tuiles de carte se téléchargent maintenant avec une progression en temps réel. VARA HF passe à 500 Hz par défaut.</p>
       </div>
       <div class="card" style="margin-top: 8px;">
         <h3>Précédente — v2.2.4</h3>
         <p>Répertoire BBS QtTermTCP — liste filtrable des stations BBS connues avec filtrage automatique bande/VARA/UTC, QSY à la sélection, éditeur de stations et stockage local SQLite.</p>
-      </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Précédente — v2.2.3</h3>
-        <p><strong>Correction de bogue</strong> — Une erreur de script dans la v2.2.2 avait corrompu plusieurs fichiers overlay, brisant rigctld, gpsd et et-supervisor au démarrage. Tous les fichiers affectés ont été restaurés.</p>
       </div>
     </div>
   </div>

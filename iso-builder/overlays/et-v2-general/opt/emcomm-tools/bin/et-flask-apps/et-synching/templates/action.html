@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Bluetooth GPS Sync — LiaisonOS</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #e0e0e0; min-height: 100vh; }
+        .container { max-width: 600px; margin: 0 auto; padding: 2rem 1.5rem; }
+        h1 { font-size: 1.3rem; color: #FFA500; margin-bottom: 0.3rem; }
+        .subtitle { font-size: 0.85rem; color: #9e9e9e; margin-bottom: 2rem; }
+        .log { background: #111; border: 1px solid #333; border-radius: 6px; padding: 1rem; min-height: 160px; margin-bottom: 1.5rem; font-family: monospace; font-size: 0.82rem; }
+        .log-line { padding: 2px 0; color: #9dbfad; }
+        .log-line.error { color: #f87171; }
+        .log-line.success { color: #4ade80; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #444; border-top-color: #FFA500; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .result-card { background: #252525; border: 1px solid #333; border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1.5rem; display: none; }
+        .result-card.show { display: block; }
+        .result-card h3 { font-size: 0.95rem; color: #4ade80; margin-bottom: 0.75rem; }
+        .result-card.error h3 { color: #f87171; }
+        .result-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.3rem; }
+        .result-row .label { color: #9e9e9e; }
+        .result-row .value { color: #e0e0e0; font-family: monospace; }
+        .btn { padding: 0.7rem 2rem; background: #FFA500; color: #1a1a1a; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; }
+        .btn:hover { background: #ff8c00; }
+        .gps-note { font-size: 0.82rem; color: #9dbfad; background: #1a2a1a; border-left: 3px solid #4ade80; padding: 0.6rem 0.8rem; border-radius: 4px; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Connecting...</h1>
+        <div class="subtitle" id="subtitle">Establishing Bluetooth GPS connection</div>
+
+        <div class="log" id="log">
+            <div class="log-line"><span class="spinner"></span> Starting...</div>
+        </div>
+
+        <div class="result-card" id="result-card">
+            <h3 id="result-title"></h3>
+            <div id="result-rows"></div>
+        </div>
+
+        <div class="gps-note" id="gps-note" style="display:none;">
+            GPS mode is active. Enable <strong>Track</strong> in the dashboard to continuously update your grid location.<br>
+            Close this window to keep GPS running in the background.
+        </div>
+
+        <button class="btn" id="stop-gps-btn" style="display:none; background:#f87171; margin-right:0.5rem;" onclick="stopGps()">Stop GPS</button>
+        <button class="btn" id="done-btn" style="display:none;" onclick="closeWindow()">Close</button>
+    </div>
+
+<script>
+    const mac = "{{ mac }}";
+    const mode = "{{ mode }}";
+    const logEl = document.getElementById('log');
+
+    function addLog(msg, cls) {
+        const line = document.createElement('div');
+        line.className = 'log-line' + (cls ? ' ' + cls : '');
+        line.textContent = msg;
+        logEl.appendChild(line);
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function clearSpinner() {
+        const first = logEl.querySelector('.log-line');
+        if (first) first.remove();
+    }
+
+    const es = new EventSource(`/api/connect/stream?mac=${encodeURIComponent(mac)}&mode=${encodeURIComponent(mode)}`);
+
+    es.onmessage = function(e) {
+        const msg = JSON.parse(e.data);
+
+        if (msg.done) {
+            es.close();
+            clearSpinner();
+            const card = document.getElementById('result-card');
+            const title = document.getElementById('result-title');
+            const rows = document.getElementById('result-rows');
+            card.classList.add('show');
+
+            if (msg.success) {
+                title.textContent = mode === 'gps' ? '✓ GPS Mode Active' : '✓ Sync Complete';
+                document.getElementById('subtitle').textContent = mode === 'gps' ? 'Live GPS connection established' : 'Time and grid updated successfully';
+                if (msg.lat) {
+                    rows.innerHTML = `
+                        <div class="result-row"><span class="label">Latitude</span><span class="value">${msg.lat.toFixed(5)}</span></div>
+                        <div class="result-row"><span class="label">Longitude</span><span class="value">${msg.lon.toFixed(5)}</span></div>
+                        <div class="result-row"><span class="label">Grid</span><span class="value">${msg.grid}</span></div>
+                        ${msg.time ? `<div class="result-row"><span class="label">UTC Time</span><span class="value">${msg.time}</span></div>` : ''}
+                    `;
+                }
+                if (mode === 'gps') {
+                    gpsActive = true;
+                    document.getElementById('gps-note').style.display = 'block';
+                    document.getElementById('stop-gps-btn').style.display = 'inline-block';
+                    document.getElementById('done-btn').textContent = 'Close (GPS stays active)';
+                }
+            } else {
+                card.classList.add('error');
+                title.textContent = '✗ Connection Failed';
+                rows.innerHTML = `<div class="result-row"><span class="value" style="color:#f87171">${msg.error || 'Unknown error'}</span></div>`;
+                document.getElementById('subtitle').textContent = 'Could not complete connection';
+            }
+            document.getElementById('done-btn').style.display = 'inline-block';
+            return;
+        }
+
+        if (msg.msg) {
+            clearSpinner();
+            addLog('▸ ' + msg.msg);
+        }
+    };
+
+    let gpsActive = false;
+
+    function closeWindow() {
+        try { window.pywebview.api.close(); } catch(e) {}
+        try { window.close(); } catch(e) {}
+    }
+
+    function stopGps() {
+        gpsActive = false;
+        document.getElementById('gps-note').style.display = 'none';
+        document.getElementById('stop-gps-btn').style.display = 'none';
+        fetch('/api/disconnect', {method: 'POST'}).finally(() => {
+            document.getElementById('result-title').textContent = '✓ GPS Stopped';
+        });
+    }
+
+    es.onerror = function() {
+        es.close();
+        clearSpinner();
+        addLog('Connection to server lost', 'error');
+        document.getElementById('done-btn').style.display = 'inline-block';
+    };
+</script>
+</body>
+</html>

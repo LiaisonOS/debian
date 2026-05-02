@@ -212,6 +212,7 @@ FLASK_APPS = {
     'et-radio': {'port': 5052, 'script': 'et-radio.py'},
     'et-firstboot': {'port': 5051, 'script': 'et-firstboot.py'},
     'et-chattervox-keys': {'port': 5055, 'script': 'et-chattervox-keys.py'},
+    'et-synching': {'port': 5053, 'script': 'et-synching.py'},
 }
 
 # Mode definitions with categories
@@ -875,6 +876,13 @@ class EmCommDashboard(Gtk.Window):
         self.track_btn.set_sensitive(False)  # Disabled until GPS detected
         self.track_btn.connect("toggled", self.on_track_toggled)
         time_box.pack_end(self.track_btn, False, False, 0)
+
+        # Bluetooth GPS Sync button
+        self.sync_btn = Gtk.Button(label="Sync")
+        self.sync_btn.set_size_request(50, 24)
+        self.sync_btn.get_style_context().add_class("track-btn")
+        self.sync_btn.connect("clicked", self.on_sync_clicked)
+        time_box.pack_end(self.sync_btn, False, False, 0)
         
         self.main_box.pack_start(time_box, False, False, 0)
         self.main_box.pack_start(self.create_separator(), False, False, 5)
@@ -1722,6 +1730,9 @@ class EmCommDashboard(Gtk.Window):
                         print(f"[TRACK] Error updating user.json: {e}")
 
             self._tracking_stop.wait(15)  # Update every 15 seconds
+
+    def on_sync_clicked(self, widget):
+        self.launch_flask_app('et-synching')
 
     def on_user_clicked(self, widget):
         self.launch_flask_app('et-user')

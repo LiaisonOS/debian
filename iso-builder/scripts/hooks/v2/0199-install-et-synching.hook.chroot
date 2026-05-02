@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e
+
+echo "Installing et-synching Bluetooth GPS Sync..."
+
+BIN_DIR="/opt/emcomm-tools/bin"
+GPS_SYNC_DIR="${BIN_DIR}/et-gps-sync"
+GPS_SYNC_SRC="${GPS_SYNC_DIR}/et-gps-sync.c"
+GPS_SYNC_BIN="${BIN_DIR}/et-gps-sync"   # binary goes directly in bin/, not in subdir
+APP_DIR="/opt/emcomm-tools/bin/et-flask-apps/et-synching"
+
+# 1. Compile et-gps-sync C binary from overlay source
+echo "  Compiling et-gps-sync..."
+apt-get install -y gcc > /dev/null 2>&1 || true
+# Remove source directory first so the binary name is not blocked
+cp "${GPS_SYNC_SRC}" /tmp/et-gps-sync.c
+rm -rf "${GPS_SYNC_DIR}"
+gcc -O2 -o "${GPS_SYNC_BIN}" /tmp/et-gps-sync.c -lm
+rm -f /tmp/et-gps-sync.c
+chmod 755 "${GPS_SYNC_BIN}"
+echo "  et-gps-sync compiled — source removed."
+
+# 2. Set permissions on Flask app
+chmod +x "${APP_DIR}/et-synching.py"
+
+# 3. Sudoers and polkit rules are placed by the overlay — fix permissions
+chmod 440 /etc/sudoers.d/et-synching
+
+echo "et-synching installation complete."

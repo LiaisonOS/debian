@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog — LiaisonOS</title>
+  <meta name="description" content="Articles détaillés sur les fonctionnalités, outils et flux de travail de LiaisonOS et emcomm-tools.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    /* NAV */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none; font-family: 'IBM Plex Sans', sans-serif;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    /* CONTENT */
+    .page-header { max-width: 760px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .page-header h1 { font-size: 28px; font-weight: 500; margin-bottom: 0.4rem; }
+    .page-header h1 span { color: #7de8b0; }
+    .page-header p { font-size: 14px; color: #9dbfad; line-height: 1.7; }
+
+    .content { max-width: 760px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    /* ARTICLE CARDS */
+    .article-list { display: flex; flex-direction: column; gap: 12px; }
+    .article-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 10px; padding: 1.25rem 1.5rem;
+      text-decoration: none; display: block;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .article-card:hover { border-color: rgba(125,232,176,0.3); background: #1a2e20; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 15px; font-weight: 500; color: #e8f5ee; margin-bottom: 0.4rem; }
+    .article-excerpt { font-size: 13px; color: #6a9a7a; line-height: 1.6; }
+    .article-read-more { font-size: 12px; color: #5ab887; margin-top: 0.6rem; display: inline-block; }
+    .article-card:hover .article-read-more { color: #7de8b0; }
+
+    /* FOOTER */
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .page-header, .content { padding-left: 1rem; padding-right: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index_fr.html">Accueil</a>
+    <a href="../download_fr.html">Télécharger</a>
+    <a href="index_fr.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="index.html" class="lang-link">🇨🇦 EN</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <h1><span>Liaison</span>OS Blog</h1>
+  <p>Articles détaillés sur les fonctionnalités, outils et flux de travail de LiaisonOS et emcomm-tools.</p>
+</div>
+
+<div class="content">
+  <div class="article-list">
+
+    <!-- ARTICLE ENTRY — dupliquer ce bloc pour chaque nouvel article -->
+    <a class="article-card" href="bluetooth-gps-sync_fr.html">
+      <div class="article-meta">
+        <span class="article-date">2026-05-02</span>
+        <span class="article-tag">GPS &amp; Synchronisation</span>
+      </div>
+      <div class="article-title">Synchronisation GPS Bluetooth — Synchroniser l'heure avec votre téléphone Android ou radio Kenwood</div>
+      <div class="article-excerpt">LiaisonOS peut synchroniser votre horloge système et votre locator Maidenhead directement depuis une source GPS Bluetooth — sans internet. Découvrez comment avec l'app Android LiaisonGPS ou un Kenwood TH-D74 / TH-D75.</div>
+      <span class="article-read-more">Lire la suite →</span>
+    </a>
+    <!-- FIN ARTICLE ENTRY -->
+
+    <!-- ARTICLE ENTRY — dupliquer ce bloc pour chaque nouvel article -->
+    <a class="article-card" href="et-repeater_fr.html">
+      <div class="article-meta">
+        <span class="article-date">2026-03-19</span>
+        <span class="article-tag">Répéteurs &amp; VHF/UHF</span>
+      </div>
+      <div class="article-title">et-repeater — Répertoire de répéteurs hors ligne avec mode Tracker</div>
+      <div class="article-excerpt">Importez vos résultats RepeaterBook en CSV, filtrez par bande et mode, programmez votre radio en un clic et laissez le mode Tracker trier votre liste par distance en déplacement.</div>
+      <span class="article-read-more">Lire la suite →</span>
+    </a>
+    <!-- FIN ARTICLE ENTRY -->
+
+    <!-- ARTICLE ENTRY — dupliquer ce bloc pour chaque nouvel article -->
+    <a class="article-card" href="et-logger_fr.html">
+      <div class="article-meta">
+        <span class="article-date">2026-04-01</span>
+        <span class="article-tag">Exploitation terrain &amp; POTA</span>
+      </div>
+      <div class="article-title">et-logger — Journal de terrain pour les activations POTA</div>
+      <div class="article-excerpt">Un journal POTA de terrain entièrement hors ligne avec tous les parcs pré-chargés, le suivi parc-à-parc automatique, la journalisation de fréquence par CAT et un voix-keyer intégré pour les appareils qui n'en ont pas.</div>
+      <span class="article-read-more">Lire la suite →</span>
+    </a>
+    <!-- FIN ARTICLE ENTRY -->
+
+    <!-- ARTICLE ENTRY — dupliquer ce bloc pour chaque nouvel article -->
+    <a class="article-card" href="bbs-directory-cache_fr.html">
+      <div class="article-meta">
+        <span class="article-date">2026-04-15</span>
+        <span class="article-tag">Packet &amp; BBS</span>
+      </div>
+      <div class="article-title">Répertoire BBS &amp; Cache — Trouver, connecter et archiver les stations BBS packet</div>
+      <div class="article-excerpt">LiaisonOS inclut un répertoire curated de stations BBS avec QSY automatique à la connexion, des entrées locales et un cache complet des sessions — tout pour travailler le BBS packet sur le terrain sans internet.</div>
+      <span class="article-read-more">Lire la suite →</span>
+    </a>
+    <!-- FIN ARTICLE ENTRY -->
+
+  </div>
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>

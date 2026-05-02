@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Bluetooth GPS Sync — LiaisonOS</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #e0e0e0; display: flex; flex-direction: column; }
+        .header { max-width: 600px; width: 100%; margin: 0 auto; padding: 2rem 1.5rem 0; flex-shrink: 0; }
+        .scrollable { flex: 1; overflow-y: auto; }
+        .scroll-inner { max-width: 600px; margin: 0 auto; padding: 1rem 1.5rem; }
+        .footer { max-width: 600px; width: 100%; margin: 0 auto; padding: 1rem 1.5rem; flex-shrink: 0; border-top: 1px solid #2a2a2a; background: #1a1a1a; }
+        h1 { font-size: 1.3rem; color: #FFA500; margin-bottom: 0.3rem; }
+        .subtitle { font-size: 0.85rem; color: #9e9e9e; margin-bottom: 1rem; }
+        .step { display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: flex-start; }
+        .step-num { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: #FFA500; color: #1a1a1a; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; }
+        .step-body h3 { font-size: 0.95rem; color: #e8e8e8; margin-bottom: 0.3rem; }
+        .step-body p { font-size: 0.85rem; color: #9e9e9e; line-height: 1.6; }
+        .step-body a { color: #FFA500; }
+        .note { background: #252525; border-left: 3px solid #FFA500; padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.82rem; color: #9dbfad; margin-bottom: 1.5rem; }
+        .btn { display: inline-block; padding: 0.7rem 2rem; background: #FFA500; color: #1a1a1a; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; text-decoration: none; }
+        .btn:hover { background: #ff8c00; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Bluetooth GPS Sync</h1>
+        <div class="subtitle">Sync time and grid location from an Android device or Kenwood HT</div>
+    </div>
+
+    <div class="scrollable">
+    <div class="scroll-inner">
+        <div class="note">
+            Two GPS sources are supported: the <strong>LiaisonGPS Android app</strong>, or a <strong>Kenwood TH-D74 / TH-D75</strong> handheld radio with built-in GPS. Follow the steps for your device below.
+        </div>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+                <h3>Android: Install the LiaisonGPS app</h3>
+                <p>Download and install the LiaisonGPS APK directly: <a href="https://releases.liaisonos.com/APK/LiaisonGPS.apk" target="_blank">LiaisonGPS.apk</a>. The app broadcasts your GPS position over Bluetooth as NMEA sentences.</p>
+                <!-- Google Play link — enable once approved:
+                <p>Also available on <a href="https://play.google.com/store/apps/details?id=com.liaisonos.liaisongps" target="_blank">Google Play</a>.</p>
+                -->
+                <p style="margin-top:0.5rem"><strong>Kenwood TH-D74 / TH-D75:</strong> No app needed. Enable GPS on the radio and make sure it has a fix before continuing.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+                <h3>Pair your device via Bluetooth</h3>
+                <p>If not already paired, go to <strong>Settings → Bluetooth</strong> on this computer and complete pairing with your Android phone or Kenwood HT. The device must appear as paired before continuing.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+                <h3>Android: Start LiaisonGPS and wait for a GPS fix</h3>
+                <p>Open the LiaisonGPS app. When prompted, allow GPS access. Wait until latitude and longitude coordinates are displayed on screen — this confirms your phone has a GPS fix.</p>
+                <p style="margin-top:0.5rem"><strong>Kenwood HT:</strong> Confirm the GPS icon is active and coordinates are visible on the radio display.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+                <h3>Android: Keep LiaisonGPS open and in the foreground</h3>
+                <p>The app must remain active during the connection. Do not lock the screen or switch to another app until the sync is complete.</p>
+                <p style="margin-top:0.5rem"><strong>Kenwood HT:</strong> No action needed — the radio streams GPS automatically over Bluetooth.</p>
+            </div>
+        </div>
+
+    </div>
+    </div>
+
+    <div class="footer">
+        <a href="/select" class="btn">Continue →</a>
+    </div>
+</body>
+</html>
