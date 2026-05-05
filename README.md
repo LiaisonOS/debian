@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://sourceforge.net/projects/liaisonos/"><img src="https://img.shields.io/badge/Version-2.2.3-f59e0b?style=for-the-badge" alt="Version 2.2.3"></a>
+  <a href="https://sourceforge.net/projects/liaisonos/"><img src="https://img.shields.io/badge/Version-2.2.7-f59e0b?style=for-the-badge" alt="Version 2.2.7"></a>
   <a href="https://sourceforge.net/projects/liaisonos/files/ISO/"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge&logo=sourceforge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
@@ -56,6 +56,25 @@
 </table>
 
 ---
+
+## ✨ What's New in 2.2.7
+
+### 🛰️ GPS — Redesigned, Event-Driven
+
+- **Event-driven architecture** — The dashboard GPS engine is completely rebuilt on a Unix socket notification system. No more polling timer or flag file — state changes are instant and reliable
+- **Visual GPS states** — The dashboard GPS indicator now shows green (active with fix), yellow (active, no data), and red (inactive), with a pulse blink on each GPS update
+
+## ✨ What's New in 2.2.6
+
+### 🛰️ Bluetooth GPS Sync
+
+- **Sync from Android** — Install the LiaisonGPS app on any Android phone and sync your system clock and Maidenhead grid square via Bluetooth — no internet required
+- **Sync from Kenwood radio** — Kenwood TH-D74 and TH-D75 radios broadcast NMEA frames via Bluetooth natively — no app required
+
+### 📡 Bluetooth &amp; WiFi Save/Restore
+
+- **Bluetooth pairings** — Paired devices are saved with USB persistence and restored automatically on next boot
+- **WiFi credentials** — Known networks are saved and reconnect automatically after every boot
 
 ## ✨ What's New in 2.2.3
 

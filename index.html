@@ -247,7 +247,7 @@
   </div>
 
   <div class="badges">
-    <span class="badge"><span>v2.2.6</span></span>
+    <span class="badge"><span>v2.2.7</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Ms-PL <span>License</span></span>
@@ -355,41 +355,33 @@
   <!-- WHATS NEW -->
   <div class="section">
     <div class="lang-en">
-      <h2 class="section-title">What's new <span class="new-badge">v2.2.6</span></h2>
+      <h2 class="section-title">What's new <span class="new-badge">v2.2.7</span></h2>
       <div class="card">
-        <h3>Bluetooth GPS Sync</h3>
-        <p>Sync your system clock and Maidenhead grid square directly from a Bluetooth GPS source — Android phone with the LiaisonGPS app, or a Kenwood TH-D74/TH-D75. No internet required.</p>
+        <h3>GPS — Redesigned, Event-Driven</h3>
+        <p>The GPS sync engine is completely redesigned. The old polling timer and flag file are replaced by a Unix socket event system — the dashboard reacts instantly to GPS state changes with no constant background checking. Visual states now show green (active with fix), yellow (active, no data), and red (inactive), with a pulse blink on each GPS update.</p>
       </div>
       <div class="card" style="margin-top: 8px;">
-        <h3>Bluetooth &amp; WiFi Save/Restore</h3>
-        <p>Bluetooth pairings and WiFi credentials are now saved and restored as part of USB persistence — reconnect to known devices and networks automatically after every boot.</p>
+        <h3>Previous — v2.2.6</h3>
+        <p>Bluetooth GPS Sync from Android (LiaisonGPS app) or Kenwood TH-D74/TH-D75. Bluetooth pairings and WiFi credentials saved and restored with USB persistence.</p>
       </div>
       <div class="card" style="margin-top: 8px;">
         <h3>Previous — v2.2.5</h3>
         <p>Map tilesets now download with real-time progress showing byte counter and percentage per tileset. VARA HF now defaults to 500 Hz bandwidth.</p>
       </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Previous — v2.2.4</h3>
-        <p>QtTermTCP BBS Directory — filterable list of known BBS stations with automatic band/VARA/UTC filtering, QSY on select, station editor, and local SQLite storage.</p>
-      </div>
     </div>
     <div class="lang-fr">
-      <h2 class="section-title">Nouveautés <span class="new-badge">v2.2.6</span></h2>
+      <h2 class="section-title">Nouveautés <span class="new-badge">v2.2.7</span></h2>
       <div class="card">
-        <h3>Synchronisation GPS Bluetooth</h3>
-        <p>Synchronisez votre horloge système et votre locator Maidenhead directement depuis une source GPS Bluetooth — téléphone Android avec l'app LiaisonGPS, ou un Kenwood TH-D74/TH-D75.</p>
+        <h3>GPS — Refonte pilotée par événements</h3>
+        <p>Le moteur de synchronisation GPS est entièrement refondu. L'ancien minuteur de scrutation et le fichier de statut sont remplacés par un système de socket Unix — le tableau de bord réagit instantanément aux changements d'état GPS sans vérification constante en arrière-plan. Les états visuels affichent maintenant vert (actif avec fix), jaune (actif, sans données) et rouge (inactif), avec un clignotement à chaque mise à jour GPS.</p>
       </div>
       <div class="card" style="margin-top: 8px;">
-        <h3>Sauvegarde/restauration Bluetooth &amp; WiFi</h3>
-        <p>Les jumelages Bluetooth et les identifiants WiFi sont maintenant sauvegardés et restaurés dans la persistance USB — reconnexion automatique aux appareils et réseaux connus à chaque démarrage.</p>
+        <h3>Précédente — v2.2.6</h3>
+        <p>Synchronisation GPS Bluetooth depuis Android (app LiaisonGPS) ou Kenwood TH-D74/TH-D75. Jumelages Bluetooth et identifiants WiFi sauvegardés et restaurés avec la persistance USB.</p>
       </div>
       <div class="card" style="margin-top: 8px;">
         <h3>Précédente — v2.2.5</h3>
         <p>Les tuiles de carte se téléchargent maintenant avec une progression en temps réel. VARA HF passe à 500 Hz par défaut.</p>
-      </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Précédente — v2.2.4</h3>
-        <p>Répertoire BBS QtTermTCP — liste filtrable des stations BBS connues avec filtrage automatique bande/VARA/UTC, QSY à la sélection, éditeur de stations et stockage local SQLite.</p>
       </div>
     </div>
   </div>
