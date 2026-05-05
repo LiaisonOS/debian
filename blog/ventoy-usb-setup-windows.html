@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ventoy USB Setup — Windows Step-by-Step — LiaisonOS Blog</title>
+  <meta name="description" content="Step-by-step Windows guide to install Ventoy and partition a USB key for LiaisonOS — with screenshots.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    h3 { font-size: 14px; font-weight: 500; color: #c8e8d8; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    .warn {
+      background: #1a1a0f; border-left: 3px solid #e8c97d;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .warn strong { color: #e8c97d; }
+
+    .step {
+      display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      background: #1a3a2a; border: 1px solid rgba(125,232,176,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: #7de8b0;
+      margin-top: 2px;
+    }
+    .step-content { flex: 1; }
+    .step-content h3 { margin-top: 0; }
+
+    .screenshot {
+      margin: 1rem 0 0.5rem;
+      border: 1px solid rgba(125,232,176,0.15);
+      border-radius: 8px; overflow: hidden;
+      background: #16231a;
+    }
+    .screenshot img { display: block; max-width: 100%; height: auto; }
+    .screenshot-caption {
+      font-size: 11px; color: #5ab887; font-family: 'IBM Plex Mono', monospace;
+      padding: 0.4rem 0.75rem; border-top: 1px solid rgba(125,232,176,0.1);
+      background: #16231a;
+    }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="../index.html">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7de8b0" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Home</a>
+    <a href="index.html" class="active">Blog</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="ventoy-usb-setup.html">← Back to Ventoy USB Setup</a>
+  <div class="article-meta">
+    <span class="article-date">2025-05-05</span>
+    <span class="article-tag">Windows</span>
+    <span class="article-tag">Ventoy</span>
+  </div>
+  <h1 class="article-title">Ventoy USB Setup — <span>Windows Step-by-Step</span></h1>
+  <div class="article-byline">VA2OPS · LiaisonOS</div>
+</div>
+
+<div class="article-body">
+
+  <p>This guide walks you through the complete Windows setup process: installing Ventoy on your USB key with reserved space, then using Disk Management to create and label the <strong>ISO</strong> and <strong>DATA</strong> partitions.</p>
+
+  <div class="note"><strong>Before you start:</strong> Download Ventoy from <a href="https://ventoy.net" target="_blank">ventoy.net</a> and extract it. Plug in your USB key — 64 GB or larger is recommended.</div>
+
+  <hr>
+
+  <h2><span>Part 1</span> — Install Ventoy</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h3>Open Ventoy2Disk and select your USB key</h3>
+      <p>Launch <strong>Ventoy2Disk.exe</strong>. Select your USB key from the Device dropdown. The tool shows the current Ventoy version on the device (if any) versus the package version. Before clicking Install, go to <strong>Option → Partition Configuration</strong>.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/windows/ventoy_1.png" alt="Ventoy2Disk main window showing device selection">
+        <div class="screenshot-caption">Ventoy2Disk — device selected, ready to configure before install</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h3>Reserve space at the end of the disk</h3>
+      <p>In <strong>Partition Configuration</strong>, set the file system to <strong>exFAT</strong> and check <strong>Preserve some space at the end of the disk</strong>. Enter the amount of space you want to reserve for the <strong>ISO</strong> and <strong>DATA</strong> partitions — in this example, 20 GB is reserved. Leave <strong>Align partitions with 4KB</strong> checked. Click <strong>OK</strong>.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/windows/ventoy_2.png" alt="Partition Configuration dialog — 20 GB reserved, exFAT selected">
+        <div class="screenshot-caption">Partition Configuration — 20 GB reserved at end of disk, exFAT, 4KB alignment</div>
+      </div>
+      <div class="note"><strong>How much to reserve?</strong> Plan for at least one LiaisonOS ISO (~5 GB) plus room for your DATA partition. 20 GB gives you roughly 10 GB ISO + 10 GB DATA on a 64 GB key.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h3>Install Ventoy</h3>
+      <p>Back in the main window, click <strong>Install</strong>. Ventoy will format the key and install the bootloader. When done, the status shows <strong>READY</strong> and both version numbers match. Notice the device label now shows <strong>[-20GB]</strong> — confirming the reserved space is set aside.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/windows/ventoy_3.png" alt="Ventoy2Disk after install — versions match, 20 GB reserved shown">
+        <div class="screenshot-caption">Ventoy installed — versions match, [-20GB] confirms reserved space</div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2><span>Part 2</span> — Label the ISO Partition and Create DATA</h2>
+
+  <p>The reserved space is now unallocated at the end of the USB key. The main Ventoy partition (already exFAT) just needs to be renamed <strong>ISO</strong>. Then use Windows <strong>Disk Management</strong> to create the <strong>DATA</strong> partition in the unallocated space.</p>
+
+  <p>Open Disk Management: press <strong>Win + X</strong> → <strong>Disk Management</strong>.</p>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h3>Locate your USB key and the unallocated space</h3>
+      <p>Find your USB key in the disk list. You will see the large Ventoy (exFAT) partition, a small <strong>VTOYEFI</strong> partition, and the unallocated space you reserved at the end.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/windows/disk-management-1.png" alt="Disk Management showing Ventoy partition and unallocated space">
+        <div class="screenshot-caption">Disk Management — Ventoy and VTOYEFI partitions visible, unallocated space on the right</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h3>Rename the Ventoy partition to ISO</h3>
+      <p>Right-click the large Ventoy exFAT partition → <strong>Properties</strong>. Change the volume label from <strong>ventoy</strong> to <strong>ISO</strong> and click <strong>OK</strong>. No formatting needed — Ventoy already created this partition as exFAT.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/windows/disk-management-2.png" alt="Ventoy partition properties — label changed to ISO">
+        <div class="screenshot-caption">Partition properties — rename label to ISO, file system stays exFAT</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <h3>Create a new volume in the unallocated space</h3>
+      <p>Right-click the unallocated space → <strong>New Simple Volume</strong>. Follow the wizard. At the Format Partition step, leave the file system as <strong>FAT32</strong> (the wizard default) and set the volume label to <strong>DATA</strong>. Check <strong>Quick Format</strong> and complete the wizard.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/windows/disk-management-3.png" alt="New Simple Volume Wizard — Format Partition step, label DATA, FAT32">
+        <div class="screenshot-caption">New Simple Volume Wizard — label DATA, FAT32 for now (will reformat next)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-content">
+      <h3>Reformat the DATA partition as exFAT</h3>
+      <p>Once the wizard completes, right-click the new DATA partition → <strong>Format</strong>. Set the file system to <strong>exFAT</strong>, confirm the volume label is <strong>DATA</strong>, check <strong>Quick Format</strong>, and click <strong>OK</strong>.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/windows/disk-management-4.png" alt="Format DATA partition — exFAT, label DATA">
+        <div class="screenshot-caption">Format DATA — switch to exFAT, label DATA, quick format</div>
+      </div>
+      <div class="note"><strong>Note:</strong> The labels <strong>ISO</strong> and <strong>DATA</strong> are not required by LiaisonOS — they are just a convention that makes the key easy to navigate. The DATA partition is selected manually during first boot setup in et-firstboot, whatever its name.</div>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2><span>Final Step</span> — Copy your ISO</h2>
+
+  <p>Open the <strong>ISO</strong> partition in Explorer and copy your LiaisonOS ISO file into it. That is all — Ventoy scans the partition automatically at boot and presents every ISO it finds in the boot menu.</p>
+
+  <div class="note"><strong>Tip:</strong> The ISO partition can hold more than one LiaisonOS version at a time. Ventoy will show all of them in the boot menu — keep a previous version alongside the latest as a known-good fallback.</div>
+
+  <p>Your key is ready. Boot from it and LiaisonOS will start directly — no installation required.</p>
+
+  <p style="margin-top:2rem;"><a href="ventoy-usb-setup.html">← Back to Ventoy USB Setup</a></p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS · <a href="https://github.com/emcomm-tools" target="_blank">github.com/emcomm-tools</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ventoy USB Setup — Linux Step-by-Step — LiaisonOS Blog</title>
+  <meta name="description" content="Step-by-step Linux guide to install Ventoy and partition a USB key for LiaisonOS — with screenshots using GNOME Disks.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    h3 { font-size: 14px; font-weight: 500; color: #c8e8d8; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    code {
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      background: #16231a; border: 1px solid rgba(125,232,176,0.15);
+      border-radius: 4px; padding: 1px 6px; color: #7de8b0;
+    }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    .warn {
+      background: #1a1a0f; border-left: 3px solid #e8c97d;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .warn strong { color: #e8c97d; }
+
+    .step {
+      display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      background: #1a3a2a; border: 1px solid rgba(125,232,176,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: #7de8b0;
+      margin-top: 2px;
+    }
+    .step-content { flex: 1; }
+    .step-content h3 { margin-top: 0; }
+
+    .screenshot {
+      margin: 1rem 0 0.5rem;
+      border: 1px solid rgba(125,232,176,0.15);
+      border-radius: 8px; overflow: hidden;
+      background: #16231a;
+    }
+    .screenshot img { display: block; max-width: 100%; height: auto; }
+    .screenshot-caption {
+      font-size: 11px; color: #5ab887; font-family: 'IBM Plex Mono', monospace;
+      padding: 0.4rem 0.75rem; border-top: 1px solid rgba(125,232,176,0.1);
+      background: #16231a;
+    }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="../index.html">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7de8b0" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Home</a>
+    <a href="index.html" class="active">Blog</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="ventoy-usb-setup.html">← Back to Ventoy USB Setup</a>
+  <div class="article-meta">
+    <span class="article-date">2025-05-05</span>
+    <span class="article-tag">Linux</span>
+    <span class="article-tag">Ventoy</span>
+  </div>
+  <h1 class="article-title">Ventoy USB Setup — <span>Linux Step-by-Step</span></h1>
+  <div class="article-byline">VA2OPS · LiaisonOS</div>
+</div>
+
+<div class="article-body">
+
+  <p>This guide walks you through the complete Linux setup process: installing Ventoy on your USB key with reserved space, then using <strong>GNOME Disks</strong> to create and label the <strong>ISO</strong> and <strong>DATA</strong> partitions.</p>
+
+  <div class="note"><strong>Before you start:</strong> Download Ventoy from <a href="https://ventoy.net" target="_blank">ventoy.net</a> and extract it. Plug in your USB key — 64 GB or larger is recommended.</div>
+
+  <hr>
+
+  <h2><span>Part 1</span> — Install Ventoy</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h3>Identify your USB key with lsblk</h3>
+      <p>Open a terminal and run <code>lsblk</code>. Look for your USB drive by size — in this example it is <code>/dev/sdb</code>, a 28.9 GB key. Double-check before proceeding — Ventoy will erase the entire drive.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_1.png" alt="lsblk output showing USB drive at /dev/sdb">
+        <div class="screenshot-caption">lsblk — USB drive identified as /dev/sdb (28.9 GB)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h3>Run Ventoy2Disk with reserved space</h3>
+      <p>Navigate to the extracted Ventoy folder and run the install command with the <code>-r</code> flag to reserve space at the end of the disk. The value is in <strong>MB</strong> — 20480 reserves 20 GB for your DATA partition. Replace <code>/dev/sdb</code> with your actual drive.</p>
+      <code style="display:block; padding: 0.6rem 1rem; margin: 0.75rem 0; font-size:13px;">sudo bash Ventoy2Disk.sh -i -r 20480 /dev/sdb</code>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_2.png" alt="Terminal running Ventoy2Disk.sh with -r 20480">
+        <div class="screenshot-caption">Ventoy2Disk.sh — install with 20480 MB reserved at end of disk</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h3>Confirm the install completed</h3>
+      <p>Ventoy will ask for confirmation twice before erasing the drive. Once done, the output confirms <strong>Ventoy has been successfully installed</strong>. The reserved space is already set aside — no partition tool needed for that part.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_3.png" alt="Ventoy install complete output in terminal">
+        <div class="screenshot-caption">Ventoy installed successfully — reserved space confirmed</div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2><span>Part 2</span> — Label ISO and Create DATA with GNOME Disks</h2>
+
+  <p>Open <strong>GNOME Disks</strong> (search for "Disks" in your application menu). Select your USB key from the left panel.</p>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h3>Locate your USB key and the free space</h3>
+      <p>You will see the large Ventoy partition (exFAT), a small <strong>VTOYEFI</strong> partition, and the <strong>Free Space</strong> block at the end — that is the 20 GB you reserved.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_4.png" alt="GNOME Disks showing Ventoy partition, VTOYEFI, and Free Space">
+        <div class="screenshot-caption">GNOME Disks — Ventoy partition, VTOYEFI, and 21 GB free space visible</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h3>Create the DATA partition — name and format type</h3>
+      <p>Click the <strong>Free Space</strong> block, then click the <strong>+</strong> button to create a new partition. In the Format Volume dialog, set the volume name to <strong>DATA</strong> and select <strong>Other</strong> as the type — this lets you choose exFAT in the next step.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_5.png" alt="GNOME Disks Format Volume dialog — name DATA, type Other selected">
+        <div class="screenshot-caption">Format Volume — name DATA, select Other to reach the exFAT option</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <h3>Select exFAT and create the partition</h3>
+      <p>In the Custom Format dialog, select <strong>exFAT — Flash Storage Windows Filesystem</strong> and click <strong>Create</strong>. exFAT ensures the DATA partition is readable and writable on Windows, Mac, and Linux without extra drivers.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_6.png" alt="GNOME Disks Custom Format dialog — exFAT selected">
+        <div class="screenshot-caption">Custom Format — exFAT selected, click Create</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-content">
+      <h3>Rename the Ventoy partition to ISO</h3>
+      <p>Click the large Ventoy exFAT partition. Click the <strong>edit</strong> (pencil) icon → <strong>Edit Filesystem Label</strong>. Change the label from <strong>ventoy</strong> to <strong>ISO</strong> and click <strong>Change</strong>. No reformatting needed — Ventoy already created it as exFAT.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_7.png" alt="Change Filesystem Label dialog — label set to ISO">
+        <div class="screenshot-caption">Change Filesystem Label — rename ventoy to ISO</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">8</div>
+    <div class="step-content">
+      <h3>Verify the final layout</h3>
+      <p>GNOME Disks now shows three partitions: <strong>ISO</strong> (exFAT, the main Ventoy partition), <strong>VTOYEFI</strong> (small boot partition), and <strong>DATA</strong> (exFAT). Your key is ready.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_8.png" alt="GNOME Disks final layout — ISO, VTOYEFI, DATA partitions">
+        <div class="screenshot-caption">Final layout — ISO + VTOYEFI + DATA, all set</div>
+      </div>
+      <div class="note"><strong>Note:</strong> The labels <strong>ISO</strong> and <strong>DATA</strong> are not required by LiaisonOS — they are just a convention that makes the key easy to navigate. The DATA partition is selected manually during first boot setup in et-firstboot, whatever its name.</div>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2><span>Final Step</span> — Copy your ISO</h2>
+
+  <p>Open the <strong>ISO</strong> partition in your file manager and copy your LiaisonOS ISO file into it. That is all — Ventoy scans the partition automatically at boot and presents every ISO it finds in the boot menu.</p>
+
+  <div class="note"><strong>Tip:</strong> The ISO partition can hold more than one LiaisonOS version at a time. Ventoy will show all of them in the boot menu — keep a previous version alongside the latest as a known-good fallback.</div>
+
+  <p>Your key is ready. Boot from it and LiaisonOS will start directly — no installation required.</p>
+
+  <p style="margin-top:2rem;"><a href="ventoy-usb-setup.html">← Back to Ventoy USB Setup</a></p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS · <a href="https://github.com/emcomm-tools" target="_blank">github.com/emcomm-tools</a></p>
+</footer>
+
+</body>
+</html>
