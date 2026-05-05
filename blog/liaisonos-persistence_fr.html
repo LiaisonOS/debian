@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Persistance — Vos réglages suivent votre clé — Blog LiaisonOS</title>
+  <meta name="description" content="Comment fonctionne la persistance de LiaisonOS — votre indicatif, configs radio, boîte Winlink, cartes et plus, sauvegardés sur votre clé USB et restaurés automatiquement à chaque démarrage.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    h3 { font-size: 14px; font-weight: 500; color: #c8e8d8; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    .warn {
+      background: #1a1a0f; border-left: 3px solid #e8c97d;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .warn strong { color: #e8c97d; }
+
+    .flow {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1.25rem 1.5rem; margin: 1rem 0;
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #7de8b0;
+      line-height: 2;
+    }
+
+    .app-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px; margin: 1rem 0;
+    }
+    .app-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 6px; padding: 0.6rem 0.9rem;
+    }
+    .app-card-name { font-size: 13px; font-weight: 500; color: #e8f5ee; }
+    .app-card-desc { font-size: 11px; color: #6a9a7a; margin-top: 2px; }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Accueil</a>
+    <a href="../download.html">Télécharger</a>
+    <a href="index.html" class="active">Blogue</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="liaisonos-persistence.html" class="lang-link">🇬🇧 EN</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index.html">← Retour au blogue</a>
+  <div class="article-meta">
+    <span class="article-date">2026-05-05</span>
+    <span class="article-tag">Persistance</span>
+    <span class="article-tag">Partition DATA</span>
+  </div>
+  <h1 class="article-title">Persistance — <span>Vos réglages suivent votre clé</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">Comment LiaisonOS sauvegarde votre indicatif, vos configs radio, votre boîte Winlink, vos cartes et plus sur votre clé USB — et restaure tout automatiquement à chaque démarrage.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.2.7</p>
+</div>
+
+<div class="article-body">
+
+  <h2>L'<span>idée</span></h2>
+  <p>LiaisonOS peut fonctionner entièrement depuis une clé USB — rien d'installé sur l'ordinateur hôte. Démarrez n'importe quelle machine, soyez opérationnel en quelques minutes, ne laissez aucune trace derrière — et aucune modification sur le PC hôte. Pour de meilleures performances, une installation permanente sur un disque interne ou un SSD est recommandée — mais le mode live USB est ce qui rend LiaisonOS unique sur le terrain. Dans tous les cas, la question est la même : où vont vos réglages lorsque vous éteignez ?</p>
+  <p>La réponse : la <strong>partition DATA</strong> de votre clé USB. À chaque arrêt, LiaisonOS sauvegarde vos configurations, votre boîte Winlink et vos fichiers personnels directement sur cette partition. Au prochain démarrage — sur la même machine ou une toute autre — tout est restauré automatiquement avant même que le bureau n'apparaisse.</p>
+  <p>Votre clé, c'est votre station. Elle va avec vous.</p>
+
+  <h2>Ce qui est <span>sauvegardé</span></h2>
+  <p>La persistance couvre tout ce qui fait de votre station la vôtre — applications radio, courriel, navigateur, appairages matériels et fichiers personnels&nbsp;:</p>
+
+  <h3>Identité &amp; radio</h3>
+  <div class="app-grid">
+    <div class="app-card">
+      <div class="app-card-name">Identité</div>
+      <div class="app-card-desc">Indicatif, carré de grille, nom de l'opérateur</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Radio active</div>
+      <div class="app-card-desc">Profil radio sélectionné + configs radio personnalisées</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Répertoire de répéteurs</div>
+      <div class="app-card-desc">Votre liste de répéteurs sauvegardée</div>
+    </div>
+  </div>
+
+  <h3>Applications radio numériques</h3>
+  <div class="app-grid">
+    <div class="app-card">
+      <div class="app-card-name">Pat Winlink</div>
+      <div class="app-card-desc">Config + boîte complète (reçus/envoyés/archivés)</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">JS8Call</div>
+      <div class="app-card-desc">Config et paramètres de station</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">WSJT-X</div>
+      <div class="app-card-desc">Config et paramètres de station</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Fldigi</div>
+      <div class="app-card-desc">Répertoire de config complet + macros personnalisées</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Flmsg</div>
+      <div class="app-card-desc">Configuration des formulaires</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">VARA HF / FM</div>
+      <div class="app-card-desc">Configuration du modem</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">VarAC</div>
+      <div class="app-card-desc">Config, base de données, journaux, étiquettes, modèles, horaire de fréquences + acceptation de licence</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Direwolf</div>
+      <div class="app-card-desc">Config TNC carte son</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Chattervox</div>
+      <div class="app-card-desc">Config + trousseau de clés opérateur</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">LinBPQ BBS</div>
+      <div class="app-card-desc">Configuration du nœud</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">QtTermTCP</div>
+      <div class="app-card-desc">Config + cache BBS + répertoire BBS</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">YAAC</div>
+      <div class="app-card-desc">Préférences complètes, sources de tuiles, couleurs de station, objets SAR</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Navit</div>
+      <div class="app-card-desc">Config, signets, historique de destinations</div>
+    </div>
+  </div>
+
+  <h3>Courriel &amp; navigateur</h3>
+  <div class="app-grid">
+    <div class="app-card">
+      <div class="app-card-name">Thunderbird</div>
+      <div class="app-card-desc">Profil courriel complet — comptes, messages, contacts, paramètres (compressé)</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Firefox</div>
+      <div class="app-card-desc">Signets, historique, témoins, mots de passe enregistrés, extensions, préférences</div>
+    </div>
+  </div>
+
+  <h3>Appairages matériels</h3>
+  <div class="app-grid">
+    <div class="app-card">
+      <div class="app-card-name">Réseaux WiFi</div>
+      <div class="app-card-desc">Toutes les connexions NetworkManager — reconnexion automatique au prochain démarrage</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Bluetooth</div>
+      <div class="app-card-desc">Tous les appareils appairés — récepteurs GPS, casques, téléphones Android</div>
+    </div>
+  </div>
+
+  <h3>Fichiers personnels</h3>
+  <div class="app-grid">
+    <div class="app-card">
+      <div class="app-card-name">Documents</div>
+      <div class="app-card-desc">Tout le contenu de votre dossier Documents</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Téléchargements</div>
+      <div class="app-card-desc">Tout le contenu de votre dossier Téléchargements</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Images</div>
+      <div class="app-card-desc">Tout le contenu de votre dossier Images</div>
+    </div>
+  </div>
+
+  <div class="note"><strong>Cartes et Wikipédia, c'est différent.</strong> Les fichiers volumineux comme les cartes hors ligne et les fichiers ZIM de Kiwix ne sont pas copiés en mémoire — ils sont accessibles directement depuis la partition DATA via des liens symboliques. La consommation de RAM reste faible quelle que soit la quantité de données sur la clé.</div>
+
+  <h2>Comment ça fonctionne au <span>démarrage</span></h2>
+  <p>Quand LiaisonOS démarre, il cherche une partition DATA sur la clé USB avant que le bureau ne s'affiche. Deux choses se produisent automatiquement&nbsp;:</p>
+
+  <div class="flow">
+Démarrage de LiaisonOS
+  │
+  ├─► Cartes &amp; Wikipédia liés depuis DATA → disponibles instantanément, sans RAM
+  │
+  └─► et-firstboot vérifie la partition DATA
+        │
+        ├─ Config trouvée ? ──► Restauration ──► « Bienvenue, VA2OPS »
+        │
+        └─ Pas de config ? ───► Assistant premier démarrage ──► Indicatif, grille, partition DATA
+  </div>
+
+  <p>Au premier démarrage, l'assistant demande votre indicatif, votre carré de grille et quelle partition utiliser comme DATA. Ensuite, chaque démarrage suivant est silencieux et automatique — votre station est prête quelques secondes après l'apparition du bureau.</p>
+
+  <h2>Comment <span>sauvegarder</span></h2>
+  <p>La sauvegarde est intégrée à votre routine d'arrêt. Quand vous avez terminé la session, utilisez l'une des trois options du menu LiaisonOS&nbsp;:</p>
+  <ul>
+    <li><strong>Sauvegarder et éteindre</strong> — sauvegarde tout, puis éteint</li>
+    <li><strong>Sauvegarder et redémarrer</strong> — sauvegarde tout, puis redémarre</li>
+    <li><strong>Sauvegarder et suspendre</strong> — sauvegarde tout, puis met en veille</li>
+  </ul>
+  <p>La sauvegarde s'exécute pendant la séquence d'arrêt — vous en voyez la progression à l'écran. Si vous oubliez de sauvegarder et éteignez directement, votre dernier état sauvegardé reste sur la clé — vous perdez seulement les changements effectués depuis la dernière sauvegarde.</p>
+
+  <div class="warn"><strong>Ne retirez pas la clé pendant la sauvegarde.</strong> La sauvegarde écrit directement sur la partition DATA. Retirer la clé en cours de sauvegarde peut corrompre vos configs. Attendez toujours que l'arrêt soit complet.</div>
+
+  <h2>Sur la <span>partition DATA</span></h2>
+  <p>Depuis votre ordinateur, la partition DATA ressemble à une clé USB ordinaire. À l'intérieur, LiaisonOS maintient une structure de répertoires claire&nbsp;:</p>
+
+  <div class="flow">
+DATA/
+└── et-config/
+    ├── user.json       ← votre indicatif et grille
+    ├── manifest.json   ← métadonnées et version
+    ├── configs/        ← un dossier par application
+    │   ├── pat/
+    │   ├── js8call/
+    │   ├── wsjtx/
+    │   ├── fldigi/
+    │   └── ...
+    ├── mailbox/        ← messages Winlink
+    └── user-data/      ← Documents, Téléchargements, Images
+  </div>
+
+  <p>Vous pouvez parcourir ce contenu depuis n'importe quel ordinateur — Windows, Mac ou Linux — puisque DATA est formaté en exFAT. Vous pouvez aussi copier manuellement le contenu de votre partition DATA vers un autre emplacement pour un filet de sécurité supplémentaire.</p>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">LiaisonOS 2.2.7 &middot; Guide rédigé par VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Québec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>

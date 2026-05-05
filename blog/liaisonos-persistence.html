@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Persistence — Your Settings Follow Your Key — LiaisonOS Blog</title>
+  <meta name="description" content="How LiaisonOS persistence works — your callsign, radio configs, Winlink mailbox, maps and more saved on your USB key and restored automatically at every boot.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    h3 { font-size: 14px; font-weight: 500; color: #c8e8d8; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    .warn {
+      background: #1a1a0f; border-left: 3px solid #e8c97d;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .warn strong { color: #e8c97d; }
+
+    .flow {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1.25rem 1.5rem; margin: 1rem 0;
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #7de8b0;
+      line-height: 2;
+    }
+
+    .app-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px; margin: 1rem 0;
+    }
+    .app-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 6px; padding: 0.6rem 0.9rem;
+    }
+    .app-card-name { font-size: 13px; font-weight: 500; color: #e8f5ee; }
+    .app-card-desc { font-size: 11px; color: #6a9a7a; margin-top: 2px; }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Home</a>
+    <a href="../download.html">Download</a>
+    <a href="index.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="liaisonos-persistence_fr.html" class="lang-link">🇫🇷 FR</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index.html">← Back to Blog</a>
+  <div class="article-meta">
+    <span class="article-date">2026-05-05</span>
+    <span class="article-tag">Persistence</span>
+    <span class="article-tag">DATA Partition</span>
+  </div>
+  <h1 class="article-title">Persistence — <span>Your Settings Follow Your Key</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">How LiaisonOS saves your callsign, radio configs, Winlink mailbox, maps and more on your USB key — and restores everything automatically at every boot.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.2.7</p>
+</div>
+
+<div class="article-body">
+
+  <h2>The <span>idea</span></h2>
+  <p>LiaisonOS can run entirely from a USB key — nothing installed on the computer you plug it into. Boot any machine, be operational in minutes, leave no trace behind — and no alteration on the host PC. For best performance, a permanent install on an internal drive or SSD is recommended — but the USB live mode is what makes LiaisonOS unique in the field. Either way, the question is the same: where do your settings go when you shut down?</p>
+  <p>The answer is the <strong>DATA partition</strong> on your USB key. Every time you shut down, LiaisonOS saves your configurations, your Winlink mailbox, and your personal data directly to that partition. The next time you boot — on the same machine or a completely different one — everything is restored automatically before the desktop even appears.</p>
+  <p>Your key is your station. It goes with you.</p>
+
+  <h2>What gets <span>saved</span></h2>
+  <p>Persistence covers everything that makes your station yours — radio apps, email, browser, hardware pairings, and personal files:</p>
+
+  <h3>Identity &amp; radio</h3>
+  <div class="app-grid">
+    <div class="app-card">
+      <div class="app-card-name">Identity</div>
+      <div class="app-card-desc">Callsign, grid square, operator name</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Active radio</div>
+      <div class="app-card-desc">Selected radio profile + custom radio configs</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Repeater directory</div>
+      <div class="app-card-desc">Your saved repeater list</div>
+    </div>
+  </div>
+
+  <h3>Digital radio apps</h3>
+  <div class="app-grid">
+    <div class="app-card">
+      <div class="app-card-name">Pat Winlink</div>
+      <div class="app-card-desc">Config + full mailbox (in/out/sent/archive)</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">JS8Call</div>
+      <div class="app-card-desc">Station config and settings</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">WSJT-X</div>
+      <div class="app-card-desc">Station config and settings</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Fldigi</div>
+      <div class="app-card-desc">Full config directory + custom macros</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Flmsg</div>
+      <div class="app-card-desc">Form configuration</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">VARA HF / FM</div>
+      <div class="app-card-desc">Modem configuration</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">VarAC</div>
+      <div class="app-card-desc">Config, database, logs, callsign tags, templates, frequency schedule + license acceptance</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Direwolf</div>
+      <div class="app-card-desc">Soundcard TNC config</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Chattervox</div>
+      <div class="app-card-desc">Config + operator key store</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">LinBPQ BBS</div>
+      <div class="app-card-desc">Node configuration</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">QtTermTCP</div>
+      <div class="app-card-desc">Config + BBS cache + BBS directory</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">YAAC</div>
+      <div class="app-card-desc">Full preferences, tile sources, station colors, SAR objects</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Navit</div>
+      <div class="app-card-desc">Config, bookmarks, destination history</div>
+    </div>
+  </div>
+
+  <h3>Email &amp; browser</h3>
+  <div class="app-grid">
+    <div class="app-card">
+      <div class="app-card-name">Thunderbird</div>
+      <div class="app-card-desc">Full email profile — accounts, messages, contacts, settings (compressed)</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Firefox</div>
+      <div class="app-card-desc">Bookmarks, history, cookies, saved passwords, extensions, preferences</div>
+    </div>
+  </div>
+
+  <h3>Hardware pairings</h3>
+  <div class="app-grid">
+    <div class="app-card">
+      <div class="app-card-name">WiFi networks</div>
+      <div class="app-card-desc">All saved NetworkManager connections — reconnect automatically on next boot</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Bluetooth</div>
+      <div class="app-card-desc">All paired devices — GPS receivers, headsets, Android phones</div>
+    </div>
+  </div>
+
+  <h3>Personal files</h3>
+  <div class="app-grid">
+    <div class="app-card">
+      <div class="app-card-name">Documents</div>
+      <div class="app-card-desc">Everything in your Documents folder</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Downloads</div>
+      <div class="app-card-desc">Everything in your Downloads folder</div>
+    </div>
+    <div class="app-card">
+      <div class="app-card-name">Pictures</div>
+      <div class="app-card-desc">Everything in your Pictures folder</div>
+    </div>
+  </div>
+
+  <div class="note"><strong>Maps and Wikipedia are different.</strong> Large files like offline maps and Kiwix ZIM files are not copied into memory — they are accessed directly from the DATA partition via symlinks. This keeps RAM usage low regardless of how much data you carry on the key.</div>
+
+  <h2>How it works at <span>boot</span></h2>
+  <p>When LiaisonOS starts, it looks for a DATA partition on the USB key before the desktop loads. Two things happen automatically:</p>
+
+  <div class="flow">
+Boot LiaisonOS
+  │
+  ├─► Maps &amp; Wikipedia symlinked from DATA → available instantly, no RAM used
+  │
+  └─► et-firstboot checks DATA partition
+        │
+        ├─ Config found? ──► Restore all settings ──► "Welcome back, VA2OPS"
+        │
+        └─ No config? ───► First-boot wizard ──────► Set callsign, grid, select DATA partition
+  </div>
+
+  <p>On first boot, the wizard asks for your callsign, grid square, and which partition to use as DATA. After that, every subsequent boot is silent and automatic — your station is ready within seconds of the desktop appearing.</p>
+
+  <h2>How to <span>save</span></h2>
+  <p>Saving is built into your shutdown workflow. When you are done for the session, use any of the three options from the LiaisonOS menu:</p>
+  <ul>
+    <li><strong>Save and Shut Down</strong> — saves everything, then powers off</li>
+    <li><strong>Save and Reboot</strong> — saves everything, then reboots</li>
+    <li><strong>Save and Suspend</strong> — saves everything, then suspends</li>
+  </ul>
+  <p>The save runs during the shutdown sequence — you see the progress on screen. If you forget to save and just power off, your last saved state is still on the key — you just lose any changes made since the previous save.</p>
+
+  <div class="warn"><strong>Do not pull the key while saving.</strong> The save writes directly to the DATA partition. Removing the key mid-save can corrupt your configs. Always wait for the shutdown to complete.</div>
+
+  <h2>On the <span>DATA partition</span></h2>
+  <p>From your computer, the DATA partition looks like a regular USB drive. Inside, LiaisonOS maintains a clean directory structure:</p>
+
+  <div class="flow">
+DATA/
+└── et-config/
+    ├── user.json       ← your callsign and grid
+    ├── manifest.json   ← metadata and version
+    ├── configs/        ← one folder per application
+    │   ├── pat/
+    │   ├── js8call/
+    │   ├── wsjtx/
+    │   ├── fldigi/
+    │   └── ...
+    ├── mailbox/        ← Winlink messages
+    └── user-data/      ← Documents, Downloads, Pictures
+  </div>
+
+  <p>You can browse this folder from any computer — Windows, Mac, or Linux — since DATA is formatted as exFAT. This also means you can manually copy the contents of your DATA partition to a second location if you want an extra safety net.</p>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">LiaisonOS 2.2.7 &middot; Guide written by VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>
