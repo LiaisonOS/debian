@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Installation Ventoy sur clé USB — Linux étape par étape — Blogue LiaisonOS</title>
+  <meta name="description" content="Guide Linux étape par étape pour installer Ventoy et partitionner une clé USB pour LiaisonOS — avec captures d'écran de GNOME Disques.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    h3 { font-size: 14px; font-weight: 500; color: #c8e8d8; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    code {
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      background: #16231a; border: 1px solid rgba(125,232,176,0.15);
+      border-radius: 4px; padding: 1px 6px; color: #7de8b0;
+    }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    .warn {
+      background: #1a1a0f; border-left: 3px solid #e8c97d;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .warn strong { color: #e8c97d; }
+
+    .step {
+      display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      background: #1a3a2a; border: 1px solid rgba(125,232,176,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: #7de8b0;
+      margin-top: 2px;
+    }
+    .step-content { flex: 1; }
+    .step-content h3 { margin-top: 0; }
+
+    .screenshot {
+      margin: 1rem 0 0.5rem;
+      border: 1px solid rgba(125,232,176,0.15);
+      border-radius: 8px; overflow: hidden;
+      background: #16231a;
+    }
+    .screenshot img { display: block; max-width: 100%; height: auto; }
+    .screenshot-caption {
+      font-size: 11px; color: #5ab887; font-family: 'IBM Plex Mono', monospace;
+      padding: 0.4rem 0.75rem; border-top: 1px solid rgba(125,232,176,0.1);
+      background: #16231a;
+    }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="../index_fr.html">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7de8b0" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index_fr.html">Accueil</a>
+    <a href="index.html" class="active">Blogue</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="ventoy-usb-setup_fr.html">← Retour à l'installation Ventoy</a>
+  <div class="article-meta">
+    <span class="article-date">2026-05-05</span>
+    <span class="article-tag">Linux</span>
+    <span class="article-tag">Ventoy</span>
+  </div>
+  <h1 class="article-title">Installation Ventoy sur clé USB — <span>Linux étape par étape</span></h1>
+  <div class="article-byline">VA2OPS · LiaisonOS</div>
+</div>
+
+<div class="article-body">
+
+  <p>Ce guide vous accompagne dans la procédure complète sous Linux : installation de Ventoy sur votre clé USB avec de l'espace réservé, puis utilisation de <strong>GNOME Disques</strong> pour créer et nommer les partitions <strong>ISO</strong> et <strong>DATA</strong>.</p>
+
+  <div class="note"><strong>Avant de commencer :</strong> Téléchargez Ventoy depuis <a href="https://ventoy.net" target="_blank">ventoy.net</a> et extrayez l'archive. Branchez votre clé USB — 64 Go ou plus est recommandé.</div>
+
+  <hr>
+
+  <h2><span>Partie 1</span> — Installer Ventoy</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h3>Identifier votre clé USB avec lsblk</h3>
+      <p>Ouvrez un terminal et exécutez <code>lsblk</code>. Repérez votre clé par sa taille — dans cet exemple, il s'agit de <code>/dev/sdb</code>, une clé de 28,9 Go. Vérifiez bien avant de continuer — Ventoy efface la totalité du disque.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_1.png" alt="Résultat de lsblk montrant la clé USB en /dev/sdb">
+        <div class="screenshot-caption">lsblk — clé USB identifiée comme /dev/sdb (28,9 Go)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h3>Lancer Ventoy2Disk avec l'espace réservé</h3>
+      <p>Naviguez dans le dossier Ventoy extrait et lancez la commande d'installation avec le paramètre <code>-r</code> pour réserver de l'espace en fin de disque. La valeur est en <strong>Mo</strong> — 20480 réserve 20 Go pour votre partition DATA. Remplacez <code>/dev/sdb</code> par votre périphérique réel.</p>
+      <code style="display:block; padding: 0.6rem 1rem; margin: 0.75rem 0; font-size:13px;">sudo bash Ventoy2Disk.sh -i -r 20480 /dev/sdb</code>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_2.png" alt="Terminal exécutant Ventoy2Disk.sh avec -r 20480">
+        <div class="screenshot-caption">Ventoy2Disk.sh — installation avec 20 480 Mo réservés en fin de disque</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h3>Confirmer la fin de l'installation</h3>
+      <p>Ventoy demande confirmation deux fois avant d'effacer la clé. Une fois terminé, la sortie confirme que <strong>Ventoy a été installé avec succès</strong>. L'espace réservé est déjà mis de côté — aucun outil de partition supplémentaire n'est nécessaire pour cette étape.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_3.png" alt="Sortie terminal confirmant l'installation de Ventoy">
+        <div class="screenshot-caption">Ventoy installé avec succès — espace réservé confirmé</div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2><span>Partie 2</span> — Nommer ISO et créer DATA avec GNOME Disques</h2>
+
+  <p>Ouvrez <strong>GNOME Disques</strong> (cherchez « Disques » dans votre menu d'applications). Sélectionnez votre clé USB dans le panneau de gauche.</p>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h3>Repérer la clé USB et l'espace libre</h3>
+      <p>Vous verrez la grande partition Ventoy (exFAT), une petite partition <strong>VTOYEFI</strong> et le bloc <strong>Espace libre</strong> en fin de disque — ce sont les 20 Go que vous avez réservés.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_4.png" alt="GNOME Disques montrant la partition Ventoy, VTOYEFI et l'espace libre">
+        <div class="screenshot-caption">GNOME Disques — partition Ventoy, VTOYEFI et 21 Go d'espace libre visibles</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h3>Créer la partition DATA — nom et type de formatage</h3>
+      <p>Cliquez sur le bloc <strong>Espace libre</strong>, puis sur le bouton <strong>+</strong> pour créer une nouvelle partition. Dans la boîte de dialogue, nommez le volume <strong>DATA</strong> et sélectionnez <strong>Autre</strong> comme type — cela vous permettra de choisir exFAT à l'étape suivante.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_5.png" alt="Boîte de dialogue GNOME Disques — nom DATA, type Autre sélectionné">
+        <div class="screenshot-caption">Formater le volume — nom DATA, sélectionner Autre pour accéder à l'option exFAT</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <h3>Sélectionner exFAT et créer la partition</h3>
+      <p>Dans la boîte de dialogue de format personnalisé, sélectionnez <strong>exFAT — Système de fichiers Flash Windows</strong> et cliquez sur <strong>Créer</strong>. exFAT garantit que la partition DATA est lisible et accessible en écriture sous Windows, Mac et Linux sans pilote supplémentaire.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_6.png" alt="Boîte de dialogue format personnalisé GNOME Disques — exFAT sélectionné">
+        <div class="screenshot-caption">Format personnalisé — exFAT sélectionné, cliquer sur Créer</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-content">
+      <h3>Renommer la partition Ventoy en ISO</h3>
+      <p>Cliquez sur la grande partition Ventoy exFAT. Cliquez sur l'icône <strong>modifier</strong> (crayon) → <strong>Modifier l'étiquette du système de fichiers</strong>. Changez l'étiquette de <strong>ventoy</strong> à <strong>ISO</strong> et cliquez sur <strong>Modifier</strong>. Aucun reformatage n'est nécessaire — Ventoy l'a déjà créée en exFAT.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_7.png" alt="Boîte de dialogue Modifier l'étiquette — étiquette définie à ISO">
+        <div class="screenshot-caption">Modifier l'étiquette du système de fichiers — renommer ventoy en ISO</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">8</div>
+    <div class="step-content">
+      <h3>Vérifier la disposition finale</h3>
+      <p>GNOME Disques affiche maintenant trois partitions : <strong>ISO</strong> (exFAT, la partition principale Ventoy), <strong>VTOYEFI</strong> (petite partition de démarrage) et <strong>DATA</strong> (exFAT). Votre clé est prête.</p>
+      <div class="screenshot">
+        <img src="imgs/ventoy/linux/LINUX_8.png" alt="Disposition finale dans GNOME Disques — partitions ISO, VTOYEFI, DATA">
+        <div class="screenshot-caption">Disposition finale — ISO + VTOYEFI + DATA, tout est en place</div>
+      </div>
+      <div class="note"><strong>Note :</strong> Les étiquettes <strong>ISO</strong> et <strong>DATA</strong> ne sont pas obligatoires pour LiaisonOS — ce sont des conventions qui facilitent la navigation sur la clé. La partition DATA est sélectionnée manuellement lors du premier démarrage dans et-firstboot, quel que soit son nom.</div>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2><span>Dernière étape</span> — Copier votre ISO</h2>
+
+  <p>Ouvrez la partition <strong>ISO</strong> dans votre gestionnaire de fichiers et copiez-y votre fichier ISO LiaisonOS. C'est tout — Ventoy parcourt la partition automatiquement au démarrage et présente chaque ISO trouvé dans le menu de démarrage.</p>
+
+  <div class="note"><strong>Astuce :</strong> La partition ISO peut contenir plusieurs versions de LiaisonOS en même temps. Ventoy les affichera toutes dans le menu de démarrage — gardez une version précédente à côté de la dernière comme solution de secours éprouvée.</div>
+
+  <p>Votre clé est prête. Démarrez depuis celle-ci et LiaisonOS se lancera directement — aucune installation requise.</p>
+
+  <p style="margin-top:2rem;"><a href="ventoy-usb-setup_fr.html">← Retour à l'installation Ventoy</a></p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS · <a href="https://github.com/emcomm-tools" target="_blank">github.com/emcomm-tools</a></p>
+</footer>
+
+</body>
+</html>
