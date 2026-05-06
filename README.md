@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://sourceforge.net/projects/liaisonos/"><img src="https://img.shields.io/badge/Version-2.2.7-f59e0b?style=for-the-badge" alt="Version 2.2.7"></a>
+  <a href="https://sourceforge.net/projects/liaisonos/"><img src="https://img.shields.io/badge/Version-2.2.7 (1)-f59e0b?style=for-the-badge" alt="Version 2.2.7 (1)"></a>
   <a href="https://sourceforge.net/projects/liaisonos/files/ISO/"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge&logo=sourceforge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
@@ -57,7 +57,7 @@
 
 ---
 
-## ✨ What's New in 2.2.7
+## ✨ What's New in 2.2.7 (1)
 
 ### 🛰️ GPS — Redesigned, Event-Driven
 
