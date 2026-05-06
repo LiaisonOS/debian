@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Bluetooth GPS Sync — LiaisonOS</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #e0e0e0; min-height: 100vh; }
+        .container { max-width: 600px; margin: 0 auto; padding: 2rem 1.5rem; }
+        h1 { font-size: 1.3rem; color: #4ade80; margin-bottom: 0.3rem; }
+        .subtitle { font-size: 0.85rem; color: #9e9e9e; margin-bottom: 2rem; }
+        .gps-note { font-size: 0.82rem; color: #9dbfad; background: #1a2a1a; border-left: 3px solid #4ade80; padding: 0.6rem 0.8rem; border-radius: 4px; margin-bottom: 1.5rem; }
+        .btn { padding: 0.7rem 2rem; background: #FFA500; color: #1a1a1a; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; margin-right: 0.5rem; }
+        .btn:hover { background: #ff8c00; }
+        .btn-stop { background: #f87171; }
+        .btn-stop:hover { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GPS Mode Active</h1>
+        <div class="subtitle">Live GPS connection is running in the background.</div>
+
+        <div class="gps-note">
+            GPS is active and sending data to gpsd. Enable <strong>Track</strong> in the dashboard to continuously update your grid location.
+        </div>
+
+        <button class="btn btn-stop" onclick="stopGps()">Stop GPS</button>
+        <button class="btn btn-close" onclick="closeWindow()">Close (GPS stays active)</button>
+    </div>
+
+<script>
+    function closeWindow() {
+        try { window.pywebview.api.close(); } catch(e) {}
+        try { window.close(); } catch(e) {}
+    }
+
+    function stopGps() {
+        fetch('/api/disconnect', {method: 'POST'}).finally(() => {
+            document.querySelector('h1').textContent = 'GPS Stopped';
+            document.querySelector('h1').style.color = '#9e9e9e';
+            document.querySelector('.subtitle').textContent = 'GPS connection has been disconnected.';
+            document.querySelector('.gps-note').style.display = 'none';
+            document.querySelector('.btn-stop').style.display = 'none';
+            document.querySelector('.btn-close').textContent = 'Close';
+        });
+    }
+</script>
+</body>
+</html>

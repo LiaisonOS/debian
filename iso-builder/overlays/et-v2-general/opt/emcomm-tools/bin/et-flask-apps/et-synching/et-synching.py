@@ -33,19 +33,40 @@ log.setLevel(logging.ERROR)
 app = Flask(__name__)
 app.secret_key = 'emcomm-tools-synching-2026'
 
+@app.after_request
+def no_cache(r):
+    r.headers['Cache-Control'] = 'no-store'
+    return r
+
 # Paths
 ET_CONFIG_FILE = Path.home() / ".config" / "emcomm-tools" / "user.json"
 ET_SYNCHING_CONFIG = Path.home() / ".config" / "emcomm-tools" / "bt-synching.json"
 RADIOS_CONF_DIR = Path("/opt/emcomm-tools/conf/radios.d")
-GPS_FLAG = Path("/tmp/et-gps-connected")
+GPS_NOTIFY_SOCK = "/tmp/et-gps-notify.sock"
 RFCOMM_DEV = "/dev/rfcomm0"
 ET_GPS_LINK = "/dev/et-gps"
 SERVICE_NAME = "LiaisonGPS"
 PORT = 5053
 
+# Global rfcomm process — kept alive in GPS mode, killed on cleanup
+_rfcomm_proc         = None
+_gpsd_wrapper_proc   = None   # wrapper-gpsd.sh start — killed in cleanup
+_gps_active          = False  # guard against double-cleanup
+
 # ============================================================================
 # Helpers
 # ============================================================================
+
+def _notify_gps(msg: str):
+    """Send GPS state notification to dashboard (best-effort, silent if dashboard not running)."""
+    import socket as _socket
+    s = _socket.socket(_socket.AF_UNIX, _socket.SOCK_DGRAM)
+    try:
+        s.sendto(msg.encode(), GPS_NOTIFY_SOCK)
+    except OSError:
+        pass
+    finally:
+        s.close()
 
 def get_gps_offset(device_name):
     """Look up gps_offset from radio conf files matching the BT device name.
@@ -135,17 +156,22 @@ def sdp_find_channel(mac):
 
 
 def rfcomm_connect(mac, channel):
-    """Start rfcomm connect in background. Returns Popen process."""
-    return subprocess.Popen(
-        ['sudo', 'rfcomm', 'connect', '0', mac, str(channel)],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    """Bind rfcomm0 to MAC/channel — no background process needed.
+    Unlike 'rfcomm connect', bind uses RELEASE_ONHUP without REUSE_DLC.
+    The actual BT connection is initiated by gpsd opening /dev/rfcomm0.
+    When gpsd stops and closes the fd, the slot auto-releases cleanly."""
+    r = subprocess.run(
+        ['sudo', 'rfcomm', 'bind', '0', mac, str(channel)],
+        capture_output=True
     )
+    print(f"[GPS] rfcomm bind: rc={r.returncode} {r.stderr.decode().strip()}")
+    return None
 
 
 def rfcomm_disconnect():
     """Release rfcomm0."""
-    subprocess.run(['sudo', 'rfcomm', 'release', '0'],
-                   capture_output=True)
+    r = subprocess.run(['sudo', 'rfcomm', 'release', '0'], capture_output=True)
+    print(f"[GPS] rfcomm release: rc={r.returncode} {r.stderr.decode().strip()}")
 
 
 def latlon_to_grid(lat, lon):
@@ -267,35 +293,89 @@ def set_system_time(dt_str, receive_time):
         return False
 
 
+
+
 def setup_gps_mode():
     """Symlink /dev/et-gps -> /dev/rfcomm0 and start gpsd."""
+    global _gps_active, _gpsd_wrapper_proc
+    _gps_active = True
     subprocess.run(
         ['sudo', 'ln', '-sf', RFCOMM_DEV, ET_GPS_LINK],
         capture_output=True
     )
-    subprocess.Popen(
+    _gpsd_wrapper_proc = subprocess.Popen(
         ['/opt/emcomm-tools/sbin/wrapper-gpsd.sh', 'start'],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
-    # Start watchdog to detect when Android stops streaming
-    threading.Thread(target=gps_watchdog, daemon=True).start()
+    threading.Thread(target=rfcomm_watcher, daemon=True).start()
+    threading.Thread(target=_gps_pulse_loop, daemon=True).start()
 
 
-def gps_watchdog():
-    """Watch for rfcomm0 disappearing — clean up when Android stops."""
-    print("[GPS] Watchdog started — monitoring /dev/rfcomm0")
-    # Wait until rfcomm0 exists first
+def rfcomm_is_connected():
+    """Return True only if rfcomm show 0 output contains 'connected'.
+    After Android closes: output shows 'closed' — this returns False."""
+    try:
+        r = subprocess.run(['rfcomm', 'show', '0'],
+                           capture_output=True, text=True, timeout=3)
+        result = 'connected' in r.stdout.lower()
+        print(f"[GPS] rfcomm show 0: {r.stdout.strip()} → {'UP' if result else 'DOWN'}")
+        return result
+    except Exception as e:
+        print(f"[GPS] rfcomm show error: {e}")
+        return False
+
+
+def rfcomm_watcher():
+    """Poll rfcomm show 0 every 2s. 'closed' in output = Android disconnected."""
+    _wait = threading.Event()
+    # Wait up to 30s for connection to become active
     for _ in range(30):
-        if os.path.exists(RFCOMM_DEV):
+        if rfcomm_is_connected():
             break
-        time.sleep(1)
+        _wait.wait(timeout=1)
 
-    # Now watch for it to disappear
-    while os.path.exists(RFCOMM_DEV):
-        time.sleep(2)
+    print("[GPS] rfcomm0 active — watching for disconnect...")
+    _notify_gps("gps:start")
 
-    print("[GPS] rfcomm0 gone — Android stopped. Cleaning up.")
-    gps_cleanup()
+    while _gps_active and rfcomm_is_connected():
+        _wait.wait(timeout=2)
+
+    if _gps_active:
+        print("[GPS] rfcomm0 closed — Android disconnected. Running cleanup...")
+        gps_cleanup()
+
+
+def _gps_pulse_loop():
+    """Every 10s check if gpsd is receiving NMEA sentences.
+    Send gps:running if data flowing, gps:warn if not."""
+    _wait = threading.Event()
+    while _gps_active:
+        try:
+            import json as _json
+            from datetime import datetime, timezone
+            r = subprocess.run(
+                ['gpspipe', '-w', '-n', '10'],
+                capture_output=True, text=True, timeout=8
+            )
+            has_data = False
+            for line in r.stdout.splitlines():
+                try:
+                    obj = _json.loads(line)
+                    if obj.get('class') == 'TPV' and 'time' in obj:
+                        fix_time = datetime.fromisoformat(obj['time'].replace('Z', '+00:00'))
+                        age = (datetime.now(timezone.utc) - fix_time).total_seconds()
+                        if age < 30:
+                            has_data = True
+                        break
+                except Exception:
+                    continue
+        except Exception:
+            has_data = False
+        if has_data:
+            _notify_gps("gps:running")
+        else:
+            _notify_gps("gps:warn")
+        _wait.wait(timeout=10)
 
 
 # ============================================================================
@@ -304,11 +384,22 @@ def gps_watchdog():
 
 @app.route('/')
 def index():
-    """Step 1 — Instructions page, skipped if user has connected before."""
+    """Step 1 — Instructions page, skipped if user has connected before.
+    If GPS is already active, go straight to the GPS active screen."""
+    if _gps_active:
+        return redirect('/gps-active')
     cfg = load_synching_config()
     if cfg.get('last_mac'):
         return redirect('/select')
     return render_template('instructions.html')
+
+
+@app.route('/gps-active')
+def gps_active_page():
+    """Resume view — shown when GPS is already running in background."""
+    if not _gps_active:
+        return redirect('/')
+    return render_template('gps_active.html')
 
 
 @app.route('/instructions')
@@ -343,9 +434,12 @@ def api_connect_stream():
     def sse(payload):
         return f"data: {json.dumps(payload)}\n\n"
 
+    def sse_done(payload):
+        return f"data: {json.dumps(payload)}\n\n"
+
     def generate():
         if not mac:
-            yield sse({'done': True, 'success': False, 'error': 'No device selected'})
+            yield sse_done({'done': True, 'success': False, 'error': 'No device selected'})
             return
 
         # Save MAC for next time
@@ -355,14 +449,16 @@ def api_connect_stream():
         yield sse({'step': 'sdp', 'msg': f'Looking up GPS service on {mac}...'})
         channel, service_name = sdp_find_channel(mac)
         if channel is None:
-            yield sse({'done': True, 'success': False,
+            yield sse_done({'done': True, 'success': False,
                        'error': f'No GPS service found on {mac}. Is LiaisonGPS running, or GPS output enabled on your HT?'})
             return
         yield sse({'step': 'sdp', 'msg': f'Found {service_name} on channel {channel}'})
 
         # Step 2: rfcomm connect
         yield sse({'step': 'rfcomm', 'msg': f'Connecting to {mac} on channel {channel}...'})
+        global _rfcomm_proc
         rfcomm_proc = rfcomm_connect(mac, channel)
+        _rfcomm_proc = rfcomm_proc
 
         # Wait for /dev/rfcomm0 to appear (up to 15s)
         for _ in range(30):
@@ -370,8 +466,8 @@ def api_connect_stream():
                 break
             time.sleep(0.5)
         else:
-            rfcomm_proc.terminate()
-            yield sse({'done': True, 'success': False,
+            if rfcomm_proc: rfcomm_proc.terminate()
+            yield sse_done({'done': True, 'success': False,
                        'error': 'rfcomm0 did not appear — check Bluetooth connection'})
             return
         yield sse({'step': 'rfcomm', 'msg': 'RFCOMM connected — reading GPS data...'})
@@ -422,24 +518,24 @@ def api_connect_stream():
                     yield sse({'step': 'error', 'msg': line[6:].strip()})
             proc.wait()
             if proc.returncode == 1:
-                rfcomm_proc.terminate()
-                yield sse({'done': True, 'success': False, 'error': 'Cannot open GPS device'})
+                if rfcomm_proc: rfcomm_proc.terminate()
+                yield sse_done({'done': True, 'success': False, 'error': 'Cannot open GPS device'})
                 return
             elif proc.returncode == 2:
-                rfcomm_proc.terminate()
-                yield sse({'done': True, 'success': False,
+                if rfcomm_proc: rfcomm_proc.terminate()
+                yield sse_done({'done': True, 'success': False,
                            'error': 'No valid GPS fix received — make sure the phone has GPS signal'})
                 return
             elif proc.returncode == 3:
                 yield sse({'step': 'time', 'msg': 'Warning: could not set system time (sudo required)'})
         except Exception as e:
-            rfcomm_proc.terminate()
-            yield sse({'done': True, 'success': False, 'error': f'GPS sync error: {e}'})
+            if rfcomm_proc: rfcomm_proc.terminate()
+            yield sse_done({'done': True, 'success': False, 'error': f'GPS sync error: {e}'})
             return
 
         if lat is None:
-            rfcomm_proc.terminate()
-            yield sse({'done': True, 'success': False,
+            if rfcomm_proc: rfcomm_proc.terminate()
+            yield sse_done({'done': True, 'success': False,
                        'error': 'No valid GPS fix received — make sure the phone has GPS signal'})
             return
 
@@ -454,14 +550,13 @@ def api_connect_stream():
         if mode == 'gps':
             setup_gps_mode()
             yield sse({'step': 'gps', 'msg': 'GPS mode active — /dev/et-gps linked, gpsd started'})
-            yield sse({'done': True, 'success': True, 'mode': 'gps',
+            yield sse_done({'done': True, 'success': True, 'mode': 'gps',
                        'lat': lat, 'lon': lon, 'grid': grid})
         else:
             # Sync only — disconnect
-            rfcomm_proc.terminate()
-            time.sleep(1)
+            if rfcomm_proc: rfcomm_proc.terminate()
             rfcomm_disconnect()
-            yield sse({'done': True, 'success': True, 'mode': 'sync',
+            yield sse_done({'done': True, 'success': True, 'mode': 'sync',
                        'lat': lat, 'lon': lon, 'grid': grid, 'time': dt_str})
 
     return Response(generate(), mimetype='text/event-stream',
@@ -469,26 +564,55 @@ def api_connect_stream():
 
 
 def gps_cleanup():
-    """Stop gpsd, remove symlink, disconnect BT and stop reconnect loop."""
-    subprocess.run(['sudo', 'rm', '-f', ET_GPS_LINK], capture_output=True)
-    subprocess.run(
-        ['/opt/emcomm-tools/sbin/wrapper-gpsd.sh', 'stop'],
-        capture_output=True
-    )
-    GPS_FLAG.unlink(missing_ok=True)
+    """Stop GPS continuous mode cleanly.
+    rfcomm bind (used at connect time) sets RELEASE_ONHUP without REUSE_DLC,
+    so rfcomm release 0 works cleanly after gpsd stops — no hciconfig needed."""
+    global _rfcomm_proc, _gpsd_wrapper_proc, _gps_active
+    if not _gps_active:
+        print("[GPS] cleanup() called but already inactive — skipping")
+        return
+    _gps_active = False
+
+    print("[GPS] cleanup: step 1 — kill wrapper-gpsd.sh")
+    if _gpsd_wrapper_proc is not None:
+        try:
+            _gpsd_wrapper_proc.terminate()
+            _gpsd_wrapper_proc.wait(timeout=2)
+        except Exception:
+            pass
+        _gpsd_wrapper_proc = None
+    subprocess.run(['sudo', 'pkill', '-KILL', '-f', 'wrapper-gpsd.sh'], capture_output=True)
+
+    print("[GPS] cleanup: step 2 — stop gpsd + gpsd.socket")
+    subprocess.run(['sudo', 'systemctl', 'stop', 'gpsd', 'gpsd.socket'], capture_output=True)
+    # Wait for gpsd to fully stop (up to 5s) before releasing rfcomm
+    for _ in range(10):
+        r = subprocess.run(['systemctl', 'is-active', 'gpsd'], capture_output=True)
+        if r.stdout.decode().strip() not in ('active', 'deactivating'):
+            break
+        time.sleep(0.5)
+    else:
+        print("[GPS] warning: gpsd did not stop within 5s")
+
+    print("[GPS] cleanup: step 3 — rfcomm release 0 (bind used RELEASE_ONHUP, no reuse-dlc)")
     rfcomm_disconnect()
-    # Tell bluetoothd to disconnect — stops the OS reconnect loop
-    cfg = load_synching_config()
-    mac = cfg.get('last_mac', '')
-    if mac:
-        subprocess.run(['bluetoothctl', 'disconnect', mac], capture_output=True)
+
+    print("[GPS] cleanup: step 4 — remove symlink, notify dashboard")
+    subprocess.run(['sudo', 'rm', '-f', ET_GPS_LINK], capture_output=True)
+    _notify_gps("gps:stop")
+
     print("[GPS] Cleanup complete.")
 
 
 @app.route('/api/disconnect', methods=['POST'])
 def api_disconnect():
-    """Explicitly stop GPS — called when user closes the window."""
-    threading.Thread(target=gps_cleanup, daemon=True).start()
+    """Explicitly stop GPS — called when user clicks Stop GPS."""
+    def _do_disconnect():
+        # Notify dashboard even if _gps_active is False in this process
+        # (second window process where _gps_active was never set True)
+        _notify_gps("gps:stop")
+        gps_cleanup()
+    threading.Thread(target=_do_disconnect, daemon=True).start()
     return jsonify({'ok': True})
 
 
@@ -533,9 +657,18 @@ def wait_for_port(port, timeout=15):
 
 
 if __name__ == '__main__':
-    flask_thread = threading.Thread(target=run_flask, args=(PORT,), daemon=True)
-    flask_thread.start()
-    wait_for_port(PORT)
+    import socket as _sock
+    _port_in_use = False
+    try:
+        with _sock.create_connection(('127.0.0.1', PORT), timeout=1):
+            _port_in_use = True
+    except OSError:
+        pass
+
+    if not _port_in_use:
+        flask_thread = threading.Thread(target=run_flask, args=(PORT,), daemon=True)
+        flask_thread.start()
+        wait_for_port(PORT)
 
     try:
         import webview
@@ -556,13 +689,20 @@ if __name__ == '__main__':
         win_api.set_window(window)
 
         def on_closing():
-            """Called when user closes the window — clean up GPS if active."""
-            if GPS_FLAG.exists():
-                print("[GPS] Window closed with GPS active — cleaning up...")
-                threading.Thread(target=gps_cleanup, daemon=True).start()
+            """Called when user closes the window.
+            If GPS is active, do NOT clean up — the rfcomm_watcher keeps running
+            in the background (process stays alive via the while _gps_active loop)
+            and will call gps_cleanup() when Android disconnects."""
+            if _gps_active:
+                print("[GPS] Window closed with GPS active — staying alive in background.")
 
         window.events.closing += on_closing
         webview.start()
+
+        # Window closed — if GPS is still active, keep process alive so
+        # rfcomm_watcher can detect Android disconnect and run cleanup
+        while _gps_active:
+            time.sleep(1)
 
     except ImportError:
         print("PyWebView not installed, falling back to browser.")

@@ -393,9 +393,16 @@ class EmCommDashboard(Gtk.Window):
         GLib.timeout_add(300, self.auto_resize_height)
         GLib.timeout_add(1000, self.auto_resize_height)
         
-        # UTC clock updates every second, system checks every 2 seconds
+        # UTC clock updates every second
         GLib.timeout_add_seconds(1, self.update_utc)
-        GLib.timeout_add_seconds(2, self.update_info)
+        # GPS state via event socket — no polling timer
+        self._gps_notify_sock = self._setup_gps_notify_listener()
+        self.update_info()  # one-time check at startup
+        # Periodic refresh for operator info (callsign/radio/grid) —
+        # catches first-boot race where user.json/active-radio are written
+        # after autostart fires (et-firstboot, et-restore-hw), and picks up
+        # changes from et-user and et-radio without requiring explicit IPC
+        GLib.timeout_add_seconds(5, self.update_info)
     
     def load_user_config(self):
         """Load user configuration."""
@@ -1439,16 +1446,115 @@ class EmCommDashboard(Gtk.Window):
         self.utc_label.set_text(f"UTC: {utc}")
         return True  # Repeat
 
+    GPS_NOTIFY_SOCK = "/tmp/et-gps-notify.sock"
+
+    def _setup_gps_notify_listener(self):
+        """Bind a SOCK_DGRAM Unix socket and watch it via GLib — zero polling."""
+        sock_path = self.GPS_NOTIFY_SOCK
+        # Force remove any stale socket — try user then sudo
+        for cmd in [['rm', '-f', sock_path], ['sudo', 'rm', '-f', sock_path]]:
+            try:
+                import subprocess as _sp
+                _sp.run(cmd, capture_output=True)
+            except Exception:
+                pass
+        try:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+            sock.bind(sock_path)
+            os.chmod(sock_path, 0o777)
+            sock.setblocking(False)
+            GLib.unix_fd_add_full(GLib.PRIORITY_DEFAULT, sock.fileno(), GLib.IO_IN, self._on_gps_notify, None)
+        except Exception as e:
+            print(f"[GPS] socket setup failed: {e}")
+            sock = None
+        return sock
+
+
+    def _on_gps_notify_msg(self, msg):
+        """Process a GPS notification message."""
+        if msg == "gps:start":
+            self._gps_last_pulse = time.time()
+            self._gps_watchdog_start()
+            self.update_info()
+        elif msg == "gps:running":
+            self._gps_last_pulse = time.time()
+            if self._gps_watchdog_id is None:
+                self._gps_watchdog_start()
+                self.update_info()
+            self.gps_label.set_markup("<span foreground='#00CC00'>GPS: ✓</span>")
+            self._gps_blink()
+        elif msg == "gps:warn":
+            self.gps_label.set_markup("<span foreground='#FFA500'>GPS: ✓</span>")
+        elif msg == "gps:stop":
+            self._gps_watchdog_stop()
+            self.update_info()
+
+    GPS_PULSE_TIMEOUT = 30   # seconds before going yellow (2 missed pulses at 15s interval)
+    _gps_last_pulse  = 0.0  # epoch of last gps:running received
+    _gps_watchdog_id = None # GLib source id for the watchdog timer
+
+    def _on_gps_notify(self, fd, condition, user_data=None):
+        """Called by GLib when a GPS notification datagram arrives."""
+        sock = getattr(self, '_gps_notify_sock', None)
+        if sock is None:
+            return GLib.SOURCE_CONTINUE
+        try:
+            data = sock.recv(64)
+            msg = data.decode("utf-8", errors="ignore").strip()
+            self._on_gps_notify_msg(msg)
+        except OSError:
+            pass
+        return GLib.SOURCE_CONTINUE
+
+    def _gps_watchdog_start(self):
+        """Start the no-data watchdog — fires every 10s to check pulse age."""
+        if self._gps_watchdog_id is not None:
+            return
+        self._gps_watchdog_id = GLib.timeout_add_seconds(10, self._gps_watchdog_check)
+
+    def _gps_watchdog_stop(self):
+        if self._gps_watchdog_id is not None:
+            GLib.source_remove(self._gps_watchdog_id)
+            self._gps_watchdog_id = None
+        self._gps_last_pulse = 0.0
+
+    def _gps_watchdog_check(self):
+        """Called every 10s while GPS is active — go yellow if no pulse for 30s."""
+        r = subprocess.run(['systemctl', 'is-active', 'gpsd'], capture_output=True, text=True)
+        if r.stdout.strip() != 'active':
+            self._gps_watchdog_stop()
+            return False  # gpsd stopped — update_info will handle the red
+        if self._gps_last_pulse and (time.time() - self._gps_last_pulse) > self.GPS_PULSE_TIMEOUT:
+            self.gps_label.set_markup("<span foreground='#FFA500'>GPS: ✓</span>")
+        return True  # keep timer running
+
+    def _gps_blink(self):
+        """Briefly dim the GPS label then restore — visual pulse on gps:running."""
+        self.gps_label.set_markup("<span foreground='#007700'>GPS: ✓</span>")
+        GLib.timeout_add(200, self._gps_blink_restore)
+
+    def _gps_blink_restore(self):
+        self.gps_label.set_markup("<span foreground='#00CC00'>GPS: ✓</span>")
+        return False  # one-shot
+
     def update_info(self):
+        try:
+            return self._update_info_impl()
+        except Exception as e:
+            print(f"[update_info] exception: {e}")
+            return True  # keep timer alive
+
+    def _update_info_impl(self):
         ACTIVE_RADIO = "/opt/emcomm-tools/conf/radios.d/active-radio.json"
 
-        # GPS Status
-        gps_connected = os.path.exists("/tmp/et-gps-connected")
+        # GPS Status — gpsd must be active AND /dev/et-gps must exist
+        result = subprocess.run(
+            ["systemctl", "is-active", "gpsd"],
+            capture_output=True, text=True
+        )
+        gps_connected = (result.stdout.strip() == "active") and os.path.exists("/dev/et-gps")
         if gps_connected:
-            if self.tracking_active:
-                self.gps_label.set_markup(f"<span foreground='#00CC00'>GPS: ✓ {self._tracking_grid}</span>")
-            else:
-                self.gps_label.set_markup("<span foreground='#00CC00'>GPS: ✓</span>")
+            self.gps_label.set_markup("<span foreground='#00CC00'>GPS: ✓</span>")
             self.track_btn.set_sensitive(True)
         else:
             self.gps_label.set_markup("<span foreground='#CC0000'>GPS: ✗</span>")
@@ -1539,7 +1645,10 @@ class EmCommDashboard(Gtk.Window):
             grid = "AA00aa"
         
         self.callsign_label.set_text(callsign)
-        self.grid_label.set_text(f"· {grid}")
+        if self.tracking_active and self._tracking_grid:
+            self.grid_label.set_markup(f"<span foreground='#00CC00'>· {self._tracking_grid}</span>")
+        else:
+            self.grid_label.set_text(f"· {grid}")
         
         # Current mode + process status from supervisor
         self._update_supervisor_status()
@@ -1639,8 +1748,12 @@ class EmCommDashboard(Gtk.Window):
         if app_name in self.running_apps:
             proc = self.running_apps[app_name]
             if proc.poll() is None:  # Still running
-                print(f"{app_name} is already running")
-                return
+                # If GPS is active in background, allow re-launch to open a new window
+                if app_name == 'et-synching' and subprocess.run(['systemctl', 'is-active', 'gpsd'], capture_output=True, text=True).stdout.strip() == 'active':
+                    pass  # Fall through to launch a new window process
+                else:
+                    print(f"{app_name} is already running")
+                    return
             else:
                 # Process finished, remove from tracking
                 del self.running_apps[app_name]
@@ -1665,10 +1778,17 @@ class EmCommDashboard(Gtk.Window):
                                cwd=os.path.dirname(path),
                                start_new_session=True)
                 self.running_apps[app_name] = proc
+                threading.Thread(target=self._watch_flask_app, args=(proc,), daemon=True).start()
                 return
         
         print(f"Could not find {app_name}")
-    
+
+    def _watch_flask_app(self, proc):
+        """Background thread: wait for Flask app to exit, then refresh dashboard."""
+        proc.wait()
+        self.running_apps = {k: v for k, v in self.running_apps.items() if v.pid != proc.pid}
+        GLib.idle_add(self.update_info)
+
     def on_radio_clicked(self, widget):
         self.launch_flask_app('et-radio')
     
@@ -1676,7 +1796,8 @@ class EmCommDashboard(Gtk.Window):
         """Toggle GPS tracking mode."""
         if button.get_active():
             # Start tracking
-            if not os.path.exists("/tmp/et-gps-connected"):
+            r = subprocess.run(['systemctl', 'is-active', 'gpsd'], capture_output=True, text=True)
+            if r.stdout.strip() != 'active':
                 button.set_active(False)
                 return
             self.tracking_active = True
@@ -1732,6 +1853,20 @@ class EmCommDashboard(Gtk.Window):
             self._tracking_stop.wait(15)  # Update every 15 seconds
 
     def on_sync_clicked(self, widget):
+        # If GPS is already active via non-Bluetooth source (USB dongle etc), don't launch et-synching
+        r = subprocess.run(['systemctl', 'is-active', 'gpsd'], capture_output=True, text=True)
+        if r.stdout.strip() == 'active' and not os.path.exists('/dev/rfcomm0'):
+            dialog = Gtk.MessageDialog(
+                transient_for=self,
+                modal=True,
+                message_type=Gtk.MessageType.INFO,
+                buttons=Gtk.ButtonsType.OK,
+                text="GPS Active"
+            )
+            dialog.format_secondary_text("A GPS device is already connected and active.")
+            dialog.run()
+            dialog.destroy()
+            return
         self.launch_flask_app('et-synching')
 
     def on_user_clicked(self, widget):
