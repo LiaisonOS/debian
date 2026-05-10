@@ -72,7 +72,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Emergency Communications for Ham Radio</h1>
-<p><em>Version 2.2.6 — May 2026</em>
+<p><em>Version 2.3.0 — May 2026</em>
 <em>Debian 13 (Trixie) Live/Installable ISO</em></p>
 <blockquote>
 <p>⚠️ <strong>Continuous Development Notice</strong></p>
@@ -80,6 +80,28 @@ footer a:hover { color: #7de8b0; }
 <p><strong>Always boot and test from USB first.</strong> A permanent installation gives you the best experience, but installing software that has not been tested for your specific use case and hardware may result in functionality issues. Testing from USB before committing to a permanent install is always the recommended approach.</p>
 <p><strong>Français?</strong> Voir <a href="https://liaisonos.com/LISEZMOI">LISEZMOI</a> pour la version française.</p>
 </blockquote>
+<p style="margin-top:40px;">LiaisonOS is a <strong>Debian 13 (Trixie) live and installable Linux ISO</strong> designed for ham radio emergency digital communications. It includes a complete suite of pre-configured digital mode software, offline maps, and a web dashboard for one-click operation. Two deployment modes: <strong>USB Live Run</strong> (boot any PC from a USB drive) or <strong>hard drive installation</strong> (permanent install via Calamares). Bilingual English/French interface. Created by Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>What's New in Version 2.3.0</h2>
+<h3>QtGpsSync — Completely Redesigned in C++</h3>
+<ul>
+<li><strong>Rebuilt from scratch</strong> — QtGpsSync is now a native C++ application, replacing the previous implementation</li>
+<li><strong>Sync mode</strong> — Sets system time and Maidenhead grid square in one shot from a Bluetooth GPS source</li>
+<li><strong>GPS mode</strong> — Provides a continuous live GPS feed for real-time position tracking and GPS Track on offline maps</li>
+<li><strong>Works with LiaisonGPS</strong> (Android, Bluetooth) and serial GPS receivers (Kenwood TH-D74, TH-D75)</li>
+<li><strong>One-click launch</strong> — Start directly from the dashboard Sync button</li>
+</ul>
+<h3>System Tray Clock with Seconds</h3>
+<ul>
+<li>The UTC clock in the system tray now displays seconds for precise time reference</li>
+</ul>
+<h3>Mercury HF Modem — Beta Integration</h3>
+<ul>
+<li><strong>Mercury v2</strong> by Rhizomatica's HERMES team (Rafael Diniz, Pedro Messetti, Matheus Thibau), sponsored by ARDC</li>
+<li><strong>Client mode</strong> — QtTermTCP and Winlink connect using the VARA protocol name — same client protocol, Mercury modem underneath</li>
+<li><strong>Standalone mode</strong> — Run Mercury as a direct HF modem without a BBS client</li>
+<li>Open-source: <a href="https://github.com/Rhizomatica/mercury" target="_blank" rel="noopener">github.com/Rhizomatica/mercury</a></li>
+</ul>
 <hr />
 <h2>What's New in Version 2.2.6</h2>
 <h3>Bluetooth GPS Sync</h3>
@@ -991,7 +1013,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Ventoy Documentation:</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Document version: 2.1.8</em>
+<p><em>Document version: 2.3.0</em>
 <em>Last updated: March 2026</em>
 <em>Created for LiaisonOS Debian Edition</em></p>
 </div>

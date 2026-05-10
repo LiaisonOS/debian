@@ -134,28 +134,37 @@
     </div>
 
     <div class="whats-new">
-      <p class="whats-new-title">Nouveautés de la v2.2.7 (1)</p>
+      <p class="whats-new-title">Nouveautés de la v2.3.0</p>
       <ul>
-        <li><strong>GPS — Refonte pilotée par événements</strong> — Tableau de bord GPS reconstruit sur un socket Unix. États vert/jaune/rouge instantanés avec clignotement au fix. Plus de minuteur ni de fichier de statut.</li>
+        <li><strong>Bouton Sync GPS</strong> — Synchronisez l'heure système directement depuis le tableau de bord. Compatible avec les appareils Android via l'app LiaisonGPS (Bluetooth), ou les récepteurs GPS série (Kenwood TH-D74, TH-D75).</li>
+        <li><strong>QtGpsSync — Entièrement recodé en C++</strong> — Nouvel outil GPS Bluetooth construit de zéro. Se connecte via Bluetooth en deux modes : <em>mode Sync</em> règle l'heure système et le locator Maidenhead, <em>mode GPS</em> fournit un flux GPS continu en temps réel.</li>
+        <li><strong>Horloge UTC avec secondes</strong> — L'horloge UTC de la barre système affiche maintenant les secondes pour une référence de temps précise.</li>
+        <li><strong>Modem HF Mercury — Bêta</strong> — Mercury v2 de l'équipe HERMES de Rhizomatica est intégré en version bêta. Les applications clientes (QtTermTCP, Winlink) se connectent via le nom de protocole VARA — même protocole client, modem Mercury en dessous. Un mode autonome est également disponible, faisant tourner Mercury comme modem direct sans client BBS.</li>
       </ul>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.2.7.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.0.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label">Dernière version</p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.2.7.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.3.0.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; Publiée <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.2.7 (1)</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.0</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">Licence</p><p class="stat-val">Ms-PL</p></div>
       <div class="stat-card"><p class="stat-label">Publiée</p><p class="stat-val" id="stat-date"></p></div>
+    </div>
+
+    <div class="checksum-row">
+      <span class="checksum-label">SHA256</span>
+      <span class="checksum-val" id="hashval">a58b08bb2f45be3402f08d8b40e8b260e9bd7179d1355f23f732025d5748a5fa</span>
+      <button class="copy-btn" onclick="copyHash()">Copier</button>
     </div>
 
     <p class="section-label">Tous les fichiers</p>
@@ -170,19 +179,18 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.2.7.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.3.0.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.2.7.iso">⬇ Télécharger</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.0.iso">⬇ Télécharger</a></td>
         </tr>
 
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span></td>
           <td>4.56 MB</td>
-          <td id="tbl-date">2026-05-03</td>
+          <td>2026-05-03</td>
           <td><a class="dl-btn" href="https://releases.liaisonos.com/APK/LiaisonGPS.apk">⬇ Télécharger</a></td>
         </tr>
-        
         <tr>
           <td><span class="fname">LISEZMOI</span></td>
           <td>~37 kB</td>
@@ -192,10 +200,19 @@
       </tbody>
     </table>
 
-    <div class="checksum-row">
-      <span class="checksum-label">SHA256</span>
-      <span class="checksum-val" id="hashval">bb3d315a2f154abcd803ff650245b809a99ccce81f0353fdbbe44872d824f26a</span>
-      <button class="copy-btn" onclick="copyHash()">Copier</button>
+    <p class="section-label">LiaisonGPS sur Google Play</p>
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;background:#16231a;border:1px solid rgba(125,232,176,0.1);border-radius:10px;padding:1rem 1.25rem;margin-bottom:2rem;">
+      <div style="text-align:center;">
+        <a href="https://play.google.com/store/apps/details?id=com.liaisonos.liaisongps&hl=fr" target="_blank" rel="noopener">
+          <img src="imgs/liaisongps-qr-fr.png" alt="Google Play" style="width:90px;height:90px;display:block;margin:0 auto 6px;border-radius:6px;">
+          <span style="font-size:11px;color:#5ab887;">Google Play</span>
+        </a>
+      </div>
+      <div style="font-size:13px;color:#9dbfad;line-height:1.7;">
+        <strong style="color:#e8f5ee;">LiaisonGPS</strong> — Application Android compagnon.<br>
+        Synchronisez l'heure GPS et votre locator avec LiaisonOS via Bluetooth.<br>
+        Scannez le code QR ou cherchez <em>LiaisonGPS</em> sur Google Play.
+      </div>
     </div>
 
     <div class="instructions">
@@ -237,6 +254,12 @@
           <li>dd — classique, rapide</li>
         </ul>
       </div>
+
+    </div>
+
+    <div style="background: rgba(125,232,176,0.04); border: 1px solid rgba(125,232,176,0.25); border-left: 3px solid #5ab887; border-radius: 8px; padding: 0.875rem 1rem; margin-bottom: 2rem;">
+      <strong style="color:#7de8b0;">⭐ Recommandé — Guide de configuration Ventoy</strong><br>
+      <span style="font-size:13px;color:#9dbfad;">Apprenez à configurer Ventoy pour LiaisonOS avec persistance et multi-démarrage. <a href="blog/ventoy-usb-setup_fr.html" style="color:#5ab887;">Lire le guide →</a></span>
     </div>
 
     <div class="footer-links">

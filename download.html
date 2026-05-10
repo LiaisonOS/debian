@@ -204,25 +204,28 @@
         <strong>Continuous development notice —</strong> LiaisonOS uses an agile, continuous-release model. Each version is fully functional. <strong>Always boot and test from USB first</strong> before committing to a permanent install.
       </div>
       <div class="whats-new">
-        <p class="whats-new-title">What's new in v2.2.7 (1)</p>
+        <p class="whats-new-title">What's new in v2.3.0</p>
         <ul>
-          <li><strong>GPS redesigned — event-driven</strong> — Dashboard GPS rebuilt on Unix socket events. Instant green/yellow/red state with pulse blink on fix. No more polling timer or flag file.</li>
+          <li><strong>GPS Sync button</strong> — Sync system time directly from the dashboard. Works with Bluetooth Android devices running the LiaisonGPS app, or serial GPS receivers (Kenwood TH-D74, TH-D75).</li>
+          <li><strong>QtGpsSync — Completely redesigned in C++</strong> — New Bluetooth GPS tool built from the ground up. Connects over Bluetooth in two modes: <em>Sync mode</em> sets system time and Maidenhead grid square, <em>GPS mode</em> provides a continuous live GPS feed.</li>
+          <li><strong>System clock with seconds</strong> — The system tray UTC clock now displays seconds for precise time reference.</li>
+          <li><strong>Mercury HF modem — Beta</strong> — Mercury v2 by Rhizomatica's HERMES team is included as a beta integration. Client apps (QtTermTCP, Winlink) connect using the VARA protocol name — same client protocol, Mercury modem underneath. A standalone mode is also available, running Mercury as a direct modem without a BBS client.</li>
         </ul>
       </div>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.2.7.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.0.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label"><span class="il il-en">Latest release</span><span class="il il-fr">Dernière version</span></p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.2.7.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.3.0.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; <span class="il il-en">Released</span><span class="il il-fr">Publiée</span> <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.2.7 (1)</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.0</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">License</p><p class="stat-val">Ms-PL</p></div>
@@ -230,6 +233,12 @@
         <p class="stat-label"><span class="il il-en">Released</span><span class="il il-fr">Publiée</span></p>
         <p class="stat-val" id="stat-date"></p>
       </div>
+    </div>
+
+    <div class="checksum-row">
+      <span class="checksum-label">SHA256</span>
+      <span class="checksum-val" id="hashval">a58b08bb2f45be3402f08d8b40e8b260e9bd7179d1355f23f732025d5748a5fa</span>
+      <button class="copy-btn" onclick="copyHash()"><span class="il il-en">Copy</span><span class="il il-fr">Copier</span></button>
     </div>
 
     <p class="section-label"><span class="il il-en">All files</span><span class="il il-fr">Tous les fichiers</span></p>
@@ -244,32 +253,40 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.2.7.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.3.0.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.2.7.iso">⬇ Download</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.0.iso">⬇ Download</a></td>
         </tr>
        
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span></td>
           <td>4.56 MB</td>
-          <td id="tbl-date">2026-05-03</td>
+          <td>2026-05-03</td>
           <td><a class="dl-btn" href="https://releases.liaisonos.com/APK/LiaisonGPS.apk">⬇ Download</a></td>
         </tr>
-        
         <tr>
           <td><span class="fname">README</span></td>
           <td>~33 kB</td>
           <td id="tbl-date2"></td>
-          <td><a class="dl-btn" href="https://liaisonos.com/README">📖 Read</a></td>          
+          <td><a class="dl-btn" href="https://liaisonos.com/README">📖 Read</a></td>
         </tr>
       </tbody>
     </table>
 
-    <div class="checksum-row">
-      <span class="checksum-label">SHA256</span>
-      <span class="checksum-val" id="hashval">bb3d315a2f154abcd803ff650245b809a99ccce81f0353fdbbe44872d824f26a</span>
-      <button class="copy-btn" onclick="copyHash()"><span class="il il-en">Copy</span><span class="il il-fr">Copier</span></button>
+    <p class="section-label">LiaisonGPS on Google Play</p>
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;background:#16231a;border:1px solid rgba(125,232,176,0.1);border-radius:10px;padding:1rem 1.25rem;margin-bottom:2rem;">
+      <div style="text-align:center;">
+        <a href="https://play.google.com/store/apps/details?id=com.liaisonos.liaisongps&hl=en" target="_blank" rel="noopener">
+          <img src="imgs/liaisongps-qr-en.png" alt="Google Play" style="width:90px;height:90px;display:block;margin:0 auto 6px;border-radius:6px;">
+          <span style="font-size:11px;color:#5ab887;">Google Play</span>
+        </a>
+      </div>
+      <div style="font-size:13px;color:#9dbfad;line-height:1.7;">
+        <strong style="color:#e8f5ee;">LiaisonGPS</strong> — Android companion app.<br>
+        Sync your GPS time and grid square to LiaisonOS over Bluetooth.<br>
+        Scan the QR code or search <em>LiaisonGPS</em> on Google Play.
+      </div>
     </div>
 
     <div class="lang-en">
@@ -311,6 +328,11 @@
             <li>dd — classic, fast</li>
           </ul>
         </div>
+      </div>
+
+      <div style="background: rgba(125,232,176,0.04); border: 1px solid rgba(125,232,176,0.25); border-left: 3px solid #5ab887; border-radius: 8px; padding: 0.875rem 1rem; margin-top: 1rem;">
+        <strong style="color:#7de8b0;">⭐ Recommended — Ventoy setup guide</strong><br>
+        <span style="font-size:13px;color:#9dbfad;">Learn how to set up Ventoy for LiaisonOS with persistent storage and multi-boot support. <a href="blog/ventoy-usb-setup.html" style="color:#5ab887;">Read the guide →</a></span>
       </div>
     </div>
 

@@ -247,7 +247,7 @@
   </div>
 
   <div class="badges">
-    <span class="badge"><span>v2.2.7 (1)</span></span>
+    <span class="badge"><span>v2.3.0</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Ms-PL <span>License</span></span>
@@ -349,39 +349,86 @@
         <div class="feature-card-title"><span class="il il-en">Offline Reference</span><span class="il il-fr">Référence hors-ligne</span></div>
         <div class="feature-card-desc">Kiwix + Wikipedia ZIM <span class="il il-en">files</span><span class="il il-fr">fichiers</span></div>
       </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">🛰️</div>
+        <div class="feature-card-title"><span class="il il-en">GPS Sync</span><span class="il il-fr">Sync GPS</span></div>
+        <div class="feature-card-desc"><span class="il il-en">Sync system time and grid square from Bluetooth (LiaisonGPS) or serial GPS (Kenwood TH-D74/75)</span><span class="il il-fr">Synchronisez l'heure et le locator depuis Bluetooth (LiaisonGPS) ou GPS série (Kenwood TH-D74/75)</span></div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">📍</div>
+        <div class="feature-card-title"><span class="il il-en">GPS Mode</span><span class="il il-fr">Mode GPS</span></div>
+        <div class="feature-card-desc"><span class="il il-en">Continuous live GPS feed over Bluetooth for real-time position tracking</span><span class="il il-fr">Flux GPS continu via Bluetooth pour le suivi de position en temps réel</span></div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">🗺️</div>
+        <div class="feature-card-title"><span class="il il-en">GPS Track</span><span class="il il-fr">Suivi GPS</span></div>
+        <div class="feature-card-desc"><span class="il il-en">Live position tracking on offline maps — works with GPS Mode</span><span class="il il-fr">Suivi de position en temps réel sur cartes hors-ligne — fonctionne avec le mode GPS</span></div>
+      </div>
     </div>
   </div>
 
   <!-- WHATS NEW -->
   <div class="section">
     <div class="lang-en">
-      <h2 class="section-title">What's new <span class="new-badge">v2.2.7 (1)</span></h2>
+      <h2 class="section-title">What's new <span class="new-badge">v2.3.0</span></h2>
       <div class="card">
-        <h3>GPS — Redesigned, Event-Driven</h3>
-        <p>The GPS sync engine is completely redesigned. The old polling timer and flag file are replaced by a Unix socket event system — the dashboard reacts instantly to GPS state changes with no constant background checking. Visual states now show green (active with fix), yellow (active, no data), and red (inactive), with a pulse blink on each GPS update.</p>
+        <h3>GPS Sync Button</h3>
+        <p>A new Sync button in the dashboard lets you synchronize system time directly from a Bluetooth Android device running the LiaisonGPS app, or from a serial GPS receiver (Kenwood TH-D74, TH-D75). One tap to sync — no terminal needed.</p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>System Tray Clock with Seconds</h3>
+        <p>The system tray UTC clock now displays seconds, giving operators a precise time reference at a glance.</p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>QtGpsSync — Completely Redesigned in C++</h3>
+        <p>The Bluetooth GPS tool has been rebuilt from the ground up in C++. It connects over Bluetooth in two modes: <em>Sync mode</em> sets the system time and Maidenhead grid square in one shot, <em>GPS mode</em> provides a continuous live GPS feed. Launch it directly from the dashboard with a single click.</p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>Mercury HF Modem — Beta Integration</h3>
+        <p>Mercury v2, developed by Rhizomatica's HERMES team and sponsored by ARDC, is now included as a beta integration. Client applications (QtTermTCP, Winlink) connect using the VARA protocol name — same client modem protocol, Mercury running underneath. A standalone mode is also available, running Mercury as a direct modem without a BBS client. <a href="https://github.com/Rhizomatica/mercury" target="_blank" rel="noopener" style="color:#5ab887;">github.com/Rhizomatica/mercury</a></p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>Previous — v2.2.7</h3>
+        <p>GPS sync engine redesigned with Unix socket events. Instant green/yellow/red state with pulse blink on fix. No more polling timer or flag file.</p>
       </div>
       <div class="card" style="margin-top: 8px;">
         <h3>Previous — v2.2.6</h3>
         <p>Bluetooth GPS Sync from Android (LiaisonGPS app) or Kenwood TH-D74/TH-D75. Bluetooth pairings and WiFi credentials saved and restored with USB persistence.</p>
       </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Previous — v2.2.5</h3>
-        <p>Map tilesets now download with real-time progress showing byte counter and percentage per tileset. VARA HF now defaults to 500 Hz bandwidth.</p>
+      <div class="card" style="margin-top: 8px; border-color: rgba(125,232,176,0.3); background: rgba(125,232,176,0.03);">
+        <h3 style="color:#7de8b0;">Coming in v2.3.1 — BBS Server Mode with Mercury v2</h3>
+        <p>The next release will introduce BBS server mode support using the Mercury v2 modem. Operators will be able to run a BBS node directly from LiaisonOS, accepting connections from client stations over Mercury HF — no proprietary modem required.</p>
       </div>
     </div>
     <div class="lang-fr">
-      <h2 class="section-title">Nouveautés <span class="new-badge">v2.2.7 (1)</span></h2>
+      <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.0</span></h2>
       <div class="card">
-        <h3>GPS — Refonte pilotée par événements</h3>
-        <p>Le moteur de synchronisation GPS est entièrement refondu. L'ancien minuteur de scrutation et le fichier de statut sont remplacés par un système de socket Unix — le tableau de bord réagit instantanément aux changements d'état GPS sans vérification constante en arrière-plan. Les états visuels affichent maintenant vert (actif avec fix), jaune (actif, sans données) et rouge (inactif), avec un clignotement à chaque mise à jour GPS.</p>
+        <h3>Bouton Sync GPS</h3>
+        <p>Un nouveau bouton Sync dans le tableau de bord permet de synchroniser l'heure système depuis un appareil Android via l'app LiaisonGPS (Bluetooth), ou depuis un récepteur GPS série (Kenwood TH-D74, TH-D75). Une seule pression — aucun terminal requis.</p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>Horloge de la barre système avec secondes</h3>
+        <p>L'horloge UTC de la barre système affiche maintenant les secondes pour une référence de temps précise.</p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>QtGpsSync — Entièrement recodé en C++</h3>
+        <p>L'outil GPS Bluetooth a été reconstruit de zéro en C++. Il se connecte via Bluetooth en deux modes : <em>mode Sync</em> règle l'heure système et le locator Maidenhead en une seule opération, <em>mode GPS</em> fournit un flux GPS continu en temps réel. Lancez-le directement depuis le tableau de bord en un clic.</p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>Modem HF Mercury — Intégration bêta</h3>
+        <p>Mercury v2, développé par l'équipe HERMES de Rhizomatica et sponsorisé par ARDC, est maintenant intégré en version bêta. Les applications clientes (QtTermTCP, Winlink) se connectent via le nom de protocole VARA — même protocole client, Mercury en dessous. Un mode autonome est également disponible, faisant tourner Mercury comme modem direct sans client BBS. <a href="https://github.com/Rhizomatica/mercury" target="_blank" rel="noopener" style="color:#5ab887;">github.com/Rhizomatica/mercury</a></p>
+      </div>
+      <div class="card" style="margin-top: 8px;">
+        <h3>Précédente — v2.2.7</h3>
+        <p>Moteur GPS refondu avec événements Unix socket. États instantanés vert/jaune/rouge avec clignotement au fix.</p>
       </div>
       <div class="card" style="margin-top: 8px;">
         <h3>Précédente — v2.2.6</h3>
         <p>Synchronisation GPS Bluetooth depuis Android (app LiaisonGPS) ou Kenwood TH-D74/TH-D75. Jumelages Bluetooth et identifiants WiFi sauvegardés et restaurés avec la persistance USB.</p>
       </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Précédente — v2.2.5</h3>
-        <p>Les tuiles de carte se téléchargent maintenant avec une progression en temps réel. VARA HF passe à 500 Hz par défaut.</p>
+      <div class="card" style="margin-top: 8px; border-color: rgba(125,232,176,0.3); background: rgba(125,232,176,0.03);">
+        <h3 style="color:#7de8b0;">À venir en v2.3.1 — Mode serveur BBS avec Mercury v2</h3>
+        <p>La prochaine version introduira le mode serveur BBS avec le modem Mercury v2. Les opérateurs pourront faire tourner un nœud BBS directement depuis LiaisonOS, acceptant les connexions des stations clientes via Mercury HF — sans modem propriétaire.</p>
       </div>
     </div>
   </div>
