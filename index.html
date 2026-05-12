@@ -193,6 +193,20 @@
       .content { padding: 0 1rem 3rem; }
       .nav-links { gap: 0.75rem; }
     }
+    
+/* tricky part for beehiiv*/
+.container {
+  display: flex;
+}
+.column-alpha-omega {
+  width: 20%;
+}
+.column {
+  flex: 1; 
+  padding-top: 10px;
+  text-align: center;
+}
+
   </style>
 </head>
 <body class="lang-en">
@@ -254,7 +268,16 @@
     <span class="badge"><span>EN</span> / FR</span>
   </div>
 
-  <script async src="https://subscribe-forms.beehiiv.com/v3/loader.js" data-beehiiv-form="56846b08-1184-4005-be94-55f424b1963a"></script>
+  <div style="display: flex; justify-content: center;">
+  <p style="align-text: left;">Connect to get notified about new LiaisonOS releases, features, and ham radio tips.</p>
+  </div>
+  
+  <div class="container">
+    <div class="column-alpha-omega"></div>
+    <div class="column"><script async src="https://subscribe-forms.beehiiv.com/v3/loader.js" data-beehiiv-form="56846b08-1184-4005-be94-55f424b1963a"></script></div>
+    <div class="column-alpha-omega"></div>
+  </div>  
+  
 </div>
 
 <!-- CONTENT -->
