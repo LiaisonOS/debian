@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <a href="https://sourceforge.net/projects/liaisonos/"><img src="https://img.shields.io/badge/Version-2.2.7 (1)-f59e0b?style=for-the-badge" alt="Version 2.2.7 (1)"></a>
-  <a href="https://sourceforge.net/projects/liaisonos/files/ISO/"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge&logo=sourceforge" alt="Download ISO"></a>
+  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.1-f59e0b?style=for-the-badge" alt="Version 2.3.1"></a>
+  <a href="https://liaisonos.com/download"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
 </p>
@@ -32,7 +32,7 @@
 
 <p>
 📖 <a href="FUTURES_fr.md">Documentation</a><br>
-💾 <a href="https://sourceforge.net/projects/liaisonos/files/ISO/">Téléchargements ISO</a><br>
+💾 <a href="https://liaisonos.com/download">Téléchargements ISO</a><br>
 ⚠️ <a href="DISCLAIMER.md">Avis de non-responsabilité</a>
 </p>
 
@@ -47,7 +47,7 @@
 
 <p>
 📖 <a href="FUTURES.md">Documentation</a><br>
-💾 <a href="https://sourceforge.net/projects/liaisonos/files/ISO/">ISO Downloads</a><br>
+💾 <a href="https://liaisonos.com/download">ISO Downloads</a><br>
 ⚠️ <a href="DISCLAIMER.md">Disclaimer</a>
 </p>
 
@@ -56,6 +56,37 @@
 </table>
 
 ---
+
+## ✨ What's New in 2.3.1
+
+### 🖥️ QtDashboard — Native C++ Dashboard
+
+- **Fully native C++ Qt5 application** — replaces the Python/GTK et-dashboard. Faster, leaner, purpose-built for LiaisonOS
+- **Embedded UTC clock with seconds** — no lag, always visible in the top bar
+- **Inline modem selector** — choose your modem directly below the active mode, no popup or menu diving
+- **Radio/CAT and user profile** — configurable from the dashboard itself
+- **6 recent modes** — always ready to relaunch in one tap
+
+### 📱 Desktop & Touch Mode
+
+- **Dual UI mode** — Desktop mode for mouse/keyboard, Touch mode for 7" tablets and car-mount screens
+- **Instant switching** — toggle between modes with no restart required, stored in `user.json`
+- **Platform feature** — supported apps adapt automatically. et-repeater already includes a full Touch Mode card grid with slide-out filter drawer and live search. More apps to follow.
+
+### 🔜 Coming in v2.3.2 — QtPatWinlink
+
+Pat Winlink reimagined as a native Qt application with full Touch Mode support from day one.
+
+## ✨ What's New in 2.3.0
+
+### 🛰️ GPS Sync & QtGpsSync
+
+- **GPS Sync button** in the dashboard — sync system time in one tap from a Bluetooth Android device running the LiaisonGPS app, or from a serial GPS receiver (Kenwood TH-D74, TH-D75)
+- **QtGpsSync rebuilt in C++** — connects over Bluetooth in two modes: *Sync* sets system time and Maidenhead grid square, *GPS* provides a continuous live feed
+
+### 📡 Mercury HF Modem — Beta
+
+Mercury v2 (HERMES/Rhizomatica, sponsored by ARDC) included as beta. Client apps connect via VARA protocol name — same client protocol, Mercury modem underneath.
 
 ## ✨ What's New in 2.2.7 (1)
 

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driving with et-repeater in Touch Mode — LiaisonOS Blog</title>
+  <meta name="description" content="et-repeater now runs in Touch Mode — a card-based layout designed for 7&quot; tablets and car-mount screens. Pair it with GPS continuous mode and your repeater list stays sorted by distance as you drive.">
+  <link rel="canonical" href="https://liaisonos.com/blog/repeater-touch-mode.html">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://liaisonos.com/blog/repeater-touch-mode.html">
+  <meta property="og:title" content="Driving with et-repeater in Touch Mode — LiaisonOS">
+  <meta property="og:description" content="et-repeater now runs in Touch Mode — card grid, filter drawer, live search. Pair with GPS continuous mode and your repeater list stays sorted by distance as you drive.">
+  <meta property="og:image" content="https://liaisonos.com/blog/imgs/et-repeater-touch-mode.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 1rem 0; }
+    .feature-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .feature-card-icon { font-size: 20px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 4px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    .article-photo {
+      width: 100%; background: #16231a;
+      border: 1px solid rgba(125,232,176,0.12); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2rem; overflow: hidden;
+    }
+    .article-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+    .article-photo-placeholder {
+      font-size: 12px; color: #3a6a4a; font-family: 'IBM Plex Mono', monospace;
+      text-align: center; padding: 3rem;
+    }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Home</a>
+    <a href="../download.html">Download</a>
+    <a href="index.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="repeater-touch-mode_fr.html" class="lang-link">🇫🇷 FR</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index.html">← Back to Blog</a>
+  <div class="article-meta">
+    <span class="article-date">2026-05-12</span>
+    <span class="article-tag">Repeaters &amp; VHF/UHF</span>
+    <span class="article-tag">Touch Mode</span>
+    <span class="article-tag">GPS</span>
+  </div>
+  <h1 class="article-title">Driving with <span>et-repeater in Touch Mode</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">A finger-friendly repeater browser paired with continuous GPS — your closest repeaters, always sorted, always one tap away while you drive.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.3.1</p>
+</div>
+
+<div style="max-width:720px; margin:0 auto; padding:0 2rem;">
+  <div class="article-photo">
+    <img src="imgs/et-repeater-touch-mode.png" alt="et-repeater in Touch Mode — card grid on a 7&quot; tablet" style="max-width:100%; height:auto; display:block; margin:0 auto; border-radius:10px;">
+  </div>
+</div>
+
+<div class="article-body">
+
+  <h2>A new kind of <span>mobile shack</span></h2>
+  <p>Mobile operating has always meant compromise — a small screen, gloves, one hand on the wheel, and a radio buried in a menu. LiaisonOS 2.3.1 changes that equation with two features designed to work together: <strong>et-repeater Touch Mode</strong> and <strong>GPS continuous mode</strong>.</p>
+  <p>The result is a tablet mounted in your vehicle that knows exactly where you are, keeps your repeater list sorted by distance in real time, and lets you tap a repeater card to program your radio — without touching a single menu.</p>
+
+  <h2>Touch Mode — <span>built for a 7" screen</span></h2>
+  <p>The standard et-repeater interface is a table — great on a desktop monitor, but impractical on a small touch screen while moving. Touch Mode replaces the table entirely with a <strong>card grid</strong>: four repeaters per row, large touch targets, call sign and frequency prominently displayed, and a <strong>SET</strong> button at the bottom of each card to program your radio instantly.</p>
+  <p>Touch Mode is activated automatically when LiaisonOS is in Touch Mode — set it once in QtDashboard, and every supported app adapts. No per-app configuration needed.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-card-icon">📋</div>
+      <div class="feature-card-title">Card Grid</div>
+      <div class="feature-card-desc">4 repeaters per row, large touch targets, distance always visible</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">☰</div>
+      <div class="feature-card-title">Filter Drawer</div>
+      <div class="feature-card-desc">75% wide slide-out panel — band, mode, distance, favourites</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🔍</div>
+      <div class="feature-card-title">Live Search</div>
+      <div class="feature-card-desc">Filter by callsign, frequency, grid square or location as you type</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">📻</div>
+      <div class="feature-card-title">One-Tap SET</div>
+      <div class="feature-card-desc">Programs frequency, mode, offset and CTCSS tone via CAT instantly</div>
+    </div>
+  </div>
+
+  <h2>The filter <span>drawer</span></h2>
+  <p>The hamburger button in the top bar opens a <strong>75% wide drawer</strong> from the left — large enough to comfortably use with a finger, small enough to still see your content behind it. The drawer contains oversized toggle buttons for band (multi-select: 2m, 70cm, 1.25m, 6m, 10m), mode (FM, DMR, D-STAR, YSF, P25, NXDN), maximum distance (5 km through ALL), and a favourites toggle.</p>
+  <p>Tap outside the drawer to close it and apply your filters instantly. No confirm button, no extra steps.</p>
+
+  <div class="note">
+    <strong>Tip:</strong> Before leaving home, set your band filter to 2m + 70cm and your max distance to 50 km. The drawer remembers your filter selections between sessions.
+  </div>
+
+  <h2>GPS continuous mode — <span>always current</span></h2>
+  <p>et-repeater sorts your list by distance from your position. That position comes from your LiaisonOS user configuration — your grid square or GPS coordinates. The question is: how fresh is that data?</p>
+  <p>With <strong>GPS continuous mode</strong>, the answer is: always current. Launch QtGpsSync from the Sync button in QtDashboard, switch it to GPS mode, and it feeds your position to LiaisonOS continuously over the session. As you drive, your coordinates update in real time. et-repeater re-sorts the card grid automatically — the repeaters closest to where you are <em>right now</em> always appear first.</p>
+  <p>This uses your Android phone running the LiaisonGPS app over Bluetooth, or a serial GPS receiver like the Kenwood TH-D74 or TH-D75. No internet required — the GPS signal is processed entirely on the device.</p>
+
+  <h2>The full <span>mobile workflow</span></h2>
+  <ol>
+    <li>Mount your tablet in the vehicle and boot LiaisonOS</li>
+    <li>Enable Touch Mode from QtDashboard — the whole UI adapts</li>
+    <li>Open QtGpsSync, switch to GPS mode — your position is now live</li>
+    <li>Open et-repeater — card grid, sorted by distance, updating as you drive</li>
+    <li>Tap the drawer to filter by band and distance if needed</li>
+    <li>Tap <strong>SET</strong> on any card to program your radio instantly</li>
+  </ol>
+  <p>No terminal. No menus. No manual frequency entry. Just drive and operate.</p>
+
+  <h2>Coming <span>next</span></h2>
+  <p>Touch Mode is a platform-level feature — et-repeater is just the first app beyond QtDashboard to support it. In <strong>v2.3.2</strong>, Pat Winlink gets the same treatment with <strong>QtPatWinlink</strong> — a native Qt application built for both desktop and touch from day one.</p>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">Available in LiaisonOS 2.3.1 and later &middot; Feature developed by VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>

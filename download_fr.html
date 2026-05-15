@@ -134,27 +134,27 @@
     </div>
 
     <div class="whats-new">
-      <p class="whats-new-title">Nouveautés de la v2.3.0</p>
+      <p class="whats-new-title">Nouveautés de la v2.3.1</p>
       <ul>
-        <li><strong>Bouton Sync GPS</strong> — Synchronisez l'heure système directement depuis le tableau de bord. Compatible avec les appareils Android via l'app LiaisonGPS (Bluetooth), ou les récepteurs GPS série (Kenwood TH-D74, TH-D75).</li>
-        <li><strong>QtGpsSync — Entièrement recodé en C++</strong> — Nouvel outil GPS Bluetooth construit de zéro. Se connecte via Bluetooth en deux modes : <em>mode Sync</em> règle l'heure système et le locator Maidenhead, <em>mode GPS</em> fournit un flux GPS continu en temps réel.</li>
-        <li><strong>Horloge UTC avec secondes</strong> — L'horloge UTC de la barre système affiche maintenant les secondes pour une référence de temps précise.</li>
-        <li><strong>Modem HF Mercury — Bêta</strong> — Mercury v2 de l'équipe HERMES de Rhizomatica est intégré en version bêta. Les applications clientes (QtTermTCP, Winlink) se connectent via le nom de protocole VARA — même protocole client, modem Mercury en dessous. Un mode autonome est également disponible, faisant tourner Mercury comme modem direct sans client BBS.</li>
+        <li><strong>QtDashboard — Tableau de bord natif C++</strong> — Une étape majeure : l'ancien tableau de bord Python/GTK est remplacé par une application Qt5 native entièrement en C++. Plus rapide, plus propre, conçu spécifiquement pour LiaisonOS. Horloge UTC intégrée avec secondes, sélection de modem directement dans le tableau de bord, configuration radio/CAT, édition du profil utilisateur, et 6 modes récents toujours prêts en un seul tap.</li>
+        <li><strong>Mode Bureau &amp; Mode Tactile</strong> — QtDashboard fonctionne en deux modes d'interface distincts. Le mode Bureau est optimisé pour souris et clavier. Le mode Tactile est conçu pour les tablettes 7&quot; et les écrans montés en véhicule — grandes cartes, contrôles adaptés aux doigts, bascule instantanée sans redémarrage. À notre connaissance, cette conception double-mode est unique dans l'univers des OS pour radioamateurs.</li>
+        <li><strong>et-repeater en mode Tactile</strong> — Le navigateur de répéteurs s'adapte au mode Tactile avec une grille de cartes, un tiroir de filtres plein écran (bande, mode, distance, favoris) et une barre de recherche en temps réel. Le mode Tactile est une fonctionnalité de plateforme lue depuis user.json — d'autres applications suivront dans les prochaines versions.</li>
+        <li><strong>À venir en v2.3.2 — QtPatWinlink</strong> — Pat Winlink réinventé en application Qt native avec support complet du mode Tactile.</li>
       </ul>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.0.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.1.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label">Dernière version</p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.3.0.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.3.1.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; Publiée <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.0</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.1</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">Licence</p><p class="stat-val">Ms-PL</p></div>
@@ -163,7 +163,7 @@
 
     <div class="checksum-row">
       <span class="checksum-label">SHA256</span>
-      <span class="checksum-val" id="hashval">a58b08bb2f45be3402f08d8b40e8b260e9bd7179d1355f23f732025d5748a5fa</span>
+      <span class="checksum-val" id="hashval">d0c6e996214213695809b17c989a84b8766d944c10f0ecef4586d6e1670c1d51</span>
       <button class="copy-btn" onclick="copyHash()">Copier</button>
     </div>
 
@@ -179,10 +179,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.3.0.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.3.1.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.0.iso">⬇ Télécharger</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.1.iso">⬇ Télécharger</a></td>
         </tr>
 
         <tr>

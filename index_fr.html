@@ -146,7 +146,7 @@
     <a class="btn-secondary" href="mailto:info@liaisonos.com">✉ Nous joindre</a>
   </div>
   <div class="badges">
-    <span class="badge"><span>v2.3.0</span></span>
+    <span class="badge"><span>v2.3.1</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Licence <span>Ms-PL</span></span>
@@ -202,22 +202,26 @@ data-beehiiv-form="12328a64-4ff4-456a-9557-fc3ecb84804d"></script></div>
   </div>
 
   <div class="section">
-    <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.0</span></h2>
+    <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.1</span></h2>
     <div class="card">
-      <h3>Bouton Sync GPS</h3>
-      <p>Un nouveau bouton Sync dans le tableau de bord permet de synchroniser l'heure système depuis un appareil Android via l'app LiaisonGPS (Bluetooth), ou depuis un récepteur GPS série (Kenwood TH-D74, TH-D75). Une seule pression — aucun terminal requis.</p>
+      <h3>QtDashboard — Tableau de bord natif C++</h3>
+      <p>Une étape majeure : l'ancien tableau de bord Python/GTK est remplacé par une application Qt5 native entièrement en C++. Plus rapide, plus propre, conçu spécifiquement pour LiaisonOS. Horloge UTC intégrée avec secondes, sélection de modem en ligne, configuration radio/CAT, édition du profil utilisateur, et 6 modes récents toujours prêts en un seul tap — sans menus ni dialogues inutiles.</p>
     </div>
     <div class="card" style="margin-top: 8px;">
-      <h3>QtGpsSync — Entièrement recodé en C++</h3>
-      <p>L'outil GPS Bluetooth a été reconstruit de zéro en C++. Il se connecte via Bluetooth en deux modes : <em>mode Sync</em> règle l'heure système et le locator Maidenhead en une seule opération, <em>mode GPS</em> fournit un flux GPS continu en temps réel. Lancez-le directement depuis le tableau de bord en un clic.</p>
+      <h3>Mode Bureau &amp; Mode Tactile</h3>
+      <p>QtDashboard fonctionne en deux modes d'interface distincts. Le mode Bureau est optimisé pour souris et clavier. Le mode Tactile est conçu pour les tablettes 7&quot; et les écrans montés en véhicule — grandes cartes, contrôles adaptés aux doigts, bascule instantanée sans redémarrage. À notre connaissance, cette conception double-mode est unique dans l'univers des OS pour radioamateurs. Le mode Tactile est une fonctionnalité de plateforme : les applications compatibles comme et-repeater s'y adaptent déjà, d'autres suivront dans les prochaines versions.</p>
     </div>
     <div class="card" style="margin-top: 8px;">
-      <h3>Horloge de la barre système avec secondes</h3>
-      <p>L'horloge UTC de la barre système affiche maintenant les secondes pour une référence de temps précise.</p>
+      <h3>et-repeater en mode Tactile</h3>
+      <p>Le navigateur de répéteurs s'adapte au mode Tactile avec une grille de cartes, un tiroir de filtres coulissant (bande, mode, distance, favoris) et une barre de recherche en temps réel — entièrement utilisable au doigt sur petit écran.</p>
+    </div>
+    <div class="card" style="margin-top: 8px; border-color: rgba(125,232,176,0.3); background: rgba(125,232,176,0.03);">
+      <h3 style="color:#7de8b0;">À venir en v2.3.2 — QtPatWinlink</h3>
+      <p>Pat Winlink réinventé en application Qt native avec support complet du mode Tactile dès le premier jour.</p>
     </div>
     <div class="card" style="margin-top: 8px;">
-      <h3>Modem HF Mercury — Intégration bêta</h3>
-      <p>Mercury v2, développé par l'équipe HERMES de Rhizomatica et sponsorisé par ARDC, est maintenant intégré en version bêta. Les applications clientes (QtTermTCP, Winlink) se connectent via le nom de protocole VARA — même protocole client, Mercury en dessous. Un mode autonome est également disponible, faisant tourner Mercury comme modem direct sans client BBS. <a href="https://github.com/Rhizomatica/mercury" target="_blank" rel="noopener" style="color:#5ab887;">github.com/Rhizomatica/mercury</a></p>
+      <h3>Précédente — v2.3.0</h3>
+      <p>Bouton Sync GPS dans le tableau de bord. QtGpsSync entièrement reconstruit en C++ — connexion Bluetooth aux appareils Android via l'app LiaisonGPS, ou aux récepteurs GPS série (Kenwood TH-D74, TH-D75). Mode <em>Sync</em> : règle l'heure et le locator en un tap. Mode <em>GPS</em> : flux continu en temps réel. Modem Mercury HF v2 (HERMES/Rhizomatica, sponsorisé par ARDC) inclus en bêta.</p>
     </div>
     <div class="card" style="margin-top: 8px;">
       <h3>Précédente — v2.2.7</h3>
@@ -226,10 +230,6 @@ data-beehiiv-form="12328a64-4ff4-456a-9557-fc3ecb84804d"></script></div>
     <div class="card" style="margin-top: 8px;">
       <h3>Précédente — v2.2.6</h3>
       <p>Synchronisation GPS Bluetooth depuis Android (app LiaisonGPS) ou Kenwood TH-D74/TH-D75. Jumelages Bluetooth et identifiants WiFi sauvegardés et restaurés avec la persistance USB.</p>
-    </div>
-    <div class="card" style="margin-top: 8px; border-color: rgba(125,232,176,0.3); background: rgba(125,232,176,0.03);">
-      <h3 style="color:#7de8b0;">À venir en v2.3.1 — Mode serveur BBS avec Mercury v2</h3>
-      <p>La prochaine version introduira le mode serveur BBS avec le modem Mercury v2. Les opérateurs pourront faire tourner un nœud BBS directement depuis LiaisonOS, acceptant les connexions des stations clientes via Mercury HF — sans modem propriétaire.</p>
     </div>
   </div>
 

@@ -66,13 +66,14 @@ footer a:hover { color: #7de8b0; }
   <div class="nav-links">
     <a href="index_fr.html">Accueil</a>
     <a href="download_fr.html">Télécharger</a>
+    <a href="blog/index_fr.html">Blog</a>
     <a href="https://va2ops.ca">VA2OPS</a>
     <a href="https://liaisonos.com/README" class="lang-link">🇨🇦 EN</a>
   </div>
 </nav>
 <div class="content">
 <h1>LiaisonOS — Communications d'urgence pour radioamateurs</h1>
-<p><em>Version 2.3.0 — Mai 2026</em>
+<p><em>Version 2.3.1 — Mai 2026</em>
 <em>ISO Debian 13 (Trixie) Live/Installable</em></p>
 <blockquote>
 <p>⚠️ <strong>Avis de développement continu</strong></p>
@@ -82,24 +83,35 @@ footer a:hover { color: #7de8b0; }
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS est une <strong>ISO Linux Debian 13 (Trixie) live et installable</strong> conçue pour les communications numériques d'urgence en radioamateur. Elle comprend une suite complète de logiciels de modes numériques préconfigurés, des cartes hors ligne et un tableau de bord web pour une utilisation en un clic. Deux modes de déploiement : <strong>USB Live Run</strong> (démarrer n'importe quel PC depuis une clé USB) ou <strong>installation sur disque dur</strong> (installation permanente avec Calamares). Interface bilingue français/anglais. Créé par Sylvain Deguire (VA2OPS).</p>
 <hr />
+<h2>Nouveautés de la version 2.3.1</h2>
+<h3>QtDashboard — Tableau de bord natif C++</h3>
+<ul>
+<li><strong>Application Qt5 native en C++</strong> — remplace l'ancien tableau de bord Python/GTK. Plus rapide, plus propre, conçu spécifiquement pour LiaisonOS</li>
+<li><strong>Horloge UTC intégrée avec secondes</strong> — toujours visible dans la barre supérieure, sans délai</li>
+<li><strong>Sélecteur de modem en ligne</strong> — choisissez votre modem directement sous le mode actif, sans popup ni menu</li>
+<li><strong>Configuration radio/CAT et profil utilisateur</strong> — accessibles directement depuis le tableau de bord</li>
+<li><strong>6 modes récents</strong> — toujours prêts à relancer en un seul tap</li>
+</ul>
+<h3>Mode Bureau &amp; Mode Tactile</h3>
+<ul>
+<li><strong>Deux modes d'interface distincts</strong> — Bureau optimisé pour souris et clavier, Tactile conçu pour tablettes 7&quot; et écrans en véhicule</li>
+<li><strong>Bascule instantanée</strong> — sans redémarrage, stockée dans <code>user.json</code></li>
+<li><strong>Fonctionnalité de plateforme</strong> — les applications compatibles s'adaptent automatiquement. et-repeater inclut déjà une grille de cartes, un tiroir de filtres et une recherche en temps réel en mode Tactile. D'autres applications suivront.</li>
+</ul>
+<h3>À venir en v2.3.2 — QtPatWinlink</h3>
+<p>Pat Winlink réinventé en application Qt native avec support complet du mode Tactile dès le premier jour.</p>
+<hr />
 <h2>Nouveautés de la version 2.3.0</h2>
 <h3>QtGpsSync — Entièrement recodé en C++</h3>
 <ul>
-<li><strong>Reconstruit de zéro</strong> — QtGpsSync est maintenant une application C++ native, remplaçant l'implémentation précédente</li>
-<li><strong>Mode Sync</strong> — Règle l'heure système et le locator Maidenhead en une seule opération depuis une source GPS Bluetooth</li>
-<li><strong>Mode GPS</strong> — Fournit un flux GPS continu en temps réel pour le suivi de position et le GPS Track sur cartes hors-ligne</li>
-<li><strong>Compatible LiaisonGPS</strong> (Android, Bluetooth) et récepteurs GPS série (Kenwood TH-D74, TH-D75)</li>
-<li><strong>Lancement en un clic</strong> — Démarrez directement depuis le bouton Sync du tableau de bord</li>
-</ul>
-<h3>Horloge de la barre système avec secondes</h3>
-<ul>
-<li>L'horloge UTC de la barre système affiche maintenant les secondes pour une référence de temps précise</li>
+<li><strong>Reconstruit de zéro</strong> — QtGpsSync est maintenant une application C++ native</li>
+<li><strong>Mode Sync</strong> — Règle l'heure système et le locator Maidenhead en un tap depuis un GPS Bluetooth (app LiaisonGPS sur Android, Kenwood TH-D74, TH-D75)</li>
+<li><strong>Mode GPS</strong> — Flux GPS continu en temps réel pour le suivi de position sur cartes hors-ligne</li>
 </ul>
 <h3>Modem HF Mercury — Intégration bêta</h3>
 <ul>
-<li><strong>Mercury v2</strong> par l'équipe HERMES de Rhizomatica (Rafael Diniz, Pedro Messetti, Matheus Thibau), sponsorisé par ARDC</li>
-<li><strong>Mode client</strong> — QtTermTCP et Winlink se connectent via le nom de protocole VARA — même protocole client, modem Mercury en dessous</li>
-<li><strong>Mode autonome</strong> — Faites tourner Mercury comme modem HF direct sans client BBS</li>
+<li><strong>Mercury v2</strong> par l'équipe HERMES de Rhizomatica, sponsorisé par ARDC</li>
+<li>QtTermTCP et Winlink se connectent via le nom de protocole VARA — même protocole client, modem Mercury en dessous</li>
 <li>Open-source : <a href="https://github.com/Rhizomatica/mercury" target="_blank" rel="noopener">github.com/Rhizomatica/mercury</a></li>
 </ul>
 <hr />
@@ -1006,7 +1018,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Documentation Ventoy :</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Version du document : 2.1.8</em>
+<p><em>Version du document : 2.3.1</em>
 <em>Dernière mise à jour : Mars 2026</em>
 <em>Créé pour LiaisonOS Édition Debian</em></p>
 </div>

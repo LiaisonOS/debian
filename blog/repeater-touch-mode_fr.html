@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conduire avec et-repeater en mode Tactile — Blog LiaisonOS</title>
+  <meta name="description" content="et-repeater fonctionne maintenant en mode Tactile — une grille de cartes conçue pour les tablettes 7&quot; et les écrans en véhicule. Couplé au mode GPS continu, votre liste de répéteurs reste triée par distance pendant que vous conduisez.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 1rem 0; }
+    .feature-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .feature-card-icon { font-size: 20px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 4px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index_fr.html">Accueil</a>
+    <a href="../download_fr.html">Télécharger</a>
+    <a href="index_fr.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="repeater-touch-mode.html" class="lang-link">🇨🇦 EN</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index_fr.html">← Retour au Blog</a>
+  <div class="article-meta">
+    <span class="article-date">2026-05-12</span>
+    <span class="article-tag">Répéteurs &amp; VHF/UHF</span>
+    <span class="article-tag">Mode Tactile</span>
+    <span class="article-tag">GPS</span>
+  </div>
+  <h1 class="article-title">Conduire avec <span>et-repeater en mode Tactile</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">Un navigateur de répéteurs adapté aux doigts, couplé au GPS continu — vos répéteurs les plus proches, toujours triés, toujours à un tap pendant que vous conduisez.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.3.1</p>
+</div>
+
+<div style="max-width:720px; margin:0 auto; padding:0 2rem;">
+  <div class="article-photo">
+    <img src="imgs/et-repeater-touch-mode.png" alt="et-repeater en mode Tactile — grille de cartes sur tablette 7&quot;" style="max-width:100%; height:auto; display:block; margin:0 auto; border-radius:10px;">
+  </div>
+</div>
+
+<div class="article-body">
+
+  <h2>Un nouveau type de <span>shack mobile</span></h2>
+  <p>Opérer en mobile a toujours impliqué des compromis — un petit écran, des gants, une main sur le volant, et une radio enfouie dans des menus. LiaisonOS 2.3.1 change cette équation avec deux fonctionnalités conçues pour travailler ensemble : <strong>le mode Tactile d'et-repeater</strong> et le <strong>mode GPS continu</strong>.</p>
+  <p>Le résultat : une tablette montée dans votre véhicule qui connaît exactement votre position, maintient votre liste de répéteurs triée par distance en temps réel, et vous permet de taper une carte pour programmer votre radio — sans toucher un seul menu.</p>
+
+  <h2>Mode Tactile — <span>conçu pour un écran 7"</span></h2>
+  <p>L'interface standard d'et-repeater est un tableau — idéal sur un moniteur de bureau, mais peu pratique sur un petit écran tactile en mouvement. Le mode Tactile remplace entièrement le tableau par une <strong>grille de cartes</strong> : quatre répéteurs par rangée, grandes zones de touche, indicatif et fréquence bien visibles, et un bouton <strong>SET</strong> en bas de chaque carte pour programmer votre radio instantanément.</p>
+  <p>Le mode Tactile s'active automatiquement lorsque LiaisonOS est en mode Tactile — configurez-le une fois dans QtDashboard, et toutes les applications compatibles s'adaptent. Aucune configuration par application requise.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-card-icon">📋</div>
+      <div class="feature-card-title">Grille de cartes</div>
+      <div class="feature-card-desc">4 répéteurs par rangée, grandes zones de touche, distance toujours visible</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">☰</div>
+      <div class="feature-card-title">Tiroir de filtres</div>
+      <div class="feature-card-desc">Panneau coulissant 75% — bande, mode, distance, favoris</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🔍</div>
+      <div class="feature-card-title">Recherche en direct</div>
+      <div class="feature-card-desc">Filtrez par indicatif, fréquence, locator ou lieu au fur et à mesure</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">📻</div>
+      <div class="feature-card-title">SET en un tap</div>
+      <div class="feature-card-desc">Programme fréquence, mode, offset et tonalité CTCSS via CAT instantanément</div>
+    </div>
+  </div>
+
+  <h2>Le tiroir <span>de filtres</span></h2>
+  <p>Le bouton hamburger dans la barre supérieure ouvre un <strong>tiroir de 75% de largeur</strong> depuis la gauche — assez grand pour l'utiliser confortablement au doigt, assez petit pour voir votre contenu derrière. Le tiroir contient de grands boutons bascule pour la bande (multi-sélection : 2m, 70cm, 1.25m, 6m, 10m), le mode (FM, DMR, D-STAR, YSF, P25, NXDN), la distance maximale (5 km jusqu'à TOUS), et un bouton favoris.</p>
+  <p>Tapez en dehors du tiroir pour le fermer et appliquer vos filtres instantanément. Pas de bouton de confirmation, pas d'étapes supplémentaires.</p>
+
+  <div class="note">
+    <strong>Conseil :</strong> Avant de partir, réglez votre filtre de bande sur 2m + 70cm et votre distance maximale sur 50 km. Le tiroir mémorise vos sélections de filtres entre les sessions.
+  </div>
+
+  <h2>Mode GPS continu — <span>toujours à jour</span></h2>
+  <p>et-repeater trie votre liste par distance depuis votre position. Cette position provient de votre configuration utilisateur LiaisonOS — votre locator Maidenhead ou vos coordonnées GPS. La question est : ces données sont-elles fraîches ?</p>
+  <p>Avec le <strong>mode GPS continu</strong>, la réponse est : toujours. Lancez QtGpsSync depuis le bouton Sync dans QtDashboard, passez-le en mode GPS, et il alimente votre position dans LiaisonOS en continu tout au long de la session. Pendant que vous conduisez, vos coordonnées se mettent à jour en temps réel. et-repeater re-trie la grille de cartes automatiquement — les répéteurs les plus proches de <em>là où vous êtes maintenant</em> apparaissent toujours en premier.</p>
+  <p>Cela fonctionne avec votre téléphone Android exécutant l'application LiaisonGPS via Bluetooth, ou un récepteur GPS série comme le Kenwood TH-D74 ou TH-D75. Aucune connexion internet requise — le signal GPS est traité entièrement sur l'appareil.</p>
+
+  <h2>Le flux de travail <span>mobile complet</span></h2>
+  <ol>
+    <li>Montez votre tablette dans le véhicule et démarrez LiaisonOS</li>
+    <li>Activez le mode Tactile depuis QtDashboard — toute l'interface s'adapte</li>
+    <li>Ouvrez QtGpsSync, passez en mode GPS — votre position est maintenant en direct</li>
+    <li>Ouvrez et-repeater — grille de cartes, triée par distance, mise à jour pendant que vous conduisez</li>
+    <li>Tapez le tiroir pour filtrer par bande et distance si nécessaire</li>
+    <li>Tapez <strong>SET</strong> sur n'importe quelle carte pour programmer votre radio instantanément</li>
+  </ol>
+  <p>Pas de terminal. Pas de menus. Pas de saisie manuelle de fréquence. Conduisez et opérez.</p>
+
+  <h2>À <span>venir</span></h2>
+  <p>Le mode Tactile est une fonctionnalité de plateforme — et-repeater n'est que la première application après QtDashboard à le prendre en charge. En <strong>v2.3.2</strong>, Pat Winlink reçoit le même traitement avec <strong>QtPatWinlink</strong> — une application Qt native conçue pour le bureau et le tactile dès le premier jour.</p>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">Disponible dans LiaisonOS 2.3.1 et versions ultérieures &middot; Fonctionnalité développée par VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Québec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>

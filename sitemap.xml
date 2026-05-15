@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Home -->
+  <url>
+    <loc>https://liaisonos.com/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/index_fr.html"/>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/index_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/index_fr.html"/>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Download -->
+  <url>
+    <loc>https://liaisonos.com/download.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/download.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/download_fr.html"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/download_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/download.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/download_fr.html"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- README / LISEZMOI -->
+  <url>
+    <loc>https://liaisonos.com/README</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/README"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/LISEZMOI"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/LISEZMOI</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/README"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/LISEZMOI"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Blog index -->
+  <url>
+    <loc>https://liaisonos.com/blog/index.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/index.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/index_fr.html"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/index_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/index.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/index_fr.html"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Blog articles -->
+  <url>
+    <loc>https://liaisonos.com/blog/repeater-touch-mode.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/repeater-touch-mode.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/repeater-touch-mode_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/repeater-touch-mode_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/repeater-touch-mode.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/repeater-touch-mode_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/et-repeater.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/et-repeater.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/et-repeater_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/et-repeater_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/et-repeater.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/et-repeater_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/bluetooth-gps-sync.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/bluetooth-gps-sync.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/bluetooth-gps-sync_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/bluetooth-gps-sync_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/bluetooth-gps-sync.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/bluetooth-gps-sync_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/bbs-directory-cache.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/bbs-directory-cache.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/bbs-directory-cache_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/bbs-directory-cache_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/bbs-directory-cache.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/bbs-directory-cache_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/et-logger.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/et-logger.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/et-logger_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/et-logger_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/et-logger.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/et-logger_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/liaisonos-persistence.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/liaisonos-persistence.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/liaisonos-persistence_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/liaisonos-persistence_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/liaisonos-persistence.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/liaisonos-persistence_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/ventoy-usb-setup.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/ventoy-usb-setup.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/ventoy-usb-setup_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/ventoy-usb-setup_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/ventoy-usb-setup.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/ventoy-usb-setup_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/ventoy-usb-setup-linux.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/ventoy-usb-setup-linux.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/ventoy-usb-setup-linux_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/ventoy-usb-setup-linux_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/ventoy-usb-setup-linux.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/ventoy-usb-setup-linux_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/ventoy-usb-setup-windows.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/ventoy-usb-setup-windows.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/ventoy-usb-setup-windows_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://liaisonos.com/blog/ventoy-usb-setup-windows_fr.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liaisonos.com/blog/ventoy-usb-setup-windows.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liaisonos.com/blog/ventoy-usb-setup-windows_fr.html"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+</urlset>

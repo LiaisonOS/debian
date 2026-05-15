@@ -66,13 +66,14 @@ footer a:hover { color: #7de8b0; }
   <div class="nav-links">
     <a href="index.html">Home</a>
     <a href="download.html">Download</a>
+    <a href="blog/index.html">Blog</a>
     <a href="https://va2ops.ca">VA2OPS</a>
     <a href="https://liaisonos.com/LISEZMOI" class="lang-link">🇫🇷 FR</a>
   </div>
 </nav>
 <div class="content">
 <h1>LiaisonOS — Emergency Communications for Ham Radio</h1>
-<p><em>Version 2.3.0 — May 2026</em>
+<p><em>Version 2.3.1 — May 2026</em>
 <em>Debian 13 (Trixie) Live/Installable ISO</em></p>
 <blockquote>
 <p>⚠️ <strong>Continuous Development Notice</strong></p>
@@ -82,24 +83,35 @@ footer a:hover { color: #7de8b0; }
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS is a <strong>Debian 13 (Trixie) live and installable Linux ISO</strong> designed for ham radio emergency digital communications. It includes a complete suite of pre-configured digital mode software, offline maps, and a web dashboard for one-click operation. Two deployment modes: <strong>USB Live Run</strong> (boot any PC from a USB drive) or <strong>hard drive installation</strong> (permanent install via Calamares). Bilingual English/French interface. Created by Sylvain Deguire (VA2OPS).</p>
 <hr />
+<h2>What's New in Version 2.3.1</h2>
+<h3>QtDashboard — Native C++ Dashboard</h3>
+<ul>
+<li><strong>Fully native C++ Qt5 application</strong> — replaces the Python/GTK et-dashboard. Faster, leaner, purpose-built for LiaisonOS</li>
+<li><strong>Embedded UTC clock with seconds</strong> — always visible in the top bar, no lag</li>
+<li><strong>Inline modem selector</strong> — choose your modem directly below the active mode, no popup or menu diving</li>
+<li><strong>Radio/CAT and user profile</strong> — configurable directly from the dashboard</li>
+<li><strong>6 recent modes</strong> — always ready to relaunch in one tap</li>
+</ul>
+<h3>Desktop &amp; Touch Mode</h3>
+<ul>
+<li><strong>Two distinct UI modes</strong> — Desktop optimized for mouse/keyboard, Touch designed for 7" tablets and car-mount screens</li>
+<li><strong>Instant switching</strong> — no restart required, stored in <code>user.json</code></li>
+<li><strong>Platform feature</strong> — supported apps adapt automatically. et-repeater already includes a full Touch Mode card grid, slide-out filter drawer, and live search bar. More apps to follow.</li>
+</ul>
+<h3>Coming in v2.3.2 — QtPatWinlink</h3>
+<p>Pat Winlink reimagined as a native Qt application with full Touch Mode support from day one.</p>
+<hr />
 <h2>What's New in Version 2.3.0</h2>
 <h3>QtGpsSync — Completely Redesigned in C++</h3>
 <ul>
-<li><strong>Rebuilt from scratch</strong> — QtGpsSync is now a native C++ application, replacing the previous implementation</li>
-<li><strong>Sync mode</strong> — Sets system time and Maidenhead grid square in one shot from a Bluetooth GPS source</li>
-<li><strong>GPS mode</strong> — Provides a continuous live GPS feed for real-time position tracking and GPS Track on offline maps</li>
-<li><strong>Works with LiaisonGPS</strong> (Android, Bluetooth) and serial GPS receivers (Kenwood TH-D74, TH-D75)</li>
-<li><strong>One-click launch</strong> — Start directly from the dashboard Sync button</li>
-</ul>
-<h3>System Tray Clock with Seconds</h3>
-<ul>
-<li>The UTC clock in the system tray now displays seconds for precise time reference</li>
+<li><strong>Rebuilt from scratch</strong> — QtGpsSync is now a native C++ application</li>
+<li><strong>Sync mode</strong> — Sets system time and Maidenhead grid square in one tap from a Bluetooth GPS source (LiaisonGPS on Android, Kenwood TH-D74, TH-D75)</li>
+<li><strong>GPS mode</strong> — Continuous live GPS feed for real-time position tracking on offline maps</li>
 </ul>
 <h3>Mercury HF Modem — Beta Integration</h3>
 <ul>
-<li><strong>Mercury v2</strong> by Rhizomatica's HERMES team (Rafael Diniz, Pedro Messetti, Matheus Thibau), sponsored by ARDC</li>
-<li><strong>Client mode</strong> — QtTermTCP and Winlink connect using the VARA protocol name — same client protocol, Mercury modem underneath</li>
-<li><strong>Standalone mode</strong> — Run Mercury as a direct HF modem without a BBS client</li>
+<li><strong>Mercury v2</strong> by Rhizomatica's HERMES team, sponsored by ARDC</li>
+<li>QtTermTCP and Winlink connect using the VARA protocol name — same client protocol, Mercury modem underneath</li>
 <li>Open-source: <a href="https://github.com/Rhizomatica/mercury" target="_blank" rel="noopener">github.com/Rhizomatica/mercury</a></li>
 </ul>
 <hr />
@@ -1013,7 +1025,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Ventoy Documentation:</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Document version: 2.3.0</em>
+<p><em>Document version: 2.3.1</em>
 <em>Last updated: March 2026</em>
 <em>Created for LiaisonOS Debian Edition</em></p>
 </div>
