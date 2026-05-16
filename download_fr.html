@@ -134,21 +134,21 @@
     </div>
 
     <div class="whats-new">
-      <p class="whats-new-title">Nouveautés de la v2.3.1</p>
+      <p class="whats-new-title">Nouveautés de la v2.3.1 / v2.3.2</p>
       <ul>
+        <li><strong>v2.3.2 — QtTerminal</strong> — LiaisonOS aura son propre terminal poru accueillir Paracon, Chattervox et linBPQ.</li>
         <li><strong>QtDashboard — Tableau de bord natif C++</strong> — Une étape majeure : l'ancien tableau de bord Python/GTK est remplacé par une application Qt5 native entièrement en C++. Plus rapide, plus propre, conçu spécifiquement pour LiaisonOS. Horloge UTC intégrée avec secondes, sélection de modem directement dans le tableau de bord, configuration radio/CAT, édition du profil utilisateur, et 6 modes récents toujours prêts en un seul tap.</li>
         <li><strong>Mode Bureau &amp; Mode Tactile</strong> — QtDashboard fonctionne en deux modes d'interface distincts. Le mode Bureau est optimisé pour souris et clavier. Le mode Tactile est conçu pour les tablettes 7&quot; et les écrans montés en véhicule — grandes cartes, contrôles adaptés aux doigts, bascule instantanée sans redémarrage. À notre connaissance, cette conception double-mode est unique dans l'univers des OS pour radioamateurs.</li>
         <li><strong>et-repeater en mode Tactile</strong> — Le navigateur de répéteurs s'adapte au mode Tactile avec une grille de cartes, un tiroir de filtres plein écran (bande, mode, distance, favoris) et une barre de recherche en temps réel. Le mode Tactile est une fonctionnalité de plateforme lue depuis user.json — d'autres applications suivront dans les prochaines versions.</li>
-        <li><strong>À venir in v2.3.2 — QtTerminal</strong> — LiaisonOS aura son propre terminal poru accueillir Paracon, Chattervox et linBPQ.</li>
         <li><strong>À venir en v2.3.3 — QtPatWinlink</strong> — Pat Winlink réinventé en application Qt native avec support complet du mode Tactile.</li>
       </ul>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.1.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.2.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label">Dernière version</p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.3.1.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.3.2.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; Publiée <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
@@ -163,9 +163,14 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256</span>
+      <span class="checksum-label">SHA256 - v2.3.1</span>
       <span class="checksum-val" id="hashval">d0c6e996214213695809b17c989a84b8766d944c10f0ecef4586d6e1670c1d51</span>
-      <button class="copy-btn" onclick="copyHash()">Copier</button>
+      <button class="copy-btn" onclick="copyHash('hashval')">Copier</button>
+    </div>
+    <div class="checksum-row">
+      <span class="checksum-label">SHA256 - v2.3.2</span>
+      <span class="checksum-val" id="hashval2">47f94fc5ef15930383d40aeca5855a255472e513da0278b079b5e05da745cc36</span>
+      <button class="copy-btn" onclick="copyHash('hashval2')">Copier</button>
     </div>
 
     <p class="section-label">Tous les fichiers</p>
@@ -180,10 +185,16 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.3.1.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.3.1.iso</span></td>
+          <td>~4.7 GB</td>
+          <td>2026-05-15</td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.1.iso">⬇ Télécharger</a></td>
+        </tr>
+        <tr>
+          <td><span class="fname">liaisonos-debian13-v2.3.2.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.1.iso">⬇ Télécharger</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.2.iso">⬇ Télécharger</a></td>
         </tr>
 
         <tr>
@@ -279,8 +290,8 @@
 </footer>
 
 <script>
-  function copyHash() {
-    var val = document.getElementById('hashval').textContent;
+  function copyHash(hashval) {
+    var val = document.getElementById(hashval).textContent;
     navigator.clipboard.writeText(val).then(function() {
       var btn = document.querySelector('.copy-btn');
       var orig = btn.innerHTML;
@@ -290,7 +301,7 @@
   }
 
   var today = new Date().toISOString().split('T')[0];
-  ['rel-date','stat-date','tbl-date','tbl-date2','tbl-date3'].forEach(function(id) {
+  ['rel-date','stat-date','tbl-date','tbl-date1','tbl-date2','tbl-date3'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.textContent = today;
   });
