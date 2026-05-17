@@ -63,14 +63,20 @@ if ! pgrep -x xfce4-panel > /dev/null 2>&1; then
 fi
 
 # Enable seconds display on the XFCE panel clock
-# Find the clock plugin ID and set digital format with seconds
+# mode=4 = digital with show-seconds support
 for plugin_id in $(xfconf-query -c xfce4-panel -l 2>/dev/null | grep -oP 'plugin-\d+(?=/type)' | sort -u); do
     plugin_type=$(xfconf-query -c xfce4-panel -p "/$plugin_id/type" 2>/dev/null)
     if [[ "$plugin_type" == "clock" ]]; then
-        xfconf-query -c xfce4-panel -p "/$plugin_id/digital-format" \
-            -s "%R:%S" --create -t string 2>/dev/null || \
-        xfconf-query -c xfce4-panel -p "/$plugin_id/digital-format" \
-            -s "%R:%S" 2>/dev/null
+        xfconf-query -c xfce4-panel -p "/$plugin_id/mode" \
+            -s 4 --create -t uint 2>/dev/null || \
+        xfconf-query -c xfce4-panel -p "/$plugin_id/mode" -s 4 2>/dev/null
+        xfconf-query -c xfce4-panel -p "/$plugin_id/show-seconds" \
+            -s true --create -t bool 2>/dev/null || \
+        xfconf-query -c xfce4-panel -p "/$plugin_id/show-seconds" \
+            -s true 2>/dev/null
         break
     fi
 done
+
+# Restart panel so clock picks up new format
+xfce4-panel --restart 2>/dev/null &

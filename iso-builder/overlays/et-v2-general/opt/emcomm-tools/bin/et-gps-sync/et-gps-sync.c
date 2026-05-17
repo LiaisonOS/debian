@@ -282,19 +282,29 @@ int main(int argc, char *argv[]) {
             /* The GPS second just ticked — capture wall clock immediately */
             clock_gettime(CLOCK_REALTIME, &boundary_ts);
 
+            long lag = (long)boundary_ts.tv_sec - (long)t_current;
+
             fprintf(stdout, "DEBUG: prev_epoch=%ld current_epoch=%ld "
-                            "bt_buffer_depth=%lds wall=%ld.%06ld\n",
+                            "bt_buffer_depth=%lds wall=%ld.%06ld lag=%lds\n",
                     (long)t_prev, (long)t_current,
                     (long)(t_current - t_prev - 1),   /* sentences buffered   */
                     boundary_ts.tv_sec,
-                    boundary_ts.tv_nsec / 1000L);
+                    boundary_ts.tv_nsec / 1000L,
+                    lag);
             fflush(stdout);
 
-            found = 1;
-            break;
+            if (lag <= 1) {
+                /* GPS epoch matches wall clock — BT buffer drained */
+                found = 1;
+                break;
+            }
+
+            /* Still reading from BT buffer — keep scanning for a later transition */
+            fprintf(stdout, "STATUS: BT buffer draining (%lds behind), continuing...\n", lag);
+            fflush(stdout);
         }
 
-        prev = current;   /* same second — keep scanning */
+        prev = current;   /* same second (or still buffered) — keep scanning */
     }
 
     if (!found || !current.valid) {
@@ -302,8 +312,6 @@ int main(int argc, char *argv[]) {
         if (fd != STDIN_FILENO) close(fd);
         return 2;
     }
-
-    if (fd != STDIN_FILENO) close(fd);
 
     /* ---- Phase 3: set clock to GPS epoch + sub-second wall remainder ----
      *
@@ -343,6 +351,66 @@ int main(int argc, char *argv[]) {
             current.hour, current.min, current.sec,
             subsec_us);
     fflush(stdout);
+
+    /* ---- Phase 4: verification — read next RMC and compare ----------------
+     *
+     * Wait for the next GPS second boundary, then check if our newly-set
+     * system clock agrees.  If there is still a whole-second delta, apply
+     * a correction and report it.
+     * ----------------------------------------------------------------------- */
+    fprintf(stdout, "STATUS: Verifying clock accuracy...\n");
+    fflush(stdout);
+
+    {
+        time_t   verify_deadline = time(NULL) + 10;
+        RMC      vprev    = current;
+        RMC      vcurrent = {0};
+        int      vfound   = 0;
+
+        while (time(NULL) < verify_deadline) {
+            if (read_line(fd, line, sizeof(line)) < 0) break;
+            if (strncmp(line, "$GPRMC", 6) != 0 && strncmp(line, "$GNRMC", 6) != 0)
+                continue;
+            if (!parse_rmc(line, &vcurrent))
+                continue;
+
+            time_t vt_prev    = rmc_to_epoch(&vprev);
+            time_t vt_current = rmc_to_epoch(&vcurrent);
+
+            if (vt_current != vt_prev) {
+                struct timespec vwall;
+                clock_gettime(CLOCK_REALTIME, &vwall);
+                long delta = (long)vwall.tv_sec - (long)vt_current;
+
+                fprintf(stdout, "STATUS: Verification — GPS=%ld wall=%ld delta=%+lds\n",
+                        (long)vt_current, vwall.tv_sec, delta);
+                fflush(stdout);
+
+                if (delta != 0) {
+                    /* Apply correction */
+                    struct timeval tvcorr;
+                    tvcorr.tv_sec  = vt_current;
+                    tvcorr.tv_usec = (long)(vwall.tv_nsec / 1000L);
+                    if (settimeofday(&tvcorr, NULL) == 0) {
+                        fprintf(stdout, "STATUS: Correction applied (%+lds)\n", delta);
+                        if (system("hwclock --systohc 2>/dev/null")) { /* suppress */ }
+                    }
+                } else {
+                    fprintf(stdout, "STATUS: Clock verified OK (0s delta)\n");
+                }
+                fflush(stdout);
+                vfound = 1;
+                break;
+            }
+            vprev = vcurrent;
+        }
+
+        if (!vfound)
+            fprintf(stdout, "STATUS: Verification timeout (clock set, not verified)\n");
+        fflush(stdout);
+    }
+
+    if (fd != STDIN_FILENO) close(fd);
 
     return 0;
 }

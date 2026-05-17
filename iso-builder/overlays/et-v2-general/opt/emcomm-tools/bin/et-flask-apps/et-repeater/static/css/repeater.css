@@ -44,6 +44,15 @@
     left: 0;
 }
 
+/* Touch mode: wider drawer */
+body.touch-mode .drawer {
+    width: 75%;
+    left: -75%;
+}
+body.touch-mode .drawer.drawer-open {
+    left: 0;
+}
+
 .drawer-header {
     display: flex;
     justify-content: space-between;
@@ -735,4 +744,230 @@
     .col-loc, .col-modes {
         display: none;
     }
+}
+
+/* =========================================================
+   Touch Mode — Card Grid
+   ========================================================= */
+
+.touch-card-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 8px 4px;
+}
+
+.touch-card {
+    background: #1e2a1e;
+    border: 1px solid #3a6b3a;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.tc-spacer {
+    flex: 1;
+}
+
+.touch-card-active {
+    border-color: var(--accent-primary);
+    background: #1e3a1e;
+}
+
+.tc-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tc-call {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--accent-primary);
+    letter-spacing: 0.04em;
+}
+
+.tc-fav {
+    font-size: 1.4rem;
+    color: var(--accent-primary);
+}
+
+.tc-freq {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #e8e8e8;
+}
+
+.tc-info {
+    font-size: 0.95rem;
+    color: #aaa;
+    letter-spacing: 0.02em;
+}
+
+.tc-loc {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.tc-set-btn {
+    margin-top: 8px;
+    padding: 14px;
+    background: var(--accent-primary);
+    color: #111;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+}
+
+.tc-set-btn:active {
+    opacity: 0.8;
+}
+
+/* Touch filter button in header */
+.touch-filter-btn {
+    padding: 8px 14px;
+    background: #2a2a2a;
+    color: #e8e8e8;
+    border: 1px solid #444;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+/* =========================================================
+   Touch Mode — Fullscreen Filter Panel
+   ========================================================= */
+
+.tfp-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1999;
+}
+
+.touch-filter-panel {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 75%;
+    background: #0d0d0d;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow-y: auto;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.8);
+}
+
+.tfp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #1a1a1a;
+    border-bottom: 2px solid var(--accent-primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.tfp-title {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--accent-primary);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.tfp-close {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    color: #ccc;
+    font-size: 1.4rem;
+    border-radius: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.tfp-section-label {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #666;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 18px 20px 6px;
+    border-bottom: 1px solid #1e1e1e;
+}
+
+.tfp-hint {
+    font-size: 0.7rem;
+    color: #444;
+    font-weight: normal;
+    letter-spacing: 0.05em;
+}
+
+.tfp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 12px 20px;
+}
+
+.tfp-btn {
+    padding: 22px 8px;
+    background: #1a1a1a;
+    color: #888;
+    border: 2px solid #2a2a2a;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.tfp-btn-wide {
+    grid-column: 1 / -1;
+    padding: 18px;
+}
+
+.tfp-active {
+    background: #152515;
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    box-shadow: 0 0 12px rgba(255,165,0,0.15);
+}
+
+.tfp-footer {
+    padding: 20px;
+    margin-top: auto;
+    position: sticky;
+    bottom: 0;
+    background: #0d0d0d;
+    border-top: 1px solid #1e1e1e;
+}
+
+.tfp-apply {
+    width: 100%;
+    padding: 22px;
+    background: var(--accent-primary);
+    color: #111;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+}
+
+.tfp-apply:active {
+    opacity: 0.85;
 }

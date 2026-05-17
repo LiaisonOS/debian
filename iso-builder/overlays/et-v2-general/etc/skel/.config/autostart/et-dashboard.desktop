@@ -1,14 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=EmComm Dashboard
+Name=LiaisonOS Dashboard
 Comment=LiaisonOS Interactive Dashboard
-
-## optimized version
-Exec=/opt/emcomm-tools/bin/et-flask-apps/et-dashboard
-
-## normal et-dashboard
-##Exec=/opt/emcomm-tools/bin/et-dashboard
-
+Exec=/usr/local/bin/QtDashboard
 Icon=emcomm-tools
 Terminal=false
 X-GNOME-Autostart-enabled=true

@@ -512,19 +512,25 @@ if restore_file "${PERSISTENCE_PATH}/configs/wsjtx/WSJT-X.ini" "${HOME}/.config/
     ((RESTORED++)) || true
 fi
 
-# --- QtTermTCP ---
-if restore_file "${PERSISTENCE_PATH}/configs/qttermtcp/QtTermTCP.ini" "${HOME}/.config/QtTermTCP.ini" "QtTermTCP"; then
+# --- QtMercury ---
+mkdir -p "${HOME}/.config/emcomm-tools"
+if restore_file "${PERSISTENCE_PATH}/configs/QtMercury/qtmercury.ini" "${HOME}/.config/emcomm-tools/qtmercury.ini" "QtMercury"; then
     ((RESTORED++)) || true
 fi
-if [[ -f "${PERSISTENCE_PATH}/configs/qttermtcp/bbs-cache/bbscache.db" ]]; then
+
+# --- QtTermTCP ---
+if restore_file "${PERSISTENCE_PATH}/configs/QtTermTCP/QtTermTCP.ini" "${HOME}/QtTermTCP.ini" "QtTermTCP"; then
+    ((RESTORED++)) || true
+fi
+if [[ -f "${PERSISTENCE_PATH}/configs/QtTermTCP/bbs-cache/bbscache.db" ]]; then
     mkdir -p "${HOME}/.config/QtTermTCP/bbs-cache"
-    cp "${PERSISTENCE_PATH}/configs/qttermtcp/bbs-cache/bbscache.db" "${HOME}/.config/QtTermTCP/bbs-cache/" 2>/dev/null || true
+    cp "${PERSISTENCE_PATH}/configs/QtTermTCP/bbs-cache/bbscache.db" "${HOME}/.config/QtTermTCP/bbs-cache/" 2>/dev/null || true
     log "✓ Restored: QtTermTCP BBS Cache"
     ((RESTORED++)) || true
 fi
-if [[ -f "${PERSISTENCE_PATH}/configs/qttermtcp/bbs-directory/bbs-directory.db" ]]; then
+if [[ -f "${PERSISTENCE_PATH}/configs/QtTermTCP/bbs-directory/bbs-directory.db" ]]; then
     mkdir -p "${HOME}/.config/QtTermTCP/bbs-directory"
-    cp "${PERSISTENCE_PATH}/configs/qttermtcp/bbs-directory/bbs-directory.db" "${HOME}/.config/QtTermTCP/bbs-directory/" 2>/dev/null || true
+    cp "${PERSISTENCE_PATH}/configs/QtTermTCP/bbs-directory/bbs-directory.db" "${HOME}/.config/QtTermTCP/bbs-directory/" 2>/dev/null || true
     log "✓ Restored: QtTermTCP BBS Directory"
     ((RESTORED++)) || true
 fi

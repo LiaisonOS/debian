@@ -799,7 +799,8 @@ def index():
                            has_data=(len(repeaters) > 0),
                            total_count=len(repeaters),
                            last_updated=meta.get('last_updated', ''),
-                           saved_filters=saved_filters)
+                           saved_filters=saved_filters,
+                           touch_mode=config.get('touch_mode', False))
 
 
 def _import_worker(csv_text, filename):

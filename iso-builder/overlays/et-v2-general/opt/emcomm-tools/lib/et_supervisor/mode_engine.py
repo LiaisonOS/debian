@@ -164,6 +164,15 @@ class ModeEngine:
         self._current_mode = None
         self._mode_config = None
         self._modes_cache = {}
+        self._ipc = None  # Set by main after IPCServer is created
+
+    def set_ipc(self, ipc_server):
+        """Register the IPC server so we can broadcast status updates."""
+        self._ipc = ipc_server
+
+    def _broadcast_status(self):
+        if self._ipc:
+            self._ipc.broadcast_status()
 
     @property
     def current_mode(self):
@@ -331,6 +340,7 @@ class ModeEngine:
                 health_timeout=health_timeout,
                 env=step_env,
                 cwd=step_cwd,
+                ignore_exit=step.get("ignore_exit", False),
             )
 
             if not self._pm.start_process(proc_info):
@@ -355,6 +365,7 @@ class ModeEngine:
 
         self._current_mode = mode_id
         self._mode_config = config
+        self._broadcast_status()
         return True, _t("mode_started", mode_id)
 
     def _apply_modem_override(self, config, modem):
@@ -402,7 +413,7 @@ class ModeEngine:
                             },
                             "cwd": "~/.wine32/drive_c/VARA FM",
                             "health": {"type": "tcp-port", "port": 8300,
-                                       "timeout": 60},
+                                       "timeout": 60, "monitor": False},
                             "restart": "never",
                         })
                     else:
@@ -415,7 +426,7 @@ class ModeEngine:
                             },
                             "cwd": "~/.wine32/drive_c/VARA",
                             "health": {"type": "tcp-port", "port": 8300,
-                                       "timeout": 60},
+                                       "timeout": 60, "monitor": False},
                             "restart": "never",
                         })
                 else:
@@ -435,13 +446,13 @@ class ModeEngine:
                 if action.get("action") == "bbs-config":
                     action["template"] = bbs_template_map[modem]
 
-            # Update QtTermTCP.ini VARAFM/VARAHF flags
+            # Update QtTermTCP.ini VARAFM/VARAHF flags and ensure VARA is enabled
             conf_file = os.path.expanduser("~/.config/QtTermTCP.ini")
             if os.path.isfile(conf_file):
                 if modem == "vara-fm":
-                    updates = {"VARAFM": "1", "VARAHF": "0"}
+                    updates = {"VARAEnable": "1", "VARAFM": "1", "VARAHF": "0", "MERCURYEnable": "0"}
                 else:
-                    updates = {"VARAFM": "0", "VARAHF": "1"}
+                    updates = {"VARAEnable": "1", "VARAFM": "0", "VARAHF": "1", "MERCURYEnable": "0"}
                 self._update_ini_keys(conf_file, updates)
 
             # Add vara-fm-ptt-config pre_start action for VARA FM
@@ -450,6 +461,62 @@ class ModeEngine:
                     0, {"action": "vara-fm-ptt-config"})
 
             log.info("Modem override: VARA chain → %s", modem)
+
+        elif modem == "mercury":
+            # Remove direwolf config template
+            config["config"] = [
+                c for c in config.get("config", [])
+                if "direwolf" not in c.get("template", "")
+            ]
+
+            # Replace direwolf chain step with Mercury
+            new_chain = []
+            for step in config.get("chain", []):
+                if step["name"] == "direwolf":
+                    new_chain.append({
+                        "name": "mercury",
+                        "command": [
+                            "/usr/local/bin/mercury",
+                            "-C", "{mercury-ini}",
+                            "-p", "8300",
+                            "-b", "8100",
+                            "-L", "/tmp/mercury.log"
+                        ],
+                        "health": {
+                            "type": "tcp-port",
+                            "port": 8300,
+                            "timeout": 30,
+                            "monitor": False
+                        },
+                        "restart": "never",
+                    })
+                else:
+                    if step.get("depends_on") == "direwolf":
+                        step["depends_on"] = "mercury"
+                    new_chain.append(step)
+            config["chain"] = new_chain
+
+            # Swap BBS config template for Mercury (uses same port as VARA HF)
+            for action in config.get("pre_start", []):
+                if action.get("action") == "bbs-config":
+                    action["template"] = "bpq32.vara.cfg"
+
+            # Add mercury-config to pre_start
+            pre_start = config.setdefault("pre_start", [])
+            pre_start.append({"action": "mercury-config"})
+
+            # Add mercury-tnc-init, txlevel restore, and QtMercury launch to post_start
+            config.setdefault("post_start", []).insert(
+                0, {"action": "mercury-tnc-init"})
+            config["post_start"].append({"action": "mercury-txlevel-restore"})
+            config["post_start"].append({"action": "qtmercury-start"})
+
+            # Update QtTermTCP.ini for Mercury (VARA HF compatible)
+            conf_file = os.path.expanduser("~/.config/QtTermTCP.ini")
+            if os.path.isfile(conf_file):
+                self._update_ini_keys(conf_file, {"VARAFM": "0", "VARAHF": "1"})
+
+            log.info("Modem override: Mercury chain → bbs-client-qttermtcp")
 
         return config
 
@@ -472,6 +539,15 @@ class ModeEngine:
 
         self._pm.stop_all()
 
+        # Kill QtMercury if Mercury modem was used
+        if config:
+            chain = config.get("chain", [])
+            has_mercury = any(s.get("name") == "mercury" for s in chain)
+            if has_mercury:
+                subprocess.call(["pkill", "-f", "QtMercury"],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                log.info("QtMercury stopped")
+
         # Restart rigctld after Wine modes — Wine shares the serial port
         # and corrupts rigctld's connection. Same as unplugging/replugging.
         if config:
@@ -483,6 +559,7 @@ class ModeEngine:
 
         self._current_mode = None
         self._mode_config = None
+        self._broadcast_status()
         return True, _t("mode_stopped", mode_id)
 
     def handle_process_death(self, process_name, state):
@@ -497,6 +574,11 @@ class ModeEngine:
 
         Crash: follow restart policy, notify user.
         """
+        proc_info = self._pm.processes.get(process_name)
+        if proc_info and proc_info.ignore_exit:
+            log.info("Process %s exited — ignore_exit set, no cascade stop", process_name)
+            self._broadcast_status()
+            return
         if state == "STOPPED":
             self._cascade_stop(process_name)
         else:
@@ -532,6 +614,7 @@ class ModeEngine:
 
         self._current_mode = None
         self._mode_config = None
+        self._broadcast_status()
 
     def _handle_crash(self, process_name):
         """Handle a crashed process based on its restart policy.
@@ -666,6 +749,9 @@ class ModeEngine:
                 bbs_dir = os.path.expanduser(
                     "~/.local/share/emcomm-tools/bbs-server")
                 part = part.replace("{bbs_server_dir}", bbs_dir)
+            if "{mercury-ini}" in part:
+                mercury_ini = os.path.expanduser("~/.config/mercury/mercury.ini")
+                part = part.replace("{mercury-ini}", mercury_ini)
             resolved.append(part)
         return resolved
 
@@ -723,6 +809,14 @@ class ModeEngine:
             self._qsy_to_band_freq(action.get("frequencies", {}))
         elif action_type == "wait-audio":
             self._wait_for_audio(action.get("seconds", 3))
+        elif action_type == "mercury-config":
+            self._apply_mercury_config()
+        elif action_type == "mercury-tnc-init":
+            self._apply_mercury_tnc_init()
+        elif action_type == "mercury-txlevel-restore":
+            self._apply_mercury_txlevel_restore()
+        elif action_type == "qtmercury-start":
+            self._launch_qtmercury()
         else:
             log.warning("Unknown action: %s", action_type)
 
@@ -732,10 +826,9 @@ class ModeEngine:
         Returns True if Wine was running (serial port may be disrupted).
         """
         self._pm.stop_all()
-        # Check if Wine was running before killing it
+        # Always kill wineserver — ensures VARA starts clean even on second run
         wine_was_running = self._is_wineserver_running()
-        if wine_was_running:
-            self._kill_wineserver()
+        self._kill_wineserver()
         # Also kill any leftover processes from v1 scripts
         try:
             subprocess.run(
@@ -758,6 +851,160 @@ class ModeEngine:
             )
         except (FileNotFoundError, subprocess.TimeoutExpired) as e:
             log.warning("Audio config failed: %s", e)
+
+    def _apply_mercury_tnc_init(self):
+        """Send ARQ tuning commands to Mercury TNC after startup."""
+        import socket as _socket
+        commands = [b"RETRIES 15\r", b"CALLINT 5\r"]
+        try:
+            s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+            s.settimeout(5)
+            s.connect(("localhost", 8300))
+            for cmd in commands:
+                s.sendall(cmd)
+            s.close()
+            log.info("Mercury TNC init sent (RETRIES 15, CALLINT 5)")
+        except Exception as e:
+            log.warning("Mercury TNC init failed: %s", e)
+
+    def _apply_mercury_txlevel_restore(self):
+        """Restore last QtMercury TX level via Unix control socket."""
+        import socket as _socket
+        import configparser
+
+        ini_path = os.path.expanduser("~/.config/emcomm-tools/qtmercury.ini")
+        txlevel = 100
+        retries = 15
+        callint = 5
+
+        if os.path.isfile(ini_path):
+            cp = configparser.ConfigParser()
+            cp.read(ini_path)
+            section = "emcomm-tools\\qtmercury" if "emcomm-tools\\qtmercury" in cp else None
+            if section is None:
+                for s in cp.sections():
+                    if "qtmercury" in s.lower():
+                        section = s
+                        break
+            if section:
+                txlevel = int(cp[section].get("txlevel", 100))
+                retries = int(cp[section].get("retries", 15))
+                callint = int(cp[section].get("callint", 5))
+
+        sock_path = "/tmp/mercury-ctl.sock"
+        commands = [
+            f"TXLEVEL {txlevel}\r",
+            f"RETRIES {retries}\r",
+            f"CALLINT {callint}\r",
+        ]
+        try:
+            for cmd in commands:
+                s = _socket.socket(_socket.AF_UNIX, _socket.SOCK_STREAM)
+                s.settimeout(3)
+                s.connect(sock_path)
+                s.sendall(cmd.encode())
+                s.close()
+            log.info("Mercury TX level restored: TXLEVEL=%d RETRIES=%d CALLINT=%d",
+                     txlevel, retries, callint)
+        except Exception as e:
+            log.warning("Mercury TX level restore failed: %s", e)
+
+    def _launch_qtmercury(self):
+        """Launch QtMercury companion app in the background."""
+        try:
+            subprocess.Popen(
+                ["/usr/local/bin/QtMercury"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            log.info("QtMercury launched")
+        except Exception as e:
+            log.warning("Failed to launch QtMercury: %s", e)
+
+    def _apply_mercury_config(self):
+        """Write ~/.config/mercury/mercury.ini from current user/radio config."""
+        user_config = config_templater.load_user_config()
+        callsign = user_config.get("callsign", "N0CALL")
+
+        audio_device = config_templater._detect_audio_device("plughw:{card},{device}") or "plughw:0,0"
+
+        # Write softvol PCM to ~/.asoundrc so Mercury output can be
+        # fine-tuned (256 steps, -30dB to 0dB) via QtMercury.
+        asoundrc_path = os.path.expanduser("~/.asoundrc")
+        softvol_marker = "# mercury-softvol-begin"
+        softvol_block = (
+            "\n" + softvol_marker + "\n"
+            "pcm.mercury_out {\n"
+            "    type softvol\n"
+            f"    slave.pcm \"{audio_device}\"\n"
+            "    control {\n"
+            "        name \"Mercury TX Level\"\n"
+            "        card \"ET_AUDIO\"\n"
+            "    }\n"
+            "    min_dB -30.0\n"
+            "    max_dB 0.0\n"
+            "    resolution 256\n"
+            "}\n"
+            "# mercury-softvol-end\n"
+        )
+        existing = ""
+        if os.path.isfile(asoundrc_path):
+            with open(asoundrc_path) as f:
+                existing = f.read()
+        # Replace existing block or append
+        if softvol_marker in existing:
+            import re as _re
+            existing = _re.sub(
+                r"\n# mercury-softvol-begin.*?# mercury-softvol-end\n",
+                softvol_block,
+                existing,
+                flags=_re.DOTALL
+            )
+        else:
+            existing += softvol_block
+        with open(asoundrc_path, "w") as f:
+            f.write(existing)
+        log.info("Mercury softvol PCM written to %s", asoundrc_path)
+
+        ini_lines = [
+            "; Mercury init configuration — auto-generated by et-supervisor",
+            "",
+            "[main]",
+            f"input_device = {audio_device}",
+            "output_device = mercury_out",
+            "sound_system = alsa",
+            "capture_channel = left",
+            "arq_tcp_base_port = 8300",
+            "broadcast_tcp_port = 8100",
+            "radio_model = 2",
+            "radio_device = localhost:4532",
+            "ui_enabled = false",
+            "verbose = false",
+        ]
+
+        target_dir = os.path.expanduser("~/.config/mercury")
+        target_path = os.path.join(target_dir, "mercury.ini")
+        os.makedirs(target_dir, exist_ok=True)
+        with open(target_path, "w") as f:
+            f.write("\n".join(ini_lines) + "\n")
+
+        log.info("Mercury config written: %s (audio=%s, callsign=%s)",
+                 target_path, audio_device, callsign)
+
+        # Enable Mercury in QtTermTCP.ini — adds keys if missing
+        qttermtcp_ini = os.path.expanduser("~/.config/QtTermTCP.ini")
+        if os.path.isfile(qttermtcp_ini):
+            with open(qttermtcp_ini, encoding="latin-1") as f:
+                lines = f.readlines()
+            lines = self._ini_set_key(lines, "MERCURYEnable",   "1",        "General")
+            lines = self._ini_set_key(lines, "MERCURYTermCall",  callsign,   "General")
+            lines = self._ini_set_key(lines, "MERCURY500",       "1",        "General")
+            lines = self._ini_set_key(lines, "MERCURY2300",      "0",        "General")
+            lines = self._ini_set_key(lines, "MERCURY2750",      "0",        "General")
+            lines = self._ini_set_key(lines, "VARAEnable",       "0",        "General")
+            with open(qttermtcp_ini, "w", encoding="latin-1") as f:
+                f.writelines(lines)
+            log.info("QtTermTCP.ini: MERCURYEnable=1, callsign=%s", callsign)
 
     def _bind_rfcomm(self):
         """Bind /dev/rfcomm0 to a paired Bluetooth TNC radio.
@@ -1628,13 +1875,19 @@ class ModeEngine:
             log.warning("QtTermTCP.ini not found: %s", conf_file)
             return
 
-        updates = {
-            "AGWTermCall": callsign,
-            "MYCALL": callsign,
-            "VARATermCall": callsign,
-            "YAPPPath": os.path.expanduser("~/Downloads"),
-        }
-        self._update_ini_keys(conf_file, updates)
+        with open(conf_file, encoding="latin-1") as f:
+            lines = f.readlines()
+        for key, value in [
+            ("AGWTermCall",    callsign),
+            ("MYCALL",         callsign),
+            ("VARATermCall",   callsign),
+            ("MERCURYTermCall", callsign),
+            ("MERCURYEnable",  "0"),
+            ("YAPPPath",       os.path.expanduser("~/Downloads")),
+        ]:
+            lines = self._ini_set_key(lines, key, value, "General")
+        with open(conf_file, "w", encoding="latin-1") as f:
+            f.writelines(lines)
         log.info("QtTermTCP config updated: callsign=%s", callsign)
 
     def _setup_js8spotter(self):

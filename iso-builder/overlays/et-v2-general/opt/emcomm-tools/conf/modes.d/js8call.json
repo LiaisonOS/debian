@@ -37,6 +37,16 @@
         {"action": "kill-all"},
         {"action": "audio-config"},
         {"action": "prime-rigctld"},
+        {"action": "qsy-band", "frequencies": {
+            "80m": 3578000,
+            "40m": 7078000,
+            "30m": 10130000,
+            "20m": 14078000,
+            "17m": 18104000,
+            "15m": 21078000,
+            "12m": 24922000,
+            "10m": 28078000
+        }},
         {"action": "js8spotter-setup"}
     ],
     "chain": [

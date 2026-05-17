@@ -41,6 +41,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 
 app = Flask(__name__)
 app.secret_key = 'emcomm-tools-firstboot-va2ops'
+app.jinja_env.filters['basename'] = os.path.basename
 
 # =============================================================================
 # CONFIGURATION
@@ -356,21 +357,21 @@ def fix_ownership(path, recursive=True):
             # Use chown -R for efficiency
             subprocess.run(
                 ['sudo', 'chown', '-R', f'{current_user}:{ET_DATA_GROUP}', str(path)],
-                check=False, capture_output=True
+                check=False, capture_output=True, timeout=60
             )
             # Set group read/write permissions
             subprocess.run(
                 ['sudo', 'chmod', '-R', 'g+rwX', str(path)],
-                check=False, capture_output=True
+                check=False, capture_output=True, timeout=60
             )
         else:
             subprocess.run(
                 ['sudo', 'chown', f'{current_user}:{ET_DATA_GROUP}', str(path)],
-                check=False, capture_output=True
+                check=False, capture_output=True, timeout=10
             )
             subprocess.run(
                 ['sudo', 'chmod', 'g+rw', str(path)],
-                check=False, capture_output=True
+                check=False, capture_output=True, timeout=10
             )
         
         print(f"[OWNERSHIP] Fixed: {path} -> {current_user}:{ET_DATA_GROUP}")
@@ -512,8 +513,8 @@ def load_user_config():
         try:
             with open(USER_CONF) as f:
                 return json.load(f)
-        except:
-            pass
+        except Exception as e:
+            print(f"[load_user_config] Failed to read {USER_CONF}: {e}")
     return {'callsign': 'N0CALL', 'grid': '', 'latitude': '', 'longitude': '', 'winlinkPasswd': ''}
 
 def save_user_config(config):
@@ -535,12 +536,14 @@ def set_active_radio(radio_id):
             ACTIVE_RADIO_LINK.unlink()
         os.symlink(target.name, str(ACTIVE_RADIO_LINK))
         return True
-    except:
+    except Exception as e:
+        print(f"[set_active_radio] Symlink failed ({e}), retrying with sudo")
         try:
-            subprocess.run(['sudo', 'rm', '-f', str(ACTIVE_RADIO_LINK)], check=False)
-            subprocess.run(['sudo', 'ln', '-sf', target.name, str(ACTIVE_RADIO_LINK)], check=True, cwd=str(RADIOS_DIR))
+            subprocess.run(['sudo', 'rm', '-f', str(ACTIVE_RADIO_LINK)], check=False, timeout=10)
+            subprocess.run(['sudo', 'ln', '-sf', target.name, str(ACTIVE_RADIO_LINK)], check=True, cwd=str(RADIOS_DIR), timeout=10)
             return True
-        except:
+        except Exception as e2:
+            print(f"[set_active_radio] sudo fallback also failed: {e2}")
             return False
 
 def get_radios():
@@ -555,21 +558,21 @@ def get_radios():
                 data = json.load(fp)
                 data['filename'] = f.stem
                 radios.append(data)
-        except:
-            pass
+        except Exception as e:
+            print(f"[get_radios] Skipping {f.name}: {e}")
     return radios
 
 def get_usb_drives():
     drives = []
     try:
-        result = subprocess.run(['lsblk', '-J', '-o', 'NAME,SIZE,MOUNTPOINT,LABEL,HOTPLUG'], capture_output=True, text=True)
+        result = subprocess.run(['lsblk', '-J', '-o', 'NAME,SIZE,MOUNTPOINT,LABEL,HOTPLUG'], capture_output=True, text=True, timeout=10)
         data = json.loads(result.stdout)
         for device in data.get('blockdevices', []):
             for child in device.get('children', []):
                 if child.get('hotplug') and child.get('mountpoint'):
                     drives.append({'name': child.get('label') or child.get('name'), 'path': child.get('mountpoint'), 'size': child.get('size')})
-    except:
-        pass
+    except Exception as e:
+        print(f"[get_usb_drives] lsblk failed: {e}")
     media_path = Path(f"/media/{get_current_user()}")
     if media_path.exists():
         for d in media_path.iterdir():
@@ -585,20 +588,34 @@ def check_path_writable(path):
         test_file.touch()
         test_file.unlink()
         return True
-    except:
+    except Exception as e:
+        print(f"[check_path_writable] {path} not writable: {e}")
         return False
 
-def create_symlinks():
-    usb_path = Path(session.get('usb_path', ''))
-    if not usb_path.exists():
-        return []
+def create_symlinks(usb_path=None):
+    if usb_path is None:
+        usb_path = session.get('usb_path', '')
+    usb_path = Path(usb_path) if usb_path else Path('')
+
+    # Validate: must be an absolute, existing path — not cwd fallback
+    if not usb_path.is_absolute() or not usb_path.exists():
+        msg = f"Warning: USB path not available ({usb_path}) — skipping USB symlinks"
+        print(f"[SYMLINKS] {msg}")
+        results = [msg]
+        # Still seed from skel (ISO baked-in tilesets work without USB)
+        results.extend(seed_tilesets_from_skel())
+        results.extend(seed_maps_from_skel())
+        results.extend(seed_navit_from_skel())
+        return results
+
     results = []
-    
+    print(f"[SYMLINKS] Creating symlinks from USB: {usb_path}")
+
     # YAAC tiledir for offline map tiles (slippy map format)
     YAAC_TILEDIR = Path.home() / "YAAC" / "tiledir"
     # Navit maps directory for .bin navigation maps
     NAVIT_MAPS = Path.home() / ".navit" / "maps"
-    
+
     # =========================================================================
     # TILESETS: Smart merge (skel + USB, per-file symlinks)
     # If ISO has baked-in tilesets in /etc/skel/, symlink those first,
@@ -606,7 +623,7 @@ def create_symlinks():
     # =========================================================================
     skel_results = seed_tilesets_from_skel()
     results.extend(skel_results)
-    
+
     usb_tilesets = usb_path / "tilesets"
     if not usb_tilesets.exists():
         try:
@@ -614,26 +631,37 @@ def create_symlinks():
             results.append(f"Created: {usb_tilesets}")
         except Exception as e:
             results.append(f"Error creating {usb_tilesets}: {e}")
-    
+
     if usb_tilesets.exists():
-        TILESET_DIR.mkdir(parents=True, exist_ok=True)
-        for usb_file in usb_tilesets.glob("*.mbtiles"):
-            user_file = TILESET_DIR / usb_file.name
-            # Skip if already exists (from skel or elsewhere)
-            if user_file.exists():
-                continue
-            # Remove broken symlinks
-            if user_file.is_symlink():
-                user_file.unlink()
-            user_file.symlink_to(usb_file)
-            results.append(f"Linked: {usb_file.name} -> {usb_file}")
-    
+        try:
+            TILESET_DIR.mkdir(parents=True, exist_ok=True)
+            mbtiles_files = list(usb_tilesets.glob("*.mbtiles"))
+            if not mbtiles_files:
+                results.append(f"Note: No .mbtiles found in {usb_tilesets}")
+            for usb_file in mbtiles_files:
+                user_file = TILESET_DIR / usb_file.name
+                # Skip if already exists (from skel or elsewhere)
+                if user_file.exists():
+                    continue
+                # Remove broken symlinks
+                if user_file.is_symlink():
+                    user_file.unlink()
+                try:
+                    user_file.symlink_to(usb_file)
+                    results.append(f"Linked: {usb_file.name} -> {usb_file}")
+                except Exception as e:
+                    results.append(f"Error linking {usb_file.name}: {e}")
+                    print(f"[SYMLINKS] tileset link error: {e}")
+        except Exception as e:
+            results.append(f"Error processing tilesets: {e}")
+            print(f"[SYMLINKS] tilesets error: {e}")
+
     # =========================================================================
     # MY-MAPS: Smart merge (skel + USB, per-file symlinks)
     # =========================================================================
     skel_map_results = seed_maps_from_skel()
     results.extend(skel_map_results)
-    
+
     usb_maps = usb_path / "my-maps"
     if not usb_maps.exists():
         try:
@@ -641,24 +669,30 @@ def create_symlinks():
             results.append(f"Created: {usb_maps}")
         except Exception as e:
             results.append(f"Error creating {usb_maps}: {e}")
-    
+
     if usb_maps.exists():
-        PBF_MAP_DIR.mkdir(parents=True, exist_ok=True)
-        for usb_file in usb_maps.glob("*.pbf"):
-            user_file = PBF_MAP_DIR / usb_file.name
-            if user_file.exists():
-                continue
-            if user_file.is_symlink():
-                user_file.unlink()
-            user_file.symlink_to(usb_file)
-            results.append(f"Linked: {usb_file.name} -> {usb_file}")
-    
+        try:
+            PBF_MAP_DIR.mkdir(parents=True, exist_ok=True)
+            for usb_file in usb_maps.glob("*.pbf"):
+                user_file = PBF_MAP_DIR / usb_file.name
+                if user_file.exists():
+                    continue
+                if user_file.is_symlink():
+                    user_file.unlink()
+                try:
+                    user_file.symlink_to(usb_file)
+                    results.append(f"Linked: {usb_file.name} -> {usb_file}")
+                except Exception as e:
+                    results.append(f"Error linking {usb_file.name}: {e}")
+        except Exception as e:
+            results.append(f"Error processing my-maps: {e}")
+
     # =========================================================================
     # NAVIT MAPS: Smart merge (skel + USB, per-file symlinks)
     # =========================================================================
     skel_navit_results = seed_navit_from_skel()
     results.extend(skel_navit_results)
-    
+
     usb_navit = usb_path / "navit-maps"
     if not usb_navit.exists():
         try:
@@ -666,24 +700,30 @@ def create_symlinks():
             results.append(f"Created: {usb_navit}")
         except Exception as e:
             results.append(f"Error creating {usb_navit}: {e}")
-    
+
     if usb_navit.exists():
-        NAVIT_MAP_DIR.mkdir(parents=True, exist_ok=True)
-        for usb_file in usb_navit.glob("*.bin"):
-            user_file = NAVIT_MAP_DIR / usb_file.name
-            if user_file.exists():
-                continue
-            if user_file.is_symlink():
-                user_file.unlink()
-            user_file.symlink_to(usb_file)
-            results.append(f"Linked: {usb_file.name} -> {usb_file}")
-    
+        try:
+            NAVIT_MAP_DIR.mkdir(parents=True, exist_ok=True)
+            for usb_file in usb_navit.glob("*.bin"):
+                user_file = NAVIT_MAP_DIR / usb_file.name
+                if user_file.exists():
+                    continue
+                if user_file.is_symlink():
+                    user_file.unlink()
+                try:
+                    user_file.symlink_to(usb_file)
+                    results.append(f"Linked: {usb_file.name} -> {usb_file}")
+                except Exception as e:
+                    results.append(f"Error linking {usb_file.name}: {e}")
+        except Exception as e:
+            results.append(f"Error processing navit-maps: {e}")
+
     # =========================================================================
     # OTHER DIRS: Directory-level symlinks to USB (unchanged behavior)
     # =========================================================================
     for src_name, dest_dir in [("tiledir", YAAC_TILEDIR)]:
         usb_dir = usb_path / src_name
-        
+
         # Create the USB directory if it doesn't exist
         if not usb_dir.exists():
             try:
@@ -692,52 +732,70 @@ def create_symlinks():
             except Exception as e:
                 results.append(f"Error creating {usb_dir}: {e}")
                 continue
-        
+
         if usb_dir.exists():
-            dest_dir.parent.mkdir(parents=True, exist_ok=True)
-            if dest_dir.exists() and not dest_dir.is_symlink():
-                backup = dest_dir.with_name(f"{src_name}.backup.{int(time.time())}")
-                dest_dir.rename(backup)
-                results.append(f"Backed up: {backup}")
-            if dest_dir.is_symlink():
-                dest_dir.unlink()
-            dest_dir.symlink_to(usb_dir)
-            results.append(f"Linked: {dest_dir} -> {usb_dir}")
-    
+            try:
+                dest_dir.parent.mkdir(parents=True, exist_ok=True)
+                if dest_dir.exists() and not dest_dir.is_symlink():
+                    backup = dest_dir.with_name(f"{src_name}.backup.{int(time.time())}")
+                    dest_dir.rename(backup)
+                    results.append(f"Backed up: {backup}")
+                if dest_dir.is_symlink():
+                    dest_dir.unlink()
+                dest_dir.symlink_to(usb_dir)
+                results.append(f"Linked: {dest_dir} -> {usb_dir}")
+            except Exception as e:
+                results.append(f"Error linking {src_name}: {e}")
+                print(f"[SYMLINKS] {src_name} link error: {e}")
+
     # =========================================================================
     # YAAC MAPCACHE: Per-file symlinks to USB (.db tile caches)
     # Replace local files with symlinks — USB version has cached tiles
     # =========================================================================
     usb_mapcache = usb_path / "YAAC-MapCache"
     if usb_mapcache.exists():
-        YAAC_MAPCACHE = Path.home() / "YAAC" / "mapcache"
-        YAAC_MAPCACHE.mkdir(parents=True, exist_ok=True)
-        for db_file in usb_mapcache.glob("*.db"):
-            local_file = YAAC_MAPCACHE / db_file.name
-            if local_file.is_symlink():
-                local_file.unlink()
-            elif local_file.exists():
-                local_file.unlink()
-            local_file.symlink_to(db_file)
-            results.append(f"Linked: {db_file.name} -> {db_file}")
+        try:
+            YAAC_MAPCACHE = Path.home() / "YAAC" / "mapcache"
+            YAAC_MAPCACHE.mkdir(parents=True, exist_ok=True)
+            for db_file in usb_mapcache.glob("*.db"):
+                local_file = YAAC_MAPCACHE / db_file.name
+                if local_file.is_symlink():
+                    local_file.unlink()
+                elif local_file.exists():
+                    local_file.unlink()
+                try:
+                    local_file.symlink_to(db_file)
+                    results.append(f"Linked: {db_file.name} -> {db_file}")
+                except Exception as e:
+                    results.append(f"Error linking {db_file.name}: {e}")
+        except Exception as e:
+            results.append(f"Error processing YAAC-MapCache: {e}")
 
     usb_wiki = usb_path / "wikipedia"
     if usb_wiki.exists():
-        ZIM_DIR.mkdir(parents=True, exist_ok=True)
-        for item in ZIM_DIR.iterdir():
-            if item.is_symlink():
-                try:
-                    if not item.resolve().exists():
+        try:
+            ZIM_DIR.mkdir(parents=True, exist_ok=True)
+            for item in ZIM_DIR.iterdir():
+                if item.is_symlink():
+                    try:
+                        if not item.resolve().exists():
+                            item.unlink()
+                    except Exception as e:
+                        print(f"[symlink cleanup] Removing broken symlink {item}: {e}")
                         item.unlink()
-                except:
-                    item.unlink()
-        for zim_file in usb_wiki.glob("*.zim"):
-            local_file = ZIM_DIR / zim_file.name
-            if local_file.is_symlink():
-                local_file.unlink()
-            if not local_file.exists():
-                local_file.symlink_to(zim_file)
-                results.append(f"Linked: {zim_file.name}")
+            for zim_file in usb_wiki.glob("*.zim"):
+                local_file = ZIM_DIR / zim_file.name
+                if local_file.is_symlink():
+                    local_file.unlink()
+                if not local_file.exists():
+                    try:
+                        local_file.symlink_to(zim_file)
+                        results.append(f"Linked: {zim_file.name}")
+                    except Exception as e:
+                        results.append(f"Error linking {zim_file.name}: {e}")
+        except Exception as e:
+            results.append(f"Error processing wikipedia: {e}")
+            print(f"[SYMLINKS] wikipedia error: {e}")
     return results
 
 def create_symlinks_for_uncopied(usb_path, copied_categories):
@@ -840,7 +898,8 @@ def create_symlinks_for_uncopied(usb_path, copied_categories):
                             try:
                                 if not item.resolve().exists():
                                     item.unlink()
-                            except:
+                            except Exception as e:
+                                print(f"[symlink cleanup] Removing broken symlink {item}: {e}")
                                 item.unlink()
                     # Create symlinks for each zim file
                     for zim_file in usb_wiki.glob("*.zim"):
@@ -951,7 +1010,8 @@ def generate_radio_config_document():
         docs_dir = Path.home() / "Documents"
         docs_dir.mkdir(parents=True, exist_ok=True)
 
-        doc_path = docs_dir / "emcomm-tools-radio-config.txt"
+        safe_model = f"{vendor}-{model}".replace(' ', '_').replace('/', '-')
+        doc_path = docs_dir / f"liaisonos-radio-{safe_model}.txt"
         with open(doc_path, 'w') as f:
             f.write('\n'.join(lines))
 
@@ -1123,7 +1183,7 @@ def restore_from_persistence():
         
         if os.path.exists(restore_script):
             print("[PERSISTENCE] Calling et-persistence-restore...")
-            result = subprocess.run([restore_script], capture_output=True, text=True)
+            result = subprocess.run([restore_script], capture_output=True, text=True, timeout=300)
             print(result.stdout)
             if result.stderr:
                 print(result.stderr)
@@ -1190,8 +1250,8 @@ def save_to_persistence():
                     if usb_callsign != 'N0CALL':
                         print(f"[PERSISTENCE] SAFETY: Not overwriting {usb_callsign} with N0CALL!")
                         return False
-                except:
-                    pass  # USB file unreadable, OK to overwrite
+                except Exception as e:
+                    print(f"[save_to_persistence] USB config unreadable, allowing overwrite: {e}")
             
             # Preserve Winlink password from USB if local doesn't have one
             if not local_config.get('winlinkPasswd') and usb_user_json.exists():
@@ -1503,7 +1563,8 @@ def drive_setup():
                         (usb / d).mkdir(exist_ok=True)
                     # Fix ownership immediately after creating directories
                     fix_usb_ownership(usb_path)
-                except:
+                except Exception as e:
+                    print(f"[usb_setup] Failed to create directories on USB: {e}")
                     return render_template('drive_setup.html', drives=get_usb_drives(), error_message=t('usb_read_only'))
         return redirect(url_for('download_tiles'))
     return render_template('drive_setup.html', drives=get_usb_drives(), error_message=None)
@@ -1562,7 +1623,7 @@ def api_download_tile():
         try:
             subprocess.run(
                 ['curl', '-L', '-f', '-o', str(dest_file)] + extra_args + [url],
-                check=True, capture_output=True
+                check=True, capture_output=True, timeout=1800
             )
             fix_ownership(dest_file, recursive=False)
             return jsonify({'success': True})
@@ -1639,9 +1700,10 @@ def api_download_osm():
         # Fix ownership of downloaded file
         fix_ownership(dest_file, recursive=False)
         return jsonify({'success': True})
-    except:
+    except Exception as e:
+        print(f"[api_download_kiwix] Download failed: {e}")
         dest_file.unlink(missing_ok=True)
-        return jsonify({'success': False, 'error': 'Timeout'})
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/download/wiki', methods=['GET', 'POST'])
 def download_wiki():
@@ -1670,8 +1732,8 @@ def api_wiki_files():
             files[lang].append({'name': fn, 'display': fn.replace('.zim',''), 'size': sz+('' if sz[-1] in 'KMGT' else 'B'), 'exists': fn in existing})
         files['en'].sort(key=lambda x: x['name'])
         files['fr'].sort(key=lambda x: x['name'])
-    except:
-        pass
+    except Exception as e:
+        print(f"[api_wiki_files] Failed to fetch wiki file list: {e}")
     return jsonify({'files': files})
 
 @app.route('/download/wiki/progress')
@@ -1693,8 +1755,9 @@ def api_download_wiki():
         # Fix ownership of downloaded file
         fix_ownership(dest_file, recursive=False)
         return jsonify({'success': True})
-    except:
-        return jsonify({'success': False, 'error': 'Download failed'})
+    except Exception as e:
+        print(f"[api_download_wiki] Download of {fn} failed: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/drive/check', methods=['POST'])
 def api_check_drive():
@@ -2061,7 +2124,7 @@ def complete():
         symlinks = create_symlinks_for_uncopied(usb_path, copied_categories)
     elif session.get('drive_type') == 'usb':
         # USB mode (normal flow or live boot) - create all symlinks
-        symlinks = create_symlinks()
+        symlinks = create_symlinks(usb_path)
     elif session.get('restored_from_usb', False) and usb_path:
         # Restored from USB but skipped data_transfer - create all symlinks
         print(f"[COMPLETE] Restored from USB, creating all symlinks")
@@ -2079,7 +2142,7 @@ def complete():
         enable_save_menu_script = "/opt/emcomm-tools/bin/et-persistence/et-enable-save-menu"
         if os.path.exists(enable_save_menu_script):
             try:
-                subprocess.run([enable_save_menu_script], capture_output=True, text=True)
+                subprocess.run([enable_save_menu_script], capture_output=True, text=True, timeout=10)
                 print("[COMPLETE] Save menu enabled")
             except Exception as e:
                 print(f"[COMPLETE] Failed to enable save menu: {e}")
@@ -2144,6 +2207,17 @@ def api_quit():
 def run_flask(port):
     app.run(host='127.0.0.1', port=port, debug=False, use_reloader=False, threaded=True)
 
+def wait_for_flask(port, timeout=5):
+    """Poll until Flask is accepting connections or timeout expires."""
+    import socket as _socket
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with _socket.create_connection(('127.0.0.1', port), timeout=0.1):
+                return
+        except OSError:
+            time.sleep(0.05)
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='LiaisonOS First Boot Wizard')
@@ -2158,7 +2232,7 @@ def main():
         cal = Path.home() / "Desktop" / "calamares-install-debian.desktop"
         if cal.exists():
             try: cal.unlink()
-            except: pass
+            except Exception as e: print(f"[main] Failed to remove calamares desktop icon: {e}")
 
     if not args.force:
         flag = Path.home() / ".config" / "emcomm-tools" / ".firstboot-complete"
@@ -2180,11 +2254,12 @@ def main():
                 win_w = min(600, w-40) if w <= 1024 else 650
                 win_h = h - 98
                 x, y = (w - win_w) // 2, 10
-            except:
+            except Exception as e:
+                print(f"[main] Screen detection failed, using defaults: {e}")
                 win_w, win_h, x, y = 650, 550, None, None
             
             threading.Thread(target=run_flask, args=(args.port,), daemon=True).start()
-            time.sleep(1)
+            wait_for_flask(args.port)
             webview.create_window('LiaisonOS', f'http://127.0.0.1:{args.port}', width=win_w, height=win_h, resizable=True, min_size=(500, 450), x=x, y=y, frameless=False)
             webview.start()
         except ImportError:

@@ -30,7 +30,7 @@
         {% if radio_doc %}
         <div style="margin-top: 20px; background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 8px; padding: 15px;">
             <span style="color: #FF9800;">📻 {{ t('radio_config_saved_to') }}:<br>
-            <code style="font-size: 0.85rem;">~/Documents/emcomm-tools-radio-config.txt</code></span>
+            <code style="font-size: 0.85rem;">~/Documents/{{ radio_doc | basename }}</code></span>
         </div>
         {% endif %}
 

@@ -41,10 +41,11 @@
         },
         {
             "name": "linbpq",
-            "command": ["xfce4-terminal", "--title=LinBPQ BBS Server", "--working-directory={bbs_server_dir}", "-e", "linbpq"],
+            "command": ["QtTerminal", "--title=LinBPQ BBS Server", "--working-directory={bbs_server_dir}", "-e", "linbpq"],
             "cwd": "~/.local/share/emcomm-tools/bbs-server",
             "health": {},
             "restart": "never",
+            "ignore_exit": true,
             "depends_on": "direwolf"
         }
     ],

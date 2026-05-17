@@ -22,6 +22,10 @@
         .gps-note { font-size: 0.82rem; color: #9dbfad; background: #1a2a1a; border-left: 3px solid #4ade80; padding: 0.6rem 0.8rem; border-radius: 4px; margin-bottom: 1rem; }
         .btn { padding: 0.7rem 2rem; background: #FFA500; color: #1a1a1a; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; }
         .btn:hover { background: #ff8c00; }
+        .clock-box { text-align: center; margin-bottom: 1.5rem; }
+        .clock-label { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.2rem; }
+        .clock { font-family: 'Courier New', monospace; font-size: 2.8rem; font-weight: 700; color: #4ade80; letter-spacing: 0.05em; }
+        .clock.syncing { color: #FFA500; }
     </style>
 </head>
 <body>
@@ -34,16 +38,33 @@
             <div class="log-line"><span class="spinner"></span> Starting...</div>
         </div>
 
+        <div class="clock-box">
+            <div class="clock-label">System Time (UTC)</div>
+            <div class="clock syncing" id="clock">--:--:--</div>
+        </div>
+
         <div class="gps-note" id="gps-note" style="display:none;">
             GPS mode is active. Enable <strong>Track</strong> in the dashboard to continuously update your grid location.<br>
             Close this window to keep GPS running in the background.
         </div>
 
         <button class="btn" id="stop-gps-btn" style="display:none; background:#f87171; margin-right:0.5rem;" onclick="stopGps()">Stop GPS</button>
+        <button class="btn" id="retry-btn" style="display:none; background:#60a5fa; margin-right:0.5rem;" onclick="retrySync()">Retry</button>
         <button class="btn" id="done-btn" style="display:none;" onclick="closeWindow()">Close</button>
     </div>
 
 <script>
+    const clockEl = document.getElementById('clock');
+    function updateClock() {
+        const now = new Date();
+        const h = String(now.getUTCHours()).padStart(2, '0');
+        const m = String(now.getUTCMinutes()).padStart(2, '0');
+        const s = String(now.getUTCSeconds()).padStart(2, '0');
+        clockEl.textContent = `${h}:${m}:${s}`;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
     const mac = "{{ mac }}";
     const mode = "{{ mode }}";
     const logEl = document.getElementById('log');
@@ -79,6 +100,7 @@
             sep();
 
             if (msg.success) {
+                clockEl.classList.remove('syncing');
                 if (mode === 'gps') {
                     addLog('✓ GPS Mode Active', 'success');
                     document.getElementById('title').textContent = 'GPS Mode Active';
@@ -114,6 +136,7 @@
                 document.getElementById('title').style.color = '#f87171';
                 document.getElementById('subtitle').textContent = 'Could not complete connection';
                 document.getElementById('done-btn').textContent = 'Close';
+                document.getElementById('retry-btn').style.display = 'inline-block';
             }
 
             document.getElementById('done-btn').style.display = 'inline-block';
@@ -125,6 +148,10 @@
             addLog('▸ ' + msg.msg);
         }
     };
+
+    function retrySync() {
+        location.reload();
+    }
 
     function closeWindow() {
         try { window.pywebview.api.close(); } catch(e) {}

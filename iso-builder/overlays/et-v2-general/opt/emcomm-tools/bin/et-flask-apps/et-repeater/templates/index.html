@@ -11,7 +11,57 @@
         <button class="drawer-close" onclick="toggleDrawer()">&times;</button>
     </div>
 
-    <!-- Import / Clear -->
+    {% if touch_mode %}
+    <!-- Touch mode: large filter controls inside drawer -->
+    {% if has_data %}
+    <div class="tfp-section-label">BAND <span class="tfp-hint">(multi-select)</span></div>
+    <div class="tfp-grid" id="tf-band">
+        <button class="tfp-btn tfp-btn-wide tfp-active" data-val="all" onclick="tfBandAll(this)">ALL</button>
+        <button class="tfp-btn" data-val="2m"    onclick="tfBandToggle(this)">2m</button>
+        <button class="tfp-btn" data-val="70cm"  onclick="tfBandToggle(this)">70cm</button>
+        <button class="tfp-btn" data-val="1.25m" onclick="tfBandToggle(this)">1.25m</button>
+        <button class="tfp-btn" data-val="6m"    onclick="tfBandToggle(this)">6m</button>
+        <button class="tfp-btn" data-val="10m"   onclick="tfBandToggle(this)">10m</button>
+    </div>
+
+    <div class="tfp-section-label">MODE</div>
+    <div class="tfp-grid" id="tf-mode">
+        <button class="tfp-btn tfp-btn-wide tfp-active" data-val="all"   onclick="tfSelect('mode',this)">ALL</button>
+        <button class="tfp-btn" data-val="fm"    onclick="tfSelect('mode',this)">FM</button>
+        <button class="tfp-btn" data-val="dmr"   onclick="tfSelect('mode',this)">DMR</button>
+        <button class="tfp-btn" data-val="dstar" onclick="tfSelect('mode',this)">D-STAR</button>
+        <button class="tfp-btn" data-val="ysf"   onclick="tfSelect('mode',this)">YSF</button>
+        <button class="tfp-btn" data-val="p25"   onclick="tfSelect('mode',this)">P25</button>
+        <button class="tfp-btn" data-val="nxdn"  onclick="tfSelect('mode',this)">NXDN</button>
+    </div>
+
+    {% if has_position %}
+    <div class="tfp-section-label">MAX DISTANCE</div>
+    <div class="tfp-grid" id="tf-dist">
+        <button class="tfp-btn" data-val="5"   onclick="tfSelect('dist',this)">5 km</button>
+        <button class="tfp-btn" data-val="10"  onclick="tfSelect('dist',this)">10 km</button>
+        <button class="tfp-btn" data-val="25"  onclick="tfSelect('dist',this)">25 km</button>
+        <button class="tfp-btn tfp-active" data-val="50"  onclick="tfSelect('dist',this)">50 km</button>
+        <button class="tfp-btn" data-val="100" onclick="tfSelect('dist',this)">100 km</button>
+        <button class="tfp-btn" data-val="150" onclick="tfSelect('dist',this)">150 km</button>
+        <button class="tfp-btn" data-val=""    onclick="tfSelect('dist',this)">ALL</button>
+    </div>
+    {% endif %}
+
+    <div class="tfp-section-label">FAVOURITES</div>
+    <div class="tfp-grid">
+        <button class="tfp-btn tfp-btn-wide" id="tf-fav-btn" onclick="tfToggleFav()">&#9733; Show Favourites Only</button>
+    </div>
+
+    <div class="drawer-section drawer-info">
+        <span>{{ t['data_info'].replace('{count}', total_count|string) }}</span>
+        {% if last_updated %}<br><span>{{ t['last_updated'] }}: {{ last_updated }}</span>{% endif %}
+        <br><span id="filter-count"></span>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Desktop mode: import/clear + filters -->
     <div class="drawer-section">
         <label class="btn btn-primary import-btn drawer-btn" id="import-btn">
             {{ t['import_csv'] }}
@@ -23,7 +73,6 @@
     </div>
 
     {% if has_data %}
-    <!-- Filters -->
     <div class="drawer-section">
         <label class="drawer-label">{{ t['band'] }}</label>
         <select id="band-filter" onchange="applyFilters()" class="drawer-select">
@@ -34,7 +83,6 @@
             <option value="1.25m">1.25m</option>
             <option value="70cm">70cm</option>
         </select>
-
         <label class="drawer-label">{{ t['mode'] }}</label>
         <select id="mode-filter" onchange="applyFilters()" class="drawer-select">
             <option value="all">{{ t['all_modes'] }}</option>
@@ -45,7 +93,6 @@
             <option value="p25">P25</option>
             <option value="nxdn">NXDN</option>
         </select>
-
         {% if has_position %}
         <label class="drawer-label">{{ t['max_distance'] }}</label>
         <select id="max-distance" onchange="applyFilters()" class="drawer-select">
@@ -61,7 +108,6 @@
             <option value="">{{ t['all_bands'] }}</option>
         </select>
         {% endif %}
-
         <div class="drawer-toggle-row">
             <span class="drawer-toggle-label">{{ t['show_favorites'] }}</span>
             <label class="toggle-switch">
@@ -70,8 +116,6 @@
             </label>
         </div>
     </div>
-
-    <!-- Info -->
     <div class="drawer-section drawer-info">
         <span>{{ t['data_info'].replace('{count}', total_count|string) }}</span>
         {% if last_updated %}<br><span>{{ t['last_updated'] }}: {{ last_updated }}</span>{% endif %}
@@ -88,6 +132,7 @@
         <p>{{ t['how_to_4'] }}</p>
         <p style="margin-top:8px; color: var(--accent-primary);">{{ t['import_multiple'] }}</p>
     </div>
+    {% endif %}
     {% endif %}
 </div>
 
@@ -124,8 +169,15 @@
     <div class="alert alert-error" id="error-alert"></div>
     <div class="alert alert-success" id="success-alert"></div>
 
-    <!-- Repeater table -->
-    <div id="repeater-container" style="display:none;">
+    <!-- Touch card grid (touch mode only) -->
+    {% if touch_mode %}
+    <div id="touch-card-container" style="display:none;">
+        <div class="touch-card-grid" id="touch-card-grid"></div>
+    </div>
+    {% endif %}
+
+    <!-- Repeater table (desktop mode only) -->
+    <div id="repeater-container" style="display:none;" {% if touch_mode %}hidden{% endif %}>
         <div class="table-wrapper">
             <table class="repeater-table" id="repeater-table">
                 <thead>
@@ -214,6 +266,7 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -225,6 +278,7 @@
         if (isOpen) {
             drawer.classList.remove('drawer-open');
             overlay.style.display = 'none';
+            if (TOUCH_MODE) applyTouchFilters();
         } else {
             drawer.classList.add('drawer-open');
             overlay.style.display = 'block';
@@ -238,6 +292,7 @@
     let currentSort = { key: hasPosition ? 'distance' : 'frequency', dir: 'asc' };
     let activeFrequency = null;
     const savedFilters = {{ saved_filters | tojson }};
+    const TOUCH_MODE = {{ 'true' if touch_mode else 'false' }};
 
     function restoreFilters() {
         if (!savedFilters || !hasData) return;
@@ -641,6 +696,21 @@
 
         renderTable(filtered);
         updateFilterCount(filtered.length);
+        if (TOUCH_MODE) { renderTouchCards(filtered); }
+
+        if (TOUCH_MODE) {
+            const c = document.getElementById('touch-card-container');
+            const noResults = document.getElementById('no-results-msg');
+            const noData = document.getElementById('no-data-msg');
+            if (filtered.length > 0) {
+                c.style.display = 'block';
+                noResults.style.display = 'none';
+                if (noData) noData.style.display = 'none';
+            } else {
+                c.style.display = 'none';
+                noResults.style.display = 'block';
+            }
+        }
     }
 
     function toggleFav(repeater, starEl) {
@@ -970,9 +1040,146 @@
     setInterval(checkTracking, 10000);
     checkTracking();
 
-    if (hasData) {
+    if (hasData && !TOUCH_MODE) {
         restoreFilters();
         applyFilters();
+    }
+
+    // -----------------------------------------------------------------------
+    // Touch UI — only active when TOUCH_MODE is true
+    // -----------------------------------------------------------------------
+
+    // Declared at top level so toggleDrawer can call applyTouchFilters()
+    var tfState = {
+        bands: new Set(),
+        mode:  (savedFilters.mode || 'all'),
+        dist:  (savedFilters.max_distance || (hasPosition ? '50' : '')),
+        fav:   (savedFilters.favorites || false)
+    };
+
+
+        function tfBandAll(btn) {
+            tfState.bands.clear();
+            btn.closest('#tf-band').querySelectorAll('.tfp-btn').forEach(function(b) { b.classList.remove('tfp-active'); });
+            btn.classList.add('tfp-active');
+            applyTouchFilters();
+        }
+
+        function tfBandToggle(btn) {
+            const val = btn.dataset.val;
+            const allBtn = btn.closest('#tf-band').querySelector('[data-val="all"]');
+            if (tfState.bands.has(val)) {
+                tfState.bands.delete(val);
+                btn.classList.remove('tfp-active');
+                if (tfState.bands.size === 0 && allBtn) allBtn.classList.add('tfp-active');
+            } else {
+                tfState.bands.add(val);
+                btn.classList.add('tfp-active');
+                if (allBtn) allBtn.classList.remove('tfp-active');
+            }
+            applyTouchFilters();
+        }
+
+        function tfSelect(group, btn) {
+            btn.parentElement.querySelectorAll('.tfp-btn').forEach(function(b) { b.classList.remove('tfp-active'); });
+            btn.classList.add('tfp-active');
+            tfState[group] = btn.dataset.val;
+            applyTouchFilters();
+        }
+
+        function tfToggleFav() {
+            tfState.fav = !tfState.fav;
+            document.getElementById('tf-fav-btn').classList.toggle('tfp-active', tfState.fav);
+            applyTouchFilters();
+        }
+
+        function applyTouchFilters() {
+            // Fetch with no band filter — we do multi-band client-side
+            const params = new URLSearchParams({ band: 'all', mode: tfState.mode, max_distance: tfState.dist });
+            fetch('/api/repeaters?' + params.toString())
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    let repeaters = data.repeaters;
+                    // Multi-band filter client-side
+                    if (tfState.bands.size > 0) {
+                        repeaters = repeaters.filter(function(r) {
+                            return tfState.bands.has(freqToBand(r.frequency));
+                        });
+                    }
+                    if (tfState.fav) repeaters = repeaters.filter(function(r) { return r.favorite; });
+                    currentRepeaters = repeaters;
+                    sortRepeaters();
+                    renderTouchCards(repeaters);
+                    const c = document.getElementById('touch-card-container');
+                    const noResults = document.getElementById('no-results-msg');
+                    const noData = document.getElementById('no-data-msg');
+                    if (repeaters.length > 0) {
+                        c.style.display = 'block';
+                        noResults.style.display = 'none';
+                        noData.style.display = 'none';
+                    } else {
+                        c.style.display = 'none';
+                        noResults.style.display = data.total > 0 ? 'block' : 'none';
+                        noData.style.display = data.total > 0 ? 'none' : 'block';
+                    }
+                });
+        }  // end applyTouchFilters
+
+        function freqToBand(mhz) {
+            if (mhz >= 28   && mhz <= 29.7)  return '10m';
+            if (mhz >= 50   && mhz <= 54)    return '6m';
+            if (mhz >= 144  && mhz <= 148)   return '2m';
+            if (mhz >= 219  && mhz <= 225)   return '1.25m';
+            if (mhz >= 420  && mhz <= 450)   return '70cm';
+            return 'other';
+        }
+
+        function renderTouchCards(repeaters) {
+            const grid = document.getElementById('touch-card-grid');
+            grid.innerHTML = '';
+            repeaters.forEach(function(r) {
+                if (!r.callsign) return;
+                const card = document.createElement('div');
+                card.className = 'touch-card' + (activeFrequency && r.frequency === activeFrequency ? ' touch-card-active' : '');
+
+                const top = document.createElement('div'); top.className = 'tc-top';
+                const call = document.createElement('span'); call.className = 'tc-call';
+                call.textContent = r.callsign; top.appendChild(call);
+                if (r.favorite) { const fav = document.createElement('span'); fav.className = 'tc-fav'; fav.textContent = '\u2605'; top.appendChild(fav); }
+                card.appendChild(top);
+
+                const freq = document.createElement('div'); freq.className = 'tc-freq';
+                freq.textContent = r.frequency.toFixed(4) + ' MHz'; card.appendChild(freq);
+
+                const info = document.createElement('div'); info.className = 'tc-info';
+                let infoTxt = '';
+                if (r.tone) infoTxt += 'T:' + r.tone + '  ';
+                if (r.offset) infoTxt += r.offset + ' MHz  ';
+                if (r.modes) infoTxt += r.modes;
+                info.textContent = infoTxt.trim(); card.appendChild(info);
+
+                const loc = document.createElement('div'); loc.className = 'tc-loc';
+                let locTxt = r.location || '';
+                if (r.state) locTxt += (locTxt ? ', ' : '') + r.state;
+                if (r.distance !== null && r.distance !== undefined) locTxt += '  —  ' + r.distance + ' km';
+                loc.textContent = locTxt; card.appendChild(loc);
+
+                const spacer = document.createElement('div'); spacer.className = 'tc-spacer';
+                card.appendChild(spacer);
+
+                const setBtn = document.createElement('button'); setBtn.className = 'tc-set-btn';
+                setBtn.textContent = T['set_radio'];
+                setBtn.onclick = (function(rep, btn) { return function() { setRadio(rep, btn); }; })(r, setBtn);
+                card.appendChild(setBtn);
+
+                grid.appendChild(card);
+            });
+        }
+
+    // On page load in touch mode, hide table, use touch filters instead
+    if (TOUCH_MODE) {
+        document.getElementById('repeater-container').style.display = 'none';
+        applyTouchFilters();
     }
 </script>
 {% endblock %}

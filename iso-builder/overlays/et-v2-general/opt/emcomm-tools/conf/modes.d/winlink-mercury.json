@@ -1,0 +1,104 @@
+{
+    "$schema": "et-mode-v2",
+    "id": "winlink-mercury",
+    "name": {
+        "en": "Winlink HF (Mercury)",
+        "fr": "Winlink HF (Mercury)"
+    },
+    "category": "winlink",
+    "requires_bands": [
+        "HF"
+    ],
+    "requires": {
+        "devices": [
+            "et-audio",
+            "et-cat"
+        ],
+        "services": [
+            "rigctld"
+        ]
+    },
+    "prechecks": [
+        {
+            "type": "device-exists",
+            "path": "/dev/et-audio"
+        },
+        {
+            "type": "audio-tagged",
+            "tag": "ET_AUDIO"
+        },
+        {
+            "type": "service-active",
+            "name": "rigctld"
+        },
+        {
+            "type": "callsign-set"
+        }
+    ],
+    "config": [],
+    "pre_start": [
+        {
+            "action": "kill-all"
+        },
+        {
+            "action": "audio-config"
+        },
+        {
+            "action": "mercury-config"
+        },
+        {
+            "action": "pat-config",
+            "template": "config.mercury.json"
+        }
+    ],
+    "chain": [
+        {
+            "name": "mercury",
+            "command": [
+                "/usr/local/bin/mercury",
+                "-C", "{mercury-ini}",
+                "-p", "8300",
+                "-b", "8100",
+                "-L", "/tmp/mercury.log"
+            ],
+            "cwd": "~",
+            "health": {
+                "type": "tcp-port",
+                "port": 8300,
+                "timeout": 30,
+                "monitor": false
+            },
+            "restart": "never"
+        },
+        {
+            "name": "pat-http",
+            "command": [
+                "pat",
+                "http"
+            ],
+            "health": {
+                "type": "tcp-port",
+                "port": 8080,
+                "timeout": 60
+            },
+            "restart": "never",
+            "depends_on": "mercury"
+        }
+    ],
+    "post_start": [
+        {
+            "action": "mercury-tnc-init"
+        },
+        {
+            "action": "mercury-txlevel-restore"
+        },
+        {
+            "action": "qtmercury-start"
+        },
+        {
+            "action": "open-browser",
+            "url": "http://localhost:8080/ui?mode=varahf&band={auto-band}#"
+        }
+    ],
+    "kill_all_first": true
+}

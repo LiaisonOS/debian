@@ -1,7 +1,7 @@
 # Author  : Gaston Gonzalez
 # Date    : 4 October
 # Updated : 6 October
-# Purpose : GPS configuration for LiaisonOS
+# Purpose : GPS configuration for EmComm Tools
 #
 # Note: The 3.22 version of gpsd shipped with Ubuntu 22.04 has an issue
 # obtaining subsequent positions after the initial fix. 

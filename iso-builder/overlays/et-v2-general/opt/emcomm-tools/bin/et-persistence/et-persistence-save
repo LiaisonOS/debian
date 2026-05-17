@@ -2,7 +2,7 @@
 #
 # Author  : Sylvain Deguire (VA2OPS)
 # Date    : January 2026
-# Purpose : Save LiaisonOS configs to USB persistence
+# Purpose : Save EmComm-Tools configs to USB persistence
 #
 # Simple approach: Copy actual config files that exist
 #
@@ -89,19 +89,19 @@ log() {
 error() {
     echo "[$(date '+%H:%M:%S')] ERROR: $1" >&2
     debug "ERROR: $1"
-    plymouth_msg "LiaisonOS: Error - $1"
+    plymouth_msg "EmComm-Tools: Error - $1"
     sleep 10
     exit 1
 }
 
 if [[ -z "$PERSISTENCE_PATH" ]]; then
-    error "No LiaisonOS persistence drive found (et-config folder). Please insert your USB drive."
+    error "No EmComm-Tools persistence drive found (et-config folder). Please insert your USB drive."
 fi
 
 log "Found persistence at: ${PERSISTENCE_PATH}"
 
 # Show initial Plymouth message
-plymouth_msg "LiaisonOS: Saving your configuration..."
+plymouth_msg "EmComm-Tools: Saving your configuration..."
 
 # Create directories
 mkdir -p "${PERSISTENCE_PATH}/configs/pat"
@@ -444,10 +444,10 @@ save_thunderbird_profile() {
 # SAVE ALL CONFIGS
 # ===========================================================================
 
-log "Saving LiaisonOS configurations..."
-plymouth_msg "LiaisonOS: Saving user settings..."
+log "Saving EmComm-Tools configurations..."
+plymouth_msg "EmComm-Tools: Saving user settings..."
 
-# --- LiaisonOS Core ---
+# --- EmComm-Tools Core ---
 # SAFETY CHECK: Don't overwrite a valid callsign with N0CALL/empty!
 LOCAL_USER_JSON="${HOME}/.config/emcomm-tools/user.json"
 USB_USER_JSON="${PERSISTENCE_PATH}/user.json"
@@ -512,7 +512,7 @@ save_file "${HOME}/.config/emcomm-tools/varac/license.flag" "${PERSISTENCE_PATH}
 save_file "${HOME}/.config/emcomm-tools/varac/license-audit.log" "${PERSISTENCE_PATH}/varac/license-audit.log" "VarAC audit log"
 
 # --- Pat Winlink ---
-plymouth_msg "LiaisonOS: Saving Pat/Winlink..."
+plymouth_msg "EmComm-Tools: Saving Pat/Winlink..."
 save_file "${HOME}/.config/pat/config.json" "${PERSISTENCE_PATH}/configs/pat/config.json" "Pat config"
 if [[ -d "${HOME}/.local/share/pat/mailbox" ]]; then
     # Use rsync --delete so emails deleted locally (e.g. failed outbox messages)
@@ -529,20 +529,27 @@ fi
 # --- JS8Call ---
 save_file "${HOME}/.config/JS8Call.ini" "${PERSISTENCE_PATH}/configs/js8call/JS8Call.ini" "JS8Call"
 
-# --- QtTermTCP ---
-save_file "${HOME}/.config/QtTermTCP.ini" "${PERSISTENCE_PATH}/configs/qttermtcp/QtTermTCP.ini" "QtTermTCP"
-if [[ -f "${HOME}/.config/QtTermTCP/bbs-cache/bbscache.db" ]]; then
-    cp "${HOME}/.config/QtTermTCP/bbs-cache/bbscache.db" "${PERSISTENCE_PATH}/configs/qttermtcp/bbs-cache/" 2>/dev/null && log "✓ Saved: QtTermTCP BBS Cache"
-fi
-if [[ -f "${HOME}/.config/QtTermTCP/bbs-directory/bbs-directory.db" ]]; then
-    cp "${HOME}/.config/QtTermTCP/bbs-directory/bbs-directory.db" "${PERSISTENCE_PATH}/configs/qttermtcp/bbs-directory/" 2>/dev/null && log "✓ Saved: QtTermTCP BBS Directory"
-fi
-
 # --- WSJT-X ---
 save_file "${HOME}/.config/WSJT-X.ini" "${PERSISTENCE_PATH}/configs/wsjtx/WSJT-X.ini" "WSJT-X"
 
+# --- QtMercury ---
+mkdir -p "${PERSISTENCE_PATH}/configs/QtMercury"
+save_file "${HOME}/.config/emcomm-tools/qtmercury.ini" "${PERSISTENCE_PATH}/configs/QtMercury/qtmercury.ini" "QtMercury"
+
+# --- QtTermTCP ---
+mkdir -p "${PERSISTENCE_PATH}/configs/QtTermTCP"
+save_file "${HOME}/QtTermTCP.ini" "${PERSISTENCE_PATH}/configs/QtTermTCP/QtTermTCP.ini" "QtTermTCP"
+if [[ -f "${HOME}/.config/QtTermTCP/bbs-cache/bbscache.db" ]]; then
+    mkdir -p "${PERSISTENCE_PATH}/configs/QtTermTCP/bbs-cache"
+    cp "${HOME}/.config/QtTermTCP/bbs-cache/bbscache.db" "${PERSISTENCE_PATH}/configs/QtTermTCP/bbs-cache/" 2>/dev/null && log "✓ Saved: QtTermTCP BBS Cache"
+fi
+if [[ -f "${HOME}/.config/QtTermTCP/bbs-directory/bbs-directory.db" ]]; then
+    mkdir -p "${PERSISTENCE_PATH}/configs/QtTermTCP/bbs-directory"
+    cp "${HOME}/.config/QtTermTCP/bbs-directory/bbs-directory.db" "${PERSISTENCE_PATH}/configs/QtTermTCP/bbs-directory/" 2>/dev/null && log "✓ Saved: QtTermTCP BBS Directory"
+fi
+
 # --- Fldigi (entire directory) ---
-plymouth_msg "LiaisonOS: Saving Fldigi..."
+plymouth_msg "EmComm-Tools: Saving Fldigi..."
 if [[ -d "${HOME}/.fldigi" ]]; then
     mkdir -p "${PERSISTENCE_PATH}/configs/fldigi"
     cp -r "${HOME}/.fldigi/"* "${PERSISTENCE_PATH}/configs/fldigi/" 2>/dev/null
@@ -556,7 +563,7 @@ save_file "${HOME}/.wine32/drive_c/VARA/VARA.ini" "${PERSISTENCE_PATH}/configs/v
 save_file "${HOME}/.wine32/drive_c/VARA FM/VARAFM.ini" "${PERSISTENCE_PATH}/configs/vara/VARAFM.ini" "VARA FM"
 
 # --- VarAC (full directory - ini, db, logs, configs) ---
-plymouth_msg "LiaisonOS: Saving VarAC..."
+plymouth_msg "EmComm-Tools: Saving VarAC..."
 mkdir -p "${PERSISTENCE_PATH}/configs/varac"
 save_file "${HOME}/.wine32/drive_c/VarAC/VarAC.ini" "${PERSISTENCE_PATH}/configs/varac/VarAC.ini" "VarAC ini"
 save_file "${HOME}/.wine32/drive_c/VarAC/VarAC.db" "${PERSISTENCE_PATH}/configs/varac/VarAC.db" "VarAC database"
@@ -573,7 +580,7 @@ if [[ -d "${HOME}/.wine32/drive_c/VarAC/log" ]]; then
 fi
 
 # --- YAAC (entire Java preferences directory) ---
-plymouth_msg "LiaisonOS: Saving YAAC..."
+plymouth_msg "EmComm-Tools: Saving YAAC..."
 YAAC_PREFS_DIR="${HOME}/.java/.userPrefs/org/ka2ddo/yaac"
 if [[ -d "$YAAC_PREFS_DIR" ]]; then
     mkdir -p "${PERSISTENCE_PATH}/configs/yaac"
@@ -609,8 +616,17 @@ fi
 # --- Direwolf ---
 save_file "${HOME}/.config/direwolf/direwolf.conf" "${PERSISTENCE_PATH}/configs/direwolf/direwolf.conf" "Direwolf"
 
+# --- Desktop settings (panel, onboard) ---
+mkdir -p "${PERSISTENCE_PATH}/configs/desktop"
+save_file "${HOME}/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml" \
+    "${PERSISTENCE_PATH}/configs/desktop/xfce4-panel.xml" "XFCE panel"
+if command -v gsettings &>/dev/null; then
+    gsettings list-recursively org.onboard > "${PERSISTENCE_PATH}/configs/desktop/onboard.gsettings" 2>/dev/null && \
+        log "✓ Saved: Onboard settings" || true
+fi
+
 # --- Firefox ---
-plymouth_msg "LiaisonOS: Saving Firefox (this may take a moment)..."
+plymouth_msg "EmComm-Tools: Saving Firefox (this may take a moment)..."
 # Force Firefox to flush data to disk by terminating any lingering processes
 if pgrep -x "firefox-esr" > /dev/null 2>&1 || pgrep -x "firefox" > /dev/null 2>&1; then
     log "Closing Firefox to flush data..."
@@ -622,7 +638,7 @@ save_firefox_profile
 # --- WiFi Networks (NetworkManager) ---
 # NOTE: WiFi save requires sudo access. Works automatically in Live mode.
 #       On installed systems, user needs NOPASSWD sudo or WiFi backup is skipped.
-plymouth_msg "LiaisonOS: Saving WiFi networks..."
+plymouth_msg "EmComm-Tools: Saving WiFi networks..."
 WIFI_SRC="/etc/NetworkManager/system-connections"
 WIFI_DEST="${PERSISTENCE_PATH}/configs/wifi"
 if [[ -d "$WIFI_SRC" ]]; then
@@ -674,33 +690,28 @@ fi
 
 # --- Bluetooth Pairings ---
 # NOTE: Requires sudo (system-level). Same pattern as WiFi.
-plymouth_msg "LiaisonOS: Saving Bluetooth pairings..."
+plymouth_msg "EmComm-Tools: Saving Bluetooth pairings..."
 BT_SRC="/var/lib/bluetooth"
 BT_DEST="${PERSISTENCE_PATH}/configs/bluetooth"
 if [[ -d "$BT_SRC" ]] && [[ -n "$(sudo ls -A "$BT_SRC" 2>/dev/null)" ]]; then
-    # Count actual paired devices — must have an 'info' file (keys + metadata)
-    BT_DEVICE_COUNT=$(sudo find "$BT_SRC" -name "info" -type f 2>/dev/null | wc -l)
-    if [[ "$BT_DEVICE_COUNT" -eq 0 ]]; then
-        log "⚠ No complete Bluetooth pairings found (no info files) — skipping"
+    # Save as tar archive — BT dirs use MAC addresses with colons (AA:BB:CC:DD:EE:FF)
+    # which FAT32/exFAT cannot store as filenames
+    BT_TMP="/tmp/et-bt-backup.tar"
+    sudo tar cf "$BT_TMP" -C "$BT_SRC" . 2>/dev/null
+    sudo chown "$REAL_USER" "$BT_TMP" 2>/dev/null
+    if cp "$BT_TMP" "$BT_DEST/bt-pairings.tar" 2>/dev/null; then
+        BT_COUNT=$(tar tf "$BT_TMP" 2>/dev/null | grep -c '^./[^/]*/[^/]*/$' || true)
+        log "✓ Saved: Bluetooth pairings ($BT_COUNT devices) [tar archive]"
     else
-        # Save as tar archive — BT dirs use MAC addresses with colons (AA:BB:CC:DD:EE:FF)
-        # which FAT32/exFAT cannot store as filenames
-        BT_TMP="/tmp/et-bt-backup.tar"
-        sudo tar cf "$BT_TMP" -C "$BT_SRC" . 2>/dev/null
-        sudo chown "$REAL_USER" "$BT_TMP" 2>/dev/null
-        if cp "$BT_TMP" "$BT_DEST/bt-pairings.tar" 2>/dev/null; then
-            log "✓ Saved: Bluetooth pairings ($BT_DEVICE_COUNT devices) [tar archive]"
-        else
-            log "⚠ Failed to save Bluetooth pairings (copy error)"
-        fi
-        rm -f "$BT_TMP"
+        log "⚠ Failed to save Bluetooth pairings (copy error)"
     fi
+    rm -f "$BT_TMP"
 else
     log "⚠ No Bluetooth pairings found"
 fi
 
 # --- Thunderbird (LAST - can be large, compressed) ---
-plymouth_msg "LiaisonOS: Saving Thunderbird (this may take a moment)..."
+plymouth_msg "EmComm-Tools: Saving Thunderbird (this may take a moment)..."
 # Force Thunderbird to flush data to disk by terminating any lingering processes
 if pgrep -x "thunderbird" > /dev/null 2>&1; then
     log "Closing Thunderbird to flush data..."
@@ -710,7 +721,7 @@ fi
 save_thunderbird_profile
 
 # --- Documents & Downloads ---
-plymouth_msg "LiaisonOS: Saving Documents & Downloads..."
+plymouth_msg "EmComm-Tools: Saving Documents & Downloads..."
 for user_dir in "Documents" "Downloads" "Pictures"; do
     src_dir="${HOME}/${user_dir}"
     dest_dir="${PERSISTENCE_PATH}/user-data/${user_dir,,}"
@@ -768,7 +779,7 @@ done
 # ===========================================================================
 # FIX ALL FILE OWNERSHIP
 # ===========================================================================
-# Use et-data group for portability between LiaisonOS users/systems
+# Use et-data group for portability between EmComm-Tools users/systems
 # Any user in et-data group can read/write these files
 log "Fixing file ownership (group: et-data)..."
 chown -R :et-data "${PERSISTENCE_PATH}/" 2>/dev/null || true
@@ -803,7 +814,7 @@ log "=========================================="
 log "  Save complete!"
 log "=========================================="
 
-plymouth_msg "LiaisonOS: Save complete!"
+plymouth_msg "EmComm-Tools: Save complete!"
 sleep 1
 
 debug "=== SAVE SCRIPT COMPLETED SUCCESSFULLY ==="

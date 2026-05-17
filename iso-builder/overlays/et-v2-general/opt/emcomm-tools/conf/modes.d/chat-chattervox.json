@@ -40,7 +40,7 @@
         },
         {
             "name": "chattervox",
-            "command": ["xfce4-terminal", "--title=Chattervox Chat", "-e", "chattervox chat"],
+            "command": ["QtTerminal", "--title=Chattervox Chat", "-e", "chattervox chat"],
             "health": {},
             "restart": "never",
             "depends_on": "direwolf"

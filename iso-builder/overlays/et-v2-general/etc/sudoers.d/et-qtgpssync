@@ -1,0 +1,2 @@
+# et-qtgpssync — allow QtGpsSync to run without password (needs root for time sync)
+%dialout ALL=(ALL) SETENV: NOPASSWD: /usr/bin/QtGpsSync

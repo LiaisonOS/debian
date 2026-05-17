@@ -1,0 +1,82 @@
+{
+    "$schema": "et-mode-v2",
+    "id": "mercury",
+    "name": {
+        "en": "Mercury HF (Standalone)",
+        "fr": "Mercury HF (Autonome)"
+    },
+    "category": "digital",
+    "requires_bands": [
+        "HF"
+    ],
+    "requires": {
+        "devices": [
+            "et-audio",
+            "et-cat"
+        ],
+        "services": [
+            "rigctld"
+        ]
+    },
+    "prechecks": [
+        {
+            "type": "device-exists",
+            "path": "/dev/et-audio"
+        },
+        {
+            "type": "audio-tagged",
+            "tag": "ET_AUDIO"
+        },
+        {
+            "type": "service-active",
+            "name": "rigctld"
+        },
+        {
+            "type": "callsign-set"
+        }
+    ],
+    "config": [],
+    "pre_start": [
+        {
+            "action": "kill-all"
+        },
+        {
+            "action": "audio-config"
+        },
+        {
+            "action": "mercury-config"
+        }
+    ],
+    "chain": [
+        {
+            "name": "mercury",
+            "command": [
+                "/usr/local/bin/mercury",
+                "-C", "{mercury-ini}",
+                "-p", "8300",
+                "-b", "8100",
+                "-L", "/tmp/mercury.log"
+            ],
+            "cwd": "~",
+            "health": {
+                "type": "tcp-port",
+                "port": 8300,
+                "timeout": 30,
+                "monitor": false
+            },
+            "restart": "never"
+        }
+    ],
+    "post_start": [
+        {
+            "action": "mercury-tnc-init"
+        },
+        {
+            "action": "mercury-txlevel-restore"
+        },
+        {
+            "action": "qtmercury-start"
+        }
+    ],
+    "kill_all_first": true
+}

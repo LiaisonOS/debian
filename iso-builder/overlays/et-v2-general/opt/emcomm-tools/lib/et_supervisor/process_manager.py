@@ -10,6 +10,7 @@ IDLE -> STARTING -> RUNNING -> STOPPING -> IDLE
 import os
 import signal
 import subprocess
+import threading
 import time
 import logging
 
@@ -23,12 +24,12 @@ class ProcessInfo:
         "name", "command", "pid", "state", "start_time",
         "exit_code", "restart_count", "restart_policy",
         "health_port", "health_timeout", "process",
-        "env", "cwd", "log_file",
+        "env", "cwd", "log_file", "ignore_exit",
     )
 
     def __init__(self, name, command, restart_policy="never",
                  health_port=None, health_timeout=15,
-                 env=None, cwd=None):
+                 env=None, cwd=None, ignore_exit=False):
         self.name = name
         self.command = command
         self.pid = None
@@ -43,6 +44,7 @@ class ProcessInfo:
         self.env = env        # extra environment variables (merged with os.environ)
         self.cwd = cwd        # working directory for the process
         self.log_file = None  # file handle for process log
+        self.ignore_exit = ignore_exit
 
     @property
     def uptime(self):
@@ -66,6 +68,7 @@ class ProcessManager:
 
     def __init__(self):
         self._processes = {}  # name -> ProcessInfo
+        self._waitpid_lock = threading.Lock()
 
     @property
     def processes(self):
@@ -224,10 +227,13 @@ class ProcessManager:
 
         pid = proc_info.pid
         try:
-            result = os.waitpid(pid, os.WNOHANG)
-            if result[0] == 0:
-                return True  # Still running
-            proc_info.exit_code = os.WEXITSTATUS(result[1]) if os.WIFEXITED(result[1]) else -1
+            os.kill(pid, 0)  # Signal 0 = just check if alive, don't send anything
+            return True  # Still running
+        except ProcessLookupError:
+            # Process is gone — check exit code via Popen if available
+            proc = proc_info.process
+            exit_code = proc.poll() if proc else None
+            proc_info.exit_code = exit_code if exit_code is not None else 0
             proc_info.pid = None
             if proc_info.exit_code == 0:
                 proc_info.state = "STOPPED"
@@ -236,11 +242,8 @@ class ProcessManager:
                 proc_info.state = "CRASHED"
                 log.warning("Process %s crashed (exit code %d)", name, proc_info.exit_code)
             return False
-        except ChildProcessError:
-            proc_info.state = "STOPPED"
-            proc_info.pid = None
-            log.info("Process %s disappeared (assumed normal exit)", name)
-            return False
+        except PermissionError:
+            return True  # Process exists but we can't signal it — still alive
 
     def get_status(self):
         """Return status dict for all tracked processes."""

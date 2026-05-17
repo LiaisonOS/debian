@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/repeater.css') }}">
 </head>
-<body>
+<body{% if touch_mode %} class="touch-mode"{% endif %}>
     <div class="container">
         <div class="card">
             {% block content %}{% endblock %}

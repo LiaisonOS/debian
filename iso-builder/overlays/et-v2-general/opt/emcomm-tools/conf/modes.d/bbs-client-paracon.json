@@ -40,7 +40,7 @@
         },
         {
             "name": "paracon",
-            "command": ["xfce4-terminal", "--title=Paracon BBS Client", "--working-directory={bbs_client_dir}", "-e", "paracon"],
+            "command": ["QtTerminal", "--title=Paracon BBS Client", "--working-directory={bbs_client_dir}", "-e", "paracon"],
             "health": {},
             "restart": "never",
             "depends_on": "direwolf"
