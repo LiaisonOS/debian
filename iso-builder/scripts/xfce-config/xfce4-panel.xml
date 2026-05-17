@@ -88,6 +88,7 @@
       <property name="mode" type="uint" value="4"/>
       <property name="show-date" type="bool" value="false"/>
       <property name="timezone" type="string" value="UTC"/>
+      <property name="show-seconds" type="bool" value="true"/>
     </property>
     <property name="plugin-9" type="string" value="actions">
       <property name="button-title" type="uint" value="1"/>

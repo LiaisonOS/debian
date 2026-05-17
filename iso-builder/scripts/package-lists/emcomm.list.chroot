@@ -1,6 +1,7 @@
 # Desktop Environment
 task-xfce-desktop
 lightdm
+slick-greeter
 xfce4-power-manager-plugins
 onboard
 python3-tksnack
