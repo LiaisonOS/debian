@@ -146,7 +146,7 @@
     <a class="btn-secondary" href="mailto:info@liaisonos.com">✉ Nous joindre</a>
   </div>
   <div class="badges">
-    <span class="badge"><span>v2.3.2</span></span>
+    <span class="badge"><span>v2.3.3</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Licence <span>Ms-PL</span></span>
@@ -202,28 +202,35 @@ data-beehiiv-form="12328a64-4ff4-456a-9557-fc3ecb84804d"></script></div>
   </div>
 
   <div class="section">
-    <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.1</span><span class="new-badge">v2.3.2</span></h2>
-    
-      <div class="card">
-        <h3>QtTerminal — Native C++ Terminal</h3>
-        <p>LiaisonOS ajoute son propre terminal pour accueillir Paracon, Chattervox et linBPQ. Cet ajout nous permet de  mieux controller les modes de communication qui demande un interface terminal pour fonctionner.</p>
-      </div>
-    
-    <div class="card">
-      <h3>QtDashboard — Tableau de bord natif C++</h3>
-      <p>Une étape majeure : l'ancien tableau de bord Python/GTK est remplacé par une application Qt5 native entièrement en C++. Plus rapide, plus propre, conçu spécifiquement pour LiaisonOS. Horloge UTC intégrée avec secondes, sélection de modem en ligne, configuration radio/CAT, édition du profil utilisateur, et 6 modes récents toujours prêts en un seul tap — sans menus ni dialogues inutiles.</p>
+    <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.3</span></h2>
+
+    <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
+      <h3 style="color:#ffa500;">QtPatWinlink — Pat Winlink, version LiaisonOS</h3>
+      <p>Pat Winlink réinventé en application Qt entièrement native — fini les onglets de navigateur et les changements de contexte. Support du mode Tactile dès le premier jour pour tablettes 7&quot; et écrans en véhicule. Vues Inbox, Outbox, Envoyés et Archive avec récupération en un tap, table RMS connectable au double-tap avec filtres bande/mode/distance et favoris, console de session avec progression en direct, gestion intelligente Abort/Disconnect et reprise automatique pour VARA et Mercury.</p>
+    </div>
+
+    <div class="card" style="margin-top: 8px;">
+      <h3>Formulaires Pat — Intégrés à l'application</h3>
+      <p>Le catalogue complet des formulaires Pat s'affiche directement dans QtPatWinlink via une vue web intégrée — choisissez un formulaire, remplissez-le, envoyez-le. Aucun navigateur externe, aucun flux séparé. Les rapports de position sont aussi intégrés : transmission en un tap de votre position GPS actuelle vers la session Winlink active.</p>
+    </div>
+
+    <div class="card" style="margin-top: 8px;">
+      <h3>et-supervisor — Solidifié et réactif</h3>
+      <p>Le superviseur de modes a reçu une refonte en profondeur pour 2.3.3. Détection de fin de processus pilotée par SIGCHLD : le tableau de bord se met à jour instantanément lorsqu'un modem ferme (plus de modes à moitié bloqués). Diffusion d'état précoce qui élimine le « il fallait cliquer Stop deux fois ». Gestion des processus zombies corrigée : fermer VARA HF/FM termine maintenant le mode actif de façon fiable. Vérification de sûreté multithread partout.</p>
+    </div>
+
+    <div class="card" style="margin-top: 8px;">
+      <h3>Chaînes de modes, raffinées</h3>
+      <p>Chaque mode Winlink lance désormais QtPatWinlink dans sa chaîne — fermez l'application et tout le mode s'arrête proprement. JS8Spotter rejoint la chaîne JS8Call avec sémantique « ignore-exit » : le fermer ne ferme plus JS8Call avec lui. Plus petit, plus intelligent, moins surprenant.</p>
+    </div>
+
+    <div class="card" style="margin-top: 8px;">
+      <h3>Précédente — v2.3.2</h3>
+      <p>QtTerminal — LiaisonOS a introduit son propre terminal pour accueillir Paracon, Chattervox et LinBPQ, avec un meilleur contrôle des modes qui demandent encore une interface terminal.</p>
     </div>
     <div class="card" style="margin-top: 8px;">
-      <h3>Mode Bureau &amp; Mode Tactile</h3>
-      <p>QtDashboard fonctionne en deux modes d'interface distincts. Le mode Bureau est optimisé pour souris et clavier. Le mode Tactile est conçu pour les tablettes 7&quot; et les écrans montés en véhicule — grandes cartes, contrôles adaptés aux doigts, bascule instantanée sans redémarrage. À notre connaissance, cette conception double-mode est unique dans l'univers des OS pour radioamateurs. Le mode Tactile est une fonctionnalité de plateforme : les applications compatibles comme et-repeater s'y adaptent déjà, d'autres suivront dans les prochaines versions.</p>
-    </div>
-    <div class="card" style="margin-top: 8px;">
-      <h3>et-repeater en mode Tactile</h3>
-      <p>Le navigateur de répéteurs s'adapte au mode Tactile avec une grille de cartes, un tiroir de filtres coulissant (bande, mode, distance, favoris) et une barre de recherche en temps réel — entièrement utilisable au doigt sur petit écran.</p>
-    </div>
-    <div class="card" style="margin-top: 8px; border-color: rgba(125,232,176,0.3); background: rgba(125,232,176,0.03);">
-      <h3 style="color:#7de8b0;">À venir en v2.3.2 — QtPatWinlink</h3>
-      <p>Pat Winlink réinventé en application Qt native avec support complet du mode Tactile dès le premier jour.</p>
+      <h3>Précédente — v2.3.1</h3>
+      <p>QtDashboard — tableau de bord natif Qt5 en C++ remplaçant l'ancien et-dashboard Python/GTK. Horloge UTC avec secondes, sélection de modem en ligne, configuration radio/CAT et édition du profil utilisateur, 6 modes récents prêts en un tap. Double interface Bureau et Tactile, avec et-repeater comme première application compagnon à s'y adapter.</p>
     </div>
     <div class="card" style="margin-top: 8px;">
       <h3>Précédente — v2.3.0</h3>

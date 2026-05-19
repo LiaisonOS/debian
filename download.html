@@ -10,10 +10,10 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://liaisonos.com/download.html">
   <meta property="og:title" content="Download LiaisonOS — Ham Radio Linux ISO">
-  <meta property="og:description" content="Download LiaisonOS v2.3.1 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
+  <meta property="og:description" content="Download LiaisonOS v2.3.3 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
   <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Download LiaisonOS v2.3.1">
+  <meta name="twitter:title" content="Download LiaisonOS v2.3.3">
   <meta name="twitter:description" content="Debian 13 live ISO for ham radio EMCOMM. QtDashboard, Touch Mode, JS8Call, Pat-Winlink, VARA, VarAC, fldigi — ready to go.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -214,30 +214,30 @@
         <strong>Continuous development notice —</strong> LiaisonOS uses an agile, continuous-release model. Each version is fully functional. <strong>Always boot and test from USB first</strong> before committing to a permanent install.
       </div>
       <div class="whats-new">
-        <p class="whats-new-title">What's new in v2.3.1 / v2.3.2.1</p>
+        <p class="whats-new-title">What's new in v2.3.3</p>
         <ul>
-          <li><strong>v2.3.2.1 — sudoer fix</strong> — Fix for QtGpsSync on permanent HDD install.</li>
-          <li><strong>v2.3.2 — QtTerminal</strong> — LiaisonOS as just introduce his own terminal app with this quick release to host Paracon, Chattervox and linBPQ.</li>
-          <li><strong>QtDashboard — Native C++ dashboard</strong> — A major milestone: the Python/GTK et-dashboard is replaced by a fully native C++ Qt5 application. Faster, cleaner, and purpose-built for LiaisonOS. Features an embedded UTC clock with seconds, inline modem selector, radio/CAT selection, user profile editing, and 6 recent modes always ready to launch in one tap.</li>
-          <li><strong>Desktop &amp; Touch Mode</strong> — QtDashboard runs in two distinct UI modes. Desktop mode is optimized for mouse and keyboard. Touch mode is designed for 7&quot; tablets and car-mount screens — large cards, finger-friendly controls, instant switching with no restart required. As far as we know, this dual-mode design is unique in the ham radio OS space.</li>
-          <li><strong>et-repeater Touch Mode</strong> — The repeater browser adapts to Touch mode with a card grid layout, a full-screen filter drawer (band, mode, distance, favourites), and a live search bar. Touch mode is a platform-level feature read from user.json — more apps will follow in future releases.</li>
-          <li><strong>Coming in v2.3.3 — QtPatWinlink</strong> — Pat Winlink reimagined as a native Qt app with full Touch Mode support.</li>
+          <li><strong>QtPatWinlink — Pat Winlink, the LiaisonOS way</strong> — Pat reimagined as a fully native Qt app with Touch Mode from day one. Inbox / Outbox / Sent / Archive views, double-tap-to-connect RMS table with band/mode/distance filtering and favourites, and a session console with live progress, smart Abort/Disconnect handling and VARA/Mercury retry behaviour.</li>
+          <li><strong>Pat Forms — Embedded in the app</strong> — The full Pat Forms catalog renders inside QtPatWinlink via an embedded web view. Pick a form, fill it in, send it. Position reports submit your current GPS location to the active Winlink session in one tap.</li>
+          <li><strong>et-supervisor — Hardened &amp; snappy</strong> — SIGCHLD-driven process death detection means the dashboard updates instantly when a modem closes. Early state broadcast removes the &quot;click Stop twice&quot; lag. Zombie-process handling fixed: closing VARA HF/FM now reliably ends the active mode. Full thread-safety pass throughout.</li>
+          <li><strong>Mode chains, refined</strong> — Each Winlink mode now launches QtPatWinlink as part of its chain — close the app, the whole mode shuts down cleanly. JS8Spotter joins the JS8Call chain with ignore-exit semantics so dismissing it doesn't take JS8Call with it.</li>
+          <li><strong>Previous — v2.3.2.1</strong> — Sudoer fix for QtGpsSync on permanent HDD install.</li>
+          <li><strong>Previous — v2.3.2</strong> — QtTerminal: LiaisonOS introduced its own terminal app to host Paracon, Chattervox and LinBPQ.</li>
         </ul>
       </div>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.2.1.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.3.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label"><span class="il il-en">Latest release</span><span class="il il-fr">Dernière version</span></p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.3.2.1.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.3.3.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; <span class="il il-en">Released</span> <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.2.1</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.3</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">License</p><p class="stat-val">Ms-PL</p></div>
@@ -248,8 +248,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.3.2.1</span>
-      <span class="checksum-val" id="hashval">4f9ab237b83390891e08110672d6b34d3260e8a0f54cb6ff1f5d5b09453df4d9</span>
+      <span class="checksum-label">SHA256 - v2.3.3</span>
+      <span class="checksum-val" id="hashval">f6da350fb6712e039bdc0bcd7fdfbac3190470f4feb1737513499aa51a8b0e34</span>
       <button class="copy-btn" onclick="copyHash('hashval')"><span class="il il-en">Copy</span><span class="il il-fr">Copier</span></button>
     </div>
 
@@ -265,10 +265,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.3.2.1.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.3.3.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.2.1.iso">⬇ Download</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.3.iso">⬇ Download</a></td>
         </tr>
        
         <tr>

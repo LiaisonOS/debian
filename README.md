@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.1-f59e0b?style=for-the-badge" alt="Version 2.3.1"></a>
+  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.3-f59e0b?style=for-the-badge" alt="Version 2.3.3"></a>
   <a href="https://liaisonos.com/download"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
@@ -57,7 +57,34 @@
 
 ---
 
-## ✨ What's New in 2.3.1
+## ✨ What's New in 2.3.3
+
+### 📧 QtPatWinlink — Pat Winlink, the LiaisonOS way
+
+- **Fully native Qt app** — no browser tabs, no context switching. Pat Winlink reimagined as a LiaisonOS-first experience
+- **Touch Mode from day one** — designed for 7" tablets and car-mount screens
+- **Inbox / Outbox / Sent / Archive** — one-tap fetch, mark-as-read, message viewer with reply/forward
+- **Double-tap-to-connect RMS table** — band / mode / distance filters, favourites, last-selected memory
+- **Session console** — live progress bar, smart Abort / Disconnect button, VARA & Mercury retry handling
+
+### 📝 Pat Forms — Embedded
+
+- **Full Pat Forms catalog** rendered inside the app via an embedded web view — pick, fill, send
+- **Position reports** — submit your current GPS location to the active Winlink session in one tap
+
+### ⚙️ et-supervisor — Hardened & Snappy
+
+- **SIGCHLD-driven death detection** — dashboard updates the instant a modem closes (no more half-stuck modes)
+- **Early state broadcast** — eliminates the "had to click Stop twice" lag
+- **Zombie process handling** — closing VARA HF/FM now reliably ends the active mode
+- **Thread-safety pass** — RLock-based state, cancellable waits, full reactor model
+
+### 🔗 Mode Chains, Refined
+
+- **QtPatWinlink in the chain** — each Winlink mode launches QtPatWinlink as a chain step; close the app, the whole mode shuts down cleanly
+- **JS8Spotter ignore-exit** — JS8Spotter joins the JS8Call chain without taking JS8Call down when dismissed
+
+## ✨ What's New in 2.3.2 / 2.3.1
 
 ### 🖥️ QtDashboard — Native C++ Dashboard
 
@@ -73,9 +100,9 @@
 - **Instant switching** — toggle between modes with no restart required, stored in `user.json`
 - **Platform feature** — supported apps adapt automatically. et-repeater already includes a full Touch Mode card grid with slide-out filter drawer and live search. More apps to follow.
 
-### 🔜 Coming in v2.3.2 — QtPatWinlink
+### 🖧 QtTerminal — Native Terminal (v2.3.2)
 
-Pat Winlink reimagined as a native Qt application with full Touch Mode support from day one.
+LiaisonOS introduced its own terminal app to host Paracon, Chattervox and LinBPQ — better control over modes that still need a terminal interface.
 
 ## ✨ What's New in 2.3.0
 

@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Communications d'urgence pour radioamateurs</h1>
-<p><em>Version 2.3.1 — Mai 2026</em>
+<p><em>Version 2.3.3 — Mai 2026</em>
 <em>ISO Debian 13 (Trixie) Live/Installable</em></p>
 <blockquote>
 <p>⚠️ <strong>Avis de développement continu</strong></p>
@@ -83,7 +83,34 @@ footer a:hover { color: #7de8b0; }
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS est une <strong>ISO Linux Debian 13 (Trixie) live et installable</strong> conçue pour les communications numériques d'urgence en radioamateur. Elle comprend une suite complète de logiciels de modes numériques préconfigurés, des cartes hors ligne et un tableau de bord web pour une utilisation en un clic. Deux modes de déploiement : <strong>USB Live Run</strong> (démarrer n'importe quel PC depuis une clé USB) ou <strong>installation sur disque dur</strong> (installation permanente avec Calamares). Interface bilingue français/anglais. Créé par Sylvain Deguire (VA2OPS).</p>
 <hr />
-<h2>Nouveautés de la version 2.3.1</h2>
+<h2>Nouveautés de la version 2.3.3</h2>
+<h3>QtPatWinlink — Pat Winlink, version LiaisonOS</h3>
+<ul>
+<li><strong>Application Qt entièrement native</strong> — fini les onglets de navigateur, Pat Winlink repensé comme une expérience LiaisonOS d'abord</li>
+<li><strong>Mode Tactile dès le premier jour</strong> — conçu pour tablettes 7&quot; et écrans en véhicule</li>
+<li><strong>Vues Inbox / Outbox / Envoyés / Archive</strong> — récupération en un tap, marquer-comme-lu, visualiseur de messages avec réponse/transfert</li>
+<li><strong>Table RMS connectable au double-tap</strong> — filtres bande / mode / distance, favoris, dernier choix mémorisé</li>
+<li><strong>Console de session</strong> — barre de progression en direct, bouton Abort / Disconnect intelligent, gestion des reprises VARA et Mercury</li>
+</ul>
+<h3>Formulaires Pat — Intégrés</h3>
+<ul>
+<li><strong>Catalogue complet des formulaires Pat</strong> affiché dans l'application via une vue web intégrée — choisir, remplir, envoyer</li>
+<li><strong>Rapports de position</strong> — transmission de votre position GPS actuelle vers la session Winlink active en un tap</li>
+</ul>
+<h3>et-supervisor — Solidifié et réactif</h3>
+<ul>
+<li><strong>Détection de fin de processus pilotée par SIGCHLD</strong> — le tableau de bord se met à jour instantanément lorsqu'un modem ferme (fini les modes à moitié bloqués)</li>
+<li><strong>Diffusion d'état précoce</strong> — élimine le délai « il fallait cliquer Stop deux fois »</li>
+<li><strong>Gestion des processus zombies</strong> — fermer VARA HF/FM termine maintenant le mode actif de façon fiable</li>
+<li><strong>Vérification de sûreté multithread</strong> — état avec RLock, attentes annulables, modèle réacteur complet</li>
+</ul>
+<h3>Chaînes de modes, raffinées</h3>
+<ul>
+<li><strong>QtPatWinlink dans la chaîne</strong> — chaque mode Winlink lance QtPatWinlink comme étape de chaîne ; fermez l'application, tout le mode s'arrête proprement</li>
+<li><strong>JS8Spotter ignore-exit</strong> — JS8Spotter rejoint la chaîne JS8Call sans la fermer lorsqu'il est dismissé</li>
+</ul>
+<hr />
+<h2>Nouveautés de la version 2.3.2 / 2.3.1</h2>
 <h3>QtDashboard — Tableau de bord natif C++</h3>
 <ul>
 <li><strong>Application Qt5 native en C++</strong> — remplace l'ancien tableau de bord Python/GTK. Plus rapide, plus propre, conçu spécifiquement pour LiaisonOS</li>
@@ -98,8 +125,8 @@ footer a:hover { color: #7de8b0; }
 <li><strong>Bascule instantanée</strong> — sans redémarrage, stockée dans <code>user.json</code></li>
 <li><strong>Fonctionnalité de plateforme</strong> — les applications compatibles s'adaptent automatiquement. et-repeater inclut déjà une grille de cartes, un tiroir de filtres et une recherche en temps réel en mode Tactile. D'autres applications suivront.</li>
 </ul>
-<h3>À venir en v2.3.2 — QtPatWinlink</h3>
-<p>Pat Winlink réinventé en application Qt native avec support complet du mode Tactile dès le premier jour.</p>
+<h3>QtTerminal — Terminal natif (v2.3.2)</h3>
+<p>LiaisonOS a introduit son propre terminal pour accueillir Paracon, Chattervox et LinBPQ — un meilleur contrôle des modes qui demandent encore une interface terminal.</p>
 <hr />
 <h2>Nouveautés de la version 2.3.0</h2>
 <h3>QtGpsSync — Entièrement recodé en C++</h3>
@@ -1018,8 +1045,8 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Documentation Ventoy :</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Version du document : 2.3.1</em>
-<em>Dernière mise à jour : Mars 2026</em>
+<p><em>Version du document : 2.3.3</em>
+<em>Dernière mise à jour : Mai 2026</em>
 <em>Créé pour LiaisonOS Édition Debian</em></p>
 </div>
 <footer>

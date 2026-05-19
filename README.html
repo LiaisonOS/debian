@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Emergency Communications for Ham Radio</h1>
-<p><em>Version 2.3.1 — May 2026</em>
+<p><em>Version 2.3.3 — May 2026</em>
 <em>Debian 13 (Trixie) Live/Installable ISO</em></p>
 <blockquote>
 <p>⚠️ <strong>Continuous Development Notice</strong></p>
@@ -83,7 +83,34 @@ footer a:hover { color: #7de8b0; }
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS is a <strong>Debian 13 (Trixie) live and installable Linux ISO</strong> designed for ham radio emergency digital communications. It includes a complete suite of pre-configured digital mode software, offline maps, and a web dashboard for one-click operation. Two deployment modes: <strong>USB Live Run</strong> (boot any PC from a USB drive) or <strong>hard drive installation</strong> (permanent install via Calamares). Bilingual English/French interface. Created by Sylvain Deguire (VA2OPS).</p>
 <hr />
-<h2>What's New in Version 2.3.1</h2>
+<h2>What's New in Version 2.3.3</h2>
+<h3>QtPatWinlink — Pat Winlink, the LiaisonOS way</h3>
+<ul>
+<li><strong>Fully native Qt app</strong> — no browser tabs, no context switching. Pat Winlink reimagined as a LiaisonOS-first experience</li>
+<li><strong>Touch Mode from day one</strong> — designed for 7&quot; tablets and car-mount screens</li>
+<li><strong>Inbox / Outbox / Sent / Archive</strong> — one-tap fetch, mark-as-read, message viewer with reply/forward</li>
+<li><strong>Double-tap-to-connect RMS table</strong> — band / mode / distance filters, favourites, last-selected memory</li>
+<li><strong>Session console</strong> — live progress bar, smart Abort / Disconnect button, VARA &amp; Mercury retry handling</li>
+</ul>
+<h3>Pat Forms — Embedded</h3>
+<ul>
+<li><strong>Full Pat Forms catalog</strong> rendered inside the app via an embedded web view — pick, fill, send</li>
+<li><strong>Position reports</strong> — submit your current GPS location to the active Winlink session in one tap</li>
+</ul>
+<h3>et-supervisor — Hardened &amp; Snappy</h3>
+<ul>
+<li><strong>SIGCHLD-driven death detection</strong> — dashboard updates the instant a modem closes (no more half-stuck modes)</li>
+<li><strong>Early state broadcast</strong> — eliminates the &quot;had to click Stop twice&quot; lag</li>
+<li><strong>Zombie process handling</strong> — closing VARA HF/FM now reliably ends the active mode</li>
+<li><strong>Thread-safety pass</strong> — RLock-based state, cancellable waits, full reactor model</li>
+</ul>
+<h3>Mode Chains, Refined</h3>
+<ul>
+<li><strong>QtPatWinlink in the chain</strong> — each Winlink mode launches QtPatWinlink as a chain step; close the app, the whole mode shuts down cleanly</li>
+<li><strong>JS8Spotter ignore-exit</strong> — JS8Spotter joins the JS8Call chain without taking JS8Call down when dismissed</li>
+</ul>
+<hr />
+<h2>What's New in Version 2.3.2 / 2.3.1</h2>
 <h3>QtDashboard — Native C++ Dashboard</h3>
 <ul>
 <li><strong>Fully native C++ Qt5 application</strong> — replaces the Python/GTK et-dashboard. Faster, leaner, purpose-built for LiaisonOS</li>
@@ -98,8 +125,8 @@ footer a:hover { color: #7de8b0; }
 <li><strong>Instant switching</strong> — no restart required, stored in <code>user.json</code></li>
 <li><strong>Platform feature</strong> — supported apps adapt automatically. et-repeater already includes a full Touch Mode card grid, slide-out filter drawer, and live search bar. More apps to follow.</li>
 </ul>
-<h3>Coming in v2.3.2 — QtPatWinlink</h3>
-<p>Pat Winlink reimagined as a native Qt application with full Touch Mode support from day one.</p>
+<h3>QtTerminal — Native Terminal (v2.3.2)</h3>
+<p>LiaisonOS introduced its own terminal app to host Paracon, Chattervox and LinBPQ — better control over modes that still need a terminal interface.</p>
 <hr />
 <h2>What's New in Version 2.3.0</h2>
 <h3>QtGpsSync — Completely Redesigned in C++</h3>
@@ -1025,8 +1052,8 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Ventoy Documentation:</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Document version: 2.3.1</em>
-<em>Last updated: March 2026</em>
+<p><em>Document version: 2.3.3</em>
+<em>Last updated: May 2026</em>
 <em>Created for LiaisonOS Debian Edition</em></p>
 </div>
 <footer>
