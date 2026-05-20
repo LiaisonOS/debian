@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Emergency Communications for Ham Radio</h1>
-<p><em>Version 2.3.3 — May 2026</em>
+<p><em>Version 2.3.4 — May 2026</em>
 <em>Debian 13 (Trixie) Live/Installable ISO</em></p>
 <blockquote>
 <p>⚠️ <strong>Continuous Development Notice</strong></p>
@@ -82,6 +82,36 @@ footer a:hover { color: #7de8b0; }
 <p><strong>Français?</strong> Voir <a href="https://liaisonos.com/LISEZMOI">LISEZMOI</a> pour la version française.</p>
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS is a <strong>Debian 13 (Trixie) live and installable Linux ISO</strong> designed for ham radio emergency digital communications. It includes a complete suite of pre-configured digital mode software, offline maps, and a web dashboard for one-click operation. Two deployment modes: <strong>USB Live Run</strong> (boot any PC from a USB drive) or <strong>hard drive installation</strong> (permanent install via Calamares). Bilingual English/French interface. Created by Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>What's New in Version 2.3.4</h2>
+<h3>Dashboard Menu — Fully Customizable</h3>
+<ul>
+<li><strong>JSON-driven</strong> — the mode menu is now defined in a single config file, not compiled into the dashboard</li>
+<li><strong>Hide modes you don't use</strong>, reorder groups, rename labels, create your own custom groups</li>
+<li><strong>Live reload</strong> — edit the file, the dashboard refreshes automatically (no restart)</li>
+<li><strong>One config, both UIs</strong> — Desktop and Touch layouts share the same configuration</li>
+<li><strong>First-boot template</strong> — documents every override option so customization is easy to discover</li>
+</ul>
+<h3>Strip Mode — Reclaim Your Desktop</h3>
+<ul>
+<li><strong>Collapsible Dashboard</strong> — click <code>⮕ STRIP</code> and the Desktop dashboard animates to a slim 80&nbsp;px vertical sidebar</li>
+<li><strong>Glanceable status</strong> — clock, GPS, callsign, rig, CAT/audio, active mode, recent modes always on the right edge</li>
+<li><strong>One click to expand</strong> — <code>⮜</code> brings it back to full size with a smooth 250&nbsp;ms animation</li>
+<li><strong>Mode icons + short tags</strong> — each recent mode shows an emoji icon and a 3-5 char abbreviation, configurable per-mode in the menu JSON</li>
+</ul>
+<h3>GPS — Live 3-State Indicator</h3>
+<ul>
+<li><strong>Red</strong> — no GPS source connected</li>
+<li><strong>Yellow</strong> — waiting for a fix or signal lost</li>
+<li><strong>Green</strong> — fix active and streaming</li>
+<li>Signal loss is reported live, not on a delay</li>
+</ul>
+<h3>Modernized Brand Internals</h3>
+<ul>
+<li>Configuration paths internally renamed to the LiaisonOS brand</li>
+<li>Compatibility layer keeps any legacy script working transparently</li>
+<li>Your callsign, radios, repeaters, VARA, VarAC, logger and POTA databases migrate themselves automatically the first time you restore your configuration on 2.3.4</li>
+</ul>
 <hr />
 <h2>What's New in Version 2.3.3</h2>
 <h3>QtPatWinlink — Pat Winlink, the LiaisonOS way</h3>
@@ -103,11 +133,6 @@ footer a:hover { color: #7de8b0; }
 <li><strong>Early state broadcast</strong> — eliminates the &quot;had to click Stop twice&quot; lag</li>
 <li><strong>Zombie process handling</strong> — closing VARA HF/FM now reliably ends the active mode</li>
 <li><strong>Thread-safety pass</strong> — RLock-based state, cancellable waits, full reactor model</li>
-</ul>
-<h3>Mode Chains, Refined</h3>
-<ul>
-<li><strong>QtPatWinlink in the chain</strong> — each Winlink mode launches QtPatWinlink as a chain step; close the app, the whole mode shuts down cleanly</li>
-<li><strong>JS8Spotter ignore-exit</strong> — JS8Spotter joins the JS8Call chain without taking JS8Call down when dismissed</li>
 </ul>
 <hr />
 <h2>What's New in Version 2.3.2 / 2.3.1</h2>
@@ -1052,7 +1077,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Ventoy Documentation:</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Document version: 2.3.3</em>
+<p><em>Document version: 2.3.4</em>
 <em>Last updated: May 2026</em>
 <em>Created for LiaisonOS Debian Edition</em></p>
 </div>

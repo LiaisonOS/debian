@@ -264,7 +264,7 @@
   </div>
 
   <div class="badges">
-    <span class="badge"><span>v2.3.3</span></span>
+    <span class="badge"><span>v2.3.4</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Ms-PL <span>License</span></span>
@@ -304,7 +304,7 @@
 
   <!-- SCREENSHOT -->
   <div style="text-align:center; margin-bottom: 3rem;">
-    <img src="imgs/desktop-screen-liaisonos.png" alt="LiaisonOS Desktop" style="width:100%; max-width:760px; border-radius:8px; border:1px solid #2a4a35;">
+    <img src="imgs/desktop-screen-liaisonos-2.3.4.png" alt="LiaisonOS Desktop" style="width:100%; max-width:760px; border-radius:8px; border:1px solid #2a4a35;">
   </div>
 
   <!-- KEY FEATURES -->
@@ -397,28 +397,32 @@
   <!-- WHATS NEW -->
   <div class="section">
     <div class="lang-en">
-      <h2 class="section-title">What's new <span class="new-badge">v2.3.3</span></h2>
+      <h2 class="section-title">What's new <span class="new-badge">v2.3.4</span></h2>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
-        <h3 style="color:#ffa500;">QtPatWinlink — Pat Winlink, the LiaisonOS way</h3>
-        <p>Pat Winlink reimagined as a fully native Qt application — no browser tabs, no context switching. Touch Mode support from day one for 7&quot; tablets and car-mount screens. Inbox, Outbox, Sent and Archive views with one-tap fetch, a double-tap-to-connect RMS table with band/mode/distance filtering and favourites, and a session console with live progress, smart Abort/Disconnect handling and automatic retry behaviour for VARA and Mercury.</p>
+        <h3 style="color:#ffa500;">Dashboard Menu — Fully Customizable</h3>
+        <p>The mode menu is now driven by a JSON config file. Hide modes you never use, reorder groups, rename labels, or create your own custom groups — all without recompiling. Edit a single file and the dashboard reloads in real time. The same config drives both Desktop and Touch layouts. A built-in template documents every override option so customization is easy to discover.</p>
       </div>
 
       <div class="card" style="margin-top: 8px;">
-        <h3>Pat Forms — Embedded in the App</h3>
-        <p>The full Pat Forms catalog renders directly inside QtPatWinlink via an embedded web view — pick a form, fill it in, send it. No external browser, no separate workflow. Position reports are integrated too, with one-tap submission of your current GPS location to the active Winlink session.</p>
+        <h3>Strip Mode — Reclaim Your Desktop</h3>
+        <p>Click <code>⮕ STRIP</code> and the Desktop dashboard animates down to a slim 80&nbsp;px vertical sidebar — freeing your screen while keeping clock, GPS, callsign, rig, CAT/audio, active mode and recent modes always glanceable on the right edge. Click <code>⮜</code> to expand back. Mode icons and short tags fit cleanly in the narrow column.</p>
       </div>
 
       <div class="card" style="margin-top: 8px;">
-        <h3>et-supervisor — Hardened &amp; Snappy</h3>
-        <p>The mode supervisor got a deep rework for 2.3.3. SIGCHLD-driven process death detection means the dashboard updates instantly when a modem closes (no more half-stuck modes). Early state broadcast eliminates the &quot;had to click Stop twice&quot; behaviour. Zombie-process handling is fixed: closing VARA HF/FM now reliably ends the current mode. Thread-safety pass throughout.</p>
+        <h3>GPS — Live 3-state Indicator</h3>
+        <p>GPS status now reflects what the receiver is actually doing. Red when no GPS source is connected. Yellow while waiting for a fix or after signal loss. Green when a fix is active. Signal loss is reported live, not on a delay.</p>
       </div>
 
       <div class="card" style="margin-top: 8px;">
-        <h3>Mode Chains, Refined</h3>
-        <p>Each Winlink mode now launches QtPatWinlink as part of the mode chain — close the app and the entire mode shuts down cleanly. JS8Spotter joins the JS8Call chain with ignore-exit semantics so dismissing it doesn't take JS8Call with it. Smaller, smarter, less surprising.</p>
+        <h3>Modernized Brand Internals</h3>
+        <p>Internal configuration paths have been renamed to the LiaisonOS brand. A built-in compatibility layer transparently keeps any legacy script working. From an operator's perspective: nothing to change — your callsign, radios, repeaters, VARA, VarAC, logger and POTA databases all migrate themselves automatically the first time you restore your configuration on 2.3.4.</p>
       </div>
 
+      <div class="card" style="margin-top: 8px;">
+        <h3>Previous — v2.3.3</h3>
+        <p>QtPatWinlink — Pat Winlink reimagined as a fully native Qt application with embedded Pat Forms rendering, Touch Mode support, smart Abort/Disconnect handling and VARA/Mercury retry behaviour. Mode supervisor hardening: SIGCHLD-driven process death, snappier UI, fixed zombie handling.</p>
+      </div>
       <div class="card" style="margin-top: 8px;">
         <h3>Previous — v2.3.2</h3>
         <p>QtTerminal — LiaisonOS introduced its own terminal app to host Paracon, Chattervox and LinBPQ, giving us better control over modes that still need a terminal interface.</p>
@@ -441,28 +445,32 @@
       </div>
     </div>
     <div class="lang-fr">
-      <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.3</span></h2>
+      <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.4</span></h2>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
-        <h3 style="color:#ffa500;">QtPatWinlink — Pat Winlink, version LiaisonOS</h3>
-        <p>Pat Winlink réinventé en application Qt entièrement native — fini les onglets de navigateur et les changements de contexte. Support du mode Tactile dès le premier jour pour tablettes 7&quot; et écrans en véhicule. Vues Inbox, Outbox, Envoyés et Archive avec récupération en un tap, table RMS connectable au double-tap avec filtres bande/mode/distance et favoris, console de session avec progression en direct, gestion intelligente Abort/Disconnect et reprise automatique pour VARA et Mercury.</p>
+        <h3 style="color:#ffa500;">Menu du tableau de bord — Entièrement personnalisable</h3>
+        <p>Le menu des modes est désormais piloté par un fichier JSON. Masquez les modes que vous n'utilisez pas, réorganisez les groupes, renommez les libellés, créez vos propres groupes personnalisés — le tout sans recompiler. Modifiez un seul fichier et le tableau de bord se recharge en temps réel. La même configuration alimente les dispositions Bureau et Tactile. Un modèle intégré documente toutes les options de personnalisation pour faciliter la découverte.</p>
       </div>
 
       <div class="card" style="margin-top: 8px;">
-        <h3>Formulaires Pat — Intégrés à l'application</h3>
-        <p>Le catalogue complet des formulaires Pat s'affiche directement dans QtPatWinlink via une vue web intégrée — choisissez un formulaire, remplissez-le, envoyez-le. Aucun navigateur externe, aucun flux séparé. Les rapports de position sont aussi intégrés : transmission en un tap de votre position GPS actuelle vers la session Winlink active.</p>
+        <h3>Mode Strip — Récupérez votre bureau</h3>
+        <p>Cliquez sur <code>⮕ STRIP</code> et le tableau de bord Bureau se rétracte en une barre verticale fine de 80&nbsp;px — libérant votre écran tout en gardant l'horloge, le GPS, l'indicatif, la radio, le statut CAT/audio, le mode actif et les modes récents toujours visibles d'un coup d'œil sur le bord droit. Cliquez sur <code>⮜</code> pour revenir à la pleine taille. Icônes et étiquettes courtes s'adaptent à la colonne étroite.</p>
       </div>
 
       <div class="card" style="margin-top: 8px;">
-        <h3>et-supervisor — Solidifié et réactif</h3>
-        <p>Le superviseur de modes a reçu une refonte en profondeur pour 2.3.3. Détection de fin de processus pilotée par SIGCHLD : le tableau de bord se met à jour instantanément lorsqu'un modem ferme (plus de modes à moitié bloqués). Diffusion d'état précoce qui élimine le « il fallait cliquer Stop deux fois ». Gestion des processus zombies corrigée : fermer VARA HF/FM termine maintenant le mode actif de façon fiable. Vérification de sûreté multithread partout.</p>
+        <h3>GPS — Indicateur 3-états en direct</h3>
+        <p>Le statut GPS reflète maintenant ce que le récepteur fait réellement. Rouge lorsqu'aucune source GPS n'est connectée. Jaune en attente d'un fix ou après une perte de signal. Vert quand le fix est actif. Les pertes de signal sont signalées en direct, sans délai.</p>
       </div>
 
       <div class="card" style="margin-top: 8px;">
-        <h3>Chaînes de modes, raffinées</h3>
-        <p>Chaque mode Winlink lance désormais QtPatWinlink dans sa chaîne — fermez l'application et tout le mode s'arrête proprement. JS8Spotter rejoint la chaîne JS8Call avec sémantique « ignore-exit » : le fermer ne ferme plus JS8Call avec lui. Plus petit, plus intelligent, moins surprenant.</p>
+        <h3>Modernisation des chemins internes</h3>
+        <p>Les chemins de configuration interne ont été renommés à la marque LiaisonOS. Une couche de compatibilité intégrée garde tous les scripts existants fonctionnels de manière transparente. Du point de vue de l'opérateur : rien à changer — votre indicatif, vos radios, répéteurs, VARA, VarAC, journal et base POTA migrent automatiquement la première fois que vous restaurez votre configuration sur 2.3.4.</p>
       </div>
 
+      <div class="card" style="margin-top: 8px;">
+        <h3>Précédente — v2.3.3</h3>
+        <p>QtPatWinlink — Pat Winlink réinventé en application Qt entièrement native avec rendu des formulaires Pat intégré, support du mode Tactile, gestion intelligente Abort/Disconnect et reprise automatique VARA/Mercury. Solidification du superviseur : détection de fin de processus pilotée par SIGCHLD, interface plus réactive, gestion zombie corrigée.</p>
+      </div>
       <div class="card" style="margin-top: 8px;">
         <h3>Précédente — v2.3.2</h3>
         <p>QtTerminal — LiaisonOS a introduit son propre terminal pour accueillir Paracon, Chattervox et LinBPQ, avec un meilleur contrôle des modes qui demandent encore une interface terminal.</p>

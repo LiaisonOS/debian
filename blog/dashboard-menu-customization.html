@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customize the LiaisonOS Dashboard Menu — LiaisonOS Blog</title>
+  <meta name="description" content="The LiaisonOS 2.3.4 Dashboard menu is now driven by a JSON config file — hide modes you don't use, rename labels, build your own custom groups, all without recompiling.">
+  <link rel="canonical" href="https://liaisonos.com/blog/dashboard-menu-customization.html">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://liaisonos.com/blog/dashboard-menu-customization.html">
+  <meta property="og:title" content="Customize the LiaisonOS Dashboard Menu — LiaisonOS">
+  <meta property="og:description" content="Edit one JSON file and watch the dashboard refresh in real time. Hide modes, rename, reorder, build custom groups. Same config drives Desktop and Touch.">
+  <meta property="og:image" content="https://liaisonos.com/blog/imgs/dashboard-menu-customization.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    code { font-family: 'IBM Plex Mono', monospace; background: #16231a;
+           padding: 1px 5px; border-radius: 3px; color: #7de8b0; font-size: 13px; }
+    pre {
+      background: #0a1410; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 6px; padding: 0.875rem 1rem; margin: 0.5rem 0 1rem;
+      overflow-x: auto; font-size: 12.5px; line-height: 1.55;
+    }
+    pre code { background: none; padding: 0; color: #cfeadd; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Home</a>
+    <a href="../download.html">Download</a>
+    <a href="index.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="dashboard-menu-customization_fr.html" class="lang-link">🇫🇷 FR</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index.html">← Back to Blog</a>
+  <div class="article-meta">
+    <span class="article-date">2026-05-20</span>
+    <span class="article-tag">Dashboard</span>
+    <span class="article-tag">Customization</span>
+    <span class="article-tag">2.3.4</span>
+  </div>
+  <h1 class="article-title">Customize the <span>LiaisonOS Dashboard Menu</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">The Dashboard mode menu is now driven by a JSON config file. Hide modes you don't use, rename labels, build your own custom groups — all without recompiling, with live reload on save.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.3.4</p>
+</div>
+
+<div class="article-body">
+
+  <h2>Why a <span>JSON-driven menu</span></h2>
+  <p>Every LiaisonOS operator runs a slightly different mix of modes. Some never touch ARDOP, some don't have a Mercury modem yet, some want Winlink VARA HF front-and-center while others live on JS8Call. Until 2.3.4, the dashboard menu was compiled into the binary — adapting it meant rebuilding from source.</p>
+  <p>In 2.3.4, the menu becomes data. A single JSON file describes every group, every mode card, every label and icon. The dashboard reads it at startup and watches the file for changes. Edit, save, the menu refreshes in place. No restart.</p>
+
+  <h2>Your <span>overrides file</span></h2>
+  <p>LiaisonOS ships a default menu — the same one you see on a fresh install. Your customizations go into a separate <strong>overrides</strong> file in your home directory:</p>
+  <ul>
+    <li><code>~/.config/liaisonos/dashboard-menu.overrides.json</code> — your customizations, survives upgrades</li>
+  </ul>
+  <p>The dashboard merges this file with the built-in defaults on every reload. The file is created automatically on first launch with documentation and examples baked in. Open it to see every available option.</p>
+
+  <h2>What you can <span>change</span></h2>
+  <p>The overrides file supports six kinds of edits. All are optional — keep what you don't need empty.</p>
+  <ul>
+    <li><strong><code>hide_modes</code></strong> — list of mode IDs to hide from the menu</li>
+    <li><strong><code>hide_groups</code></strong> — entire group IDs to hide (e.g. drop the BBS group if you don't use it)</li>
+    <li><strong><code>relabel</code></strong> — rename a mode (e.g. show "VarAC HF" instead of "VarAC (VARA Chat)")</li>
+    <li><strong><code>add_to_group</code></strong> — add your own custom modes to an existing group</li>
+    <li><strong><code>custom_groups</code></strong> — define entirely new groups, with their own title and items</li>
+    <li><strong><code>group_order</code></strong> — reorder groups; unlisted groups follow in their default order</li>
+  </ul>
+
+  <h2>Hide a <span>mode you don't use</span></h2>
+  <p>The simplest customization: pull a mode you never run out of the menu. Open <code>~/.config/liaisonos/dashboard-menu.overrides.json</code> and add:</p>
+<pre><code>{
+  "hide_modes": ["winlink-ardop", "chat-chattervox-bt"]
+}</code></pre>
+  <p>Save. The ARDOP option vanishes from the Winlink picker, and Chattervox (BT) disappears from the Messaging group. The hidden mode still exists — you just don't see it in the menu. Remove the entry to bring it back.</p>
+
+  <h2>Hide an entire <span>group</span></h2>
+  <p>If you never run a BBS, you can drop the whole BBS group:</p>
+<pre><code>{
+  "hide_groups": ["bbs"]
+}</code></pre>
+  <p>The dashboard now has Messaging, APRS, and Tools — that's it.</p>
+
+  <h2>Rename a mode</h2>
+  <p>Use whatever label makes sense to you:</p>
+<pre><code>{
+  "relabel": {
+    "varac":   "VarAC HF",
+    "js8call": "JS8"
+  }
+}</code></pre>
+
+  <h2>Add a <span>custom group</span></h2>
+  <p>Group your most-used modes into a "Favorites" section at the top of the menu:</p>
+<pre><code>{
+  "custom_groups": [
+    {
+      "id": "favorites",
+      "title_en": "MY FIELD STACK",
+      "title_fr": "MA STATION TERRAIN",
+      "icon": "⭐",
+      "items": [
+        { "type": "mode", "id": "varac",   "label": "VarAC",   "strip_icon": "💬" },
+        { "type": "mode", "id": "js8call", "label": "JS8Call", "strip_icon": "📻" },
+        { "type": "mode", "id": "winlink-vara-hf", "label": "Winlink VARA HF", "strip_icon": "📧" }
+      ]
+    }
+  ],
+  "group_order": ["favorites", "messaging", "aprs", "bbs", "tools"]
+}</code></pre>
+  <p>Your new <strong>MY FIELD STACK</strong> group appears first, with the three modes you actually use. Everything else stays in its default place after it.</p>
+
+  <div class="note">
+    <strong>Tip:</strong> The <code>strip_icon</code> field is an emoji shown in <a href="#">Strip Mode</a> when the dashboard is collapsed. Pick whatever symbol speaks to you — 💬 for chat, 📧 for email, 🐺 for Chattervox, etc. The icon is rendered via Noto Color Emoji (ships with LiaisonOS).
+  </div>
+
+  <h2>Live reload</h2>
+  <p>You don't have to restart QtDashboard. The dashboard watches the override file for changes — when you save in your editor, the menu rebuilds in roughly 200 ms. Try it: open the file in <code>nano</code> or your editor of choice, add <code>"hide_modes": ["fldigi"]</code>, save, and watch the fldigi button disappear from the side panel.</p>
+  <p>This is how the future 2.3.5 visual menu editor (a Flask web app, same pattern as et-radio) will work: it writes to the overrides file, the dashboard live-reloads, you see the result instantly without ever touching JSON yourself.</p>
+
+  <h2>Both <span>UIs share one config</span></h2>
+  <p>The same overrides file drives both the <strong>Desktop</strong> mode menu (sidebar) and the <strong>Touch</strong> mode card grid. Hide a mode here and it's hidden from your 7&quot; tablet too. No per-UI duplication.</p>
+  <p>In <strong>Strip Mode</strong> — the 80 px collapsed sidebar new in 2.3.4 — your recent modes show their <code>strip_icon</code> emoji plus a short tag derived from the menu config.</p>
+
+  <h2>Forward-compatible</h2>
+  <p>If you upgrade LiaisonOS and a mode you'd hidden no longer exists (we removed it, you renamed it, whatever), the overrides file silently ignores that entry. Nothing breaks. The merge is forgiving.</p>
+  <p>Same goes for adding new modes: when LiaisonOS 2.3.5 ships and adds a mode to the Messaging group, you'll see it automatically — even if you have heavy customizations. The system default carries the update; your overrides only describe deltas.</p>
+
+  <h2>Reset to defaults</h2>
+  <p>If you want to wipe your customizations and go back to stock:</p>
+<pre><code>rm ~/.config/liaisonos/dashboard-menu.overrides.json</code></pre>
+  <p>The dashboard recreates the file with the template content on next launch.</p>
+
+  <h2>Coming <span>next</span></h2>
+  <p>In <strong>v2.3.5</strong>, the Menu Editor lands — a Flask web app that turns all of this into a point-and-click UI. Drag groups to reorder, toggle modes with a checkbox, pick icons from a grid. Behind the scenes it writes the same JSON file you can edit by hand today.</p>
+  <p>The JSON-driven menu is the foundation. Everything else builds on top.</p>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">Available in LiaisonOS 2.3.4 and later &middot; Feature developed by VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>

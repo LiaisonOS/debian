@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.3-f59e0b?style=for-the-badge" alt="Version 2.3.3"></a>
+  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.4-f59e0b?style=for-the-badge" alt="Version 2.3.4"></a>
   <a href="https://liaisonos.com/download"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
@@ -56,6 +56,36 @@
 </table>
 
 ---
+
+## ✨ What's New in 2.3.4
+
+### 🧩 Dashboard Menu — Fully Customizable
+
+- **JSON-driven** — the mode menu is now defined in a single config file, not compiled into the dashboard
+- **Hide modes you don't use**, reorder groups, rename labels, create your own custom groups
+- **Live reload** — edit the file, the dashboard refreshes automatically (no restart)
+- **One config, both UIs** — Desktop and Touch layouts share the same configuration
+- **First-boot template** — documents every override option so customization is easy to discover
+
+### 📐 Strip Mode — Reclaim Your Desktop
+
+- **Collapsible Dashboard** — click `⮕ STRIP` and the Desktop dashboard animates to a slim 80 px vertical sidebar
+- **Glanceable status** — clock, GPS, callsign, rig, CAT/audio, active mode, recent modes always on the right edge
+- **One click to expand** — `⮜` brings it back to full size with a smooth 250 ms animation
+- **Mode icons + short tags** — each recent mode shows an emoji icon and a 3-5 char abbreviation, configurable per-mode in the menu JSON
+
+### 🛰️ GPS — Live 3-State Indicator
+
+- **Red** — no GPS source connected
+- **Yellow** — waiting for a fix or signal lost
+- **Green** — fix active and streaming
+- Signal loss is reported live, not on a delay
+
+### 🧱 Modernized Brand Internals
+
+- Configuration paths internally renamed to the LiaisonOS brand
+- Compatibility layer keeps any legacy script working transparently
+- Your callsign, radios, repeaters, VARA, VarAC, logger and POTA databases migrate themselves automatically the first time you restore your configuration on 2.3.4
 
 ## ✨ What's New in 2.3.3
 

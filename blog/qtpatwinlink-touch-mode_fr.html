@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QtPatWinlink — Pat Winlink, version LiaisonOS — LiaisonOS Blog</title>
+  <meta name="description" content="QtPatWinlink réinvente Pat Winlink en application Qt entièrement native avec mode Tactile dès le premier jour. Inbox / Outbox / Envoyés / Archive, table RMS connectable au double-tap, formulaires Pat intégrés, Abort/Disconnect intelligent — sans onglets de navigateur.">
+  <link rel="canonical" href="https://liaisonos.com/blog/qtpatwinlink-touch-mode_fr.html">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://liaisonos.com/blog/qtpatwinlink-touch-mode_fr.html">
+  <meta property="og:title" content="QtPatWinlink — Pat Winlink, version LiaisonOS">
+  <meta property="og:description" content="Pat Winlink réinventé en application Qt entièrement native — Inbox, Outbox, Envoyés, Archive, catalogue de formulaires Pat intégré, Abort/Disconnect intelligent, mode Tactile pour tablettes. Sans onglets, sans changement de contexte.">
+  <meta property="og:image" content="https://liaisonos.com/blog/imgs/qtpatwinlink-touch-mode.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    code { font-family: 'IBM Plex Mono', monospace; background: #16231a;
+           padding: 1px 5px; border-radius: 3px; color: #7de8b0; font-size: 13px; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 1rem 0; }
+    .feature-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .feature-card-icon { font-size: 20px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 4px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    .article-photo {
+      width: 100%; background: #16231a;
+      border: 1px solid rgba(125,232,176,0.12); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2rem; overflow: hidden;
+    }
+    .article-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index_fr.html">Accueil</a>
+    <a href="../download_fr.html">Téléchargement</a>
+    <a href="index_fr.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="qtpatwinlink-touch-mode.html" class="lang-link">🇨🇦 EN</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index_fr.html">← Retour au Blog</a>
+  <div class="article-meta">
+    <span class="article-date">2026-05-20</span>
+    <span class="article-tag">QtPatWinlink</span>
+    <span class="article-tag">Winlink</span>
+    <span class="article-tag">Mode Tactile</span>
+    <span class="article-tag">Formulaires Pat</span>
+  </div>
+  <h1 class="article-title">QtPatWinlink — <span>Pat Winlink, version LiaisonOS</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">Pat Winlink réinventé en application Qt entièrement native. Inbox, Outbox, catalogue de formulaires Pat intégré, gestion intelligente Abort/Disconnect, mode Tactile pour tablettes de terrain — sans onglets de navigateur, sans changement de contexte.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.3.3 &middot; affiné en 2.3.4</p>
+</div>
+
+<div style="max-width:720px; margin:0 auto; padding:0 2rem;">
+  <div class="article-photo">
+    <img src="imgs/qtpatwinlink-touch-mode.png" alt="QtPatWinlink — Vues Inbox et Compose sur une tablette 7&quot;" style="max-width:100%; height:auto; display:block; margin:0 auto; border-radius:10px;">
+  </div>
+</div>
+
+<div class="article-body">
+
+  <h2>Le <span>problème du navigateur</span></h2>
+  <p>Pat Winlink est l'une des meilleures choses arrivées au courrier radio amateur de la dernière décennie. C'est rapide, fiable, scriptable, et l'équipe derrière livre régulièrement. Il y a juste une chose — la façon standard d'utiliser Pat est via un onglet de navigateur. Vous ouvrez un terminal, lancez <code>pat http</code>, puis ouvrez Firefox sur <code>localhost:8080</code>, et cliquez dans une interface web.</p>
+  <p>Ça fonctionne sur un bureau. Ça fonctionne aussi, péniblement, sur une tablette. Mais ce n'est jamais tout à fait <em>correct</em>. Vous avez trois fenêtres à gérer. Le navigateur ne connaît pas votre radio. Les interactions tactiles sont gauches. Les changements de contexte prennent des secondes que vous n'avez pas en déploiement terrain. Et sur l'écran d'une Toughpad 7", le chrome du navigateur seul mange 20 % de votre surface visible.</p>
+  <p>LiaisonOS 2.3.3 a introduit <strong>QtPatWinlink</strong> — Pat Winlink réinventé en application Qt entièrement native. L'interface web a disparu. Le navigateur a disparu. Ce que vous obtenez est une seule application qui ressemble et se comporte comme si elle avait été conçue pour la radio amateur dès le premier jour.</p>
+
+  <div class="note">
+    <strong>Important à dire clairement :</strong> Pat lui-même n'est pas modifié. Nous n'avons pas forké Pat ni concurrencé avec lui. <code>pat http</code> tourne toujours en arrière-plan, faisant le gros du travail. QtPatWinlink est un nouveau client qui parle aux API REST et WebSocket de Pat — de la même façon que l'interface web le fait, mais en natif.
+  </div>
+
+  <h2>Une app, <span>quatre boîtes</span></h2>
+  <p>Le haut de la fenêtre est une barre de boîtes : <strong>Inbox</strong>, <strong>Outbox</strong>, <strong>Envoyés</strong>, <strong>Archive</strong>. Tapez n'importe quel onglet, voyez une liste propre de messages. Tapez un message, il s'ouvre dans une boîte de dialogue avec le corps, les en-têtes et les pièces jointes. Le marquage-comme-lu se fait automatiquement quand vous lisez un message — pas de bouton séparé à gérer.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-card-icon">📥</div>
+      <div class="feature-card-title">Inbox</div>
+      <div class="feature-card-desc">Messages non lus en gras, indicateur de pièce jointe, triable par date/expéditeur/sujet</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">📤</div>
+      <div class="feature-card-title">Outbox</div>
+      <div class="feature-card-desc">Messages en attente avec taille et RMS cible affichés</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">✉️</div>
+      <div class="feature-card-title">Envoyés</div>
+      <div class="feature-card-desc">Confirmations de livraison et horodatages</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">📁</div>
+      <div class="feature-card-title">Archive</div>
+      <div class="feature-card-desc">Stockage long terme avec mêmes vue et recherche que l'Inbox</div>
+    </div>
+  </div>
+
+  <h2>Composer <span>sans le chrome</span></h2>
+  <p>Composer un message dans l'interface web signifie un textarea dans un navigateur dans un gestionnaire de fenêtres. La <strong>vue Compose</strong> de QtPatWinlink est juste le formulaire — destinataires, sujet, corps, pièces jointes, envoi. Hauteurs de champs adaptées au tactile, le coller depuis le presse-papiers fonctionne, pas de surprises d'auto-correction du navigateur.</p>
+  <p>Les pièces jointes sont ajoutées avec un vrai dialogue de sélection de fichier (pas un input file de navigateur). Plusieurs fichiers à la fois. Le glisser-déposer fonctionne sur bureau.</p>
+
+  <h2>Connexion RMS — <span>double-tap et c'est parti</span></h2>
+  <p>C'est là que l'interface native paie vraiment. La liste RMS de l'interface web est une table — correcte sur bureau, terrible sur tactile. QtPatWinlink affiche les mêmes données comme une <strong>table tactile à grandes lignes</strong> avec trois contrôles de filtre dans une barre d'outils mince en haut : <strong>bande</strong>, <strong>mode</strong>, <strong>distance</strong>. Appuyez sur le bouton de filtre pour choisir ; la table se met à jour sur place.</p>
+  <p>Chaque ligne affiche l'indicatif, la fréquence, la distance, le mode et la fréquence d'accord. <strong>Double-tapez une ligne pour vous connecter</strong> — pas de bouton « Connecter » séparé à trouver. La console de session s'ouvre immédiatement et vous voilà parti.</p>
+  <p>Les favoris sont persistants. Mettez une étoile sur un RMS une fois, ça reste. Le dernier RMS sélectionné est également mémorisé, donc la prochaine fois que vous ouvrez la vue Connect, votre station la plus récente est mise en évidence.</p>
+
+  <h2>Console de session — <span>enfin, une ligne d'état qui a du sens</span></h2>
+  <p>C'est l'écran sur lequel vous vivez pendant qu'une session tourne. En haut : une étiquette d'état qui dit exactement ce qui se passe — « Dialing FN35XB-10... » ou « Connected — VA2BOB-10 ». Au milieu : une barre de progression en direct avec les octets transférés pendant les transferts. En bas : un journal console de chaque événement de protocole que Pat rapporte — handshakes, transferts de fichiers, ACKs, reprises.</p>
+
+  <h3 style="font-size:14px; color:#e8f5ee; font-weight:500; margin-top:1.5rem; margin-bottom:0.5rem;">Abort / Disconnect intelligent</h3>
+  <p>La chose la plus douloureuse à propos des sessions VARA HF et Mercury est la danse pour essayer de se déconnecter pendant une boucle de reprise. VARA met votre déconnexion en file d'attente, puis l'ignore parce que le modem est au milieu d'un handshake sur la reprise suivante. Vous attendez. Rien ne se passe. Vous abandonnez et tuez le mode.</p>
+  <p>QtPatWinlink gère ça pour vous. L'étiquette du bouton change selon le contexte :</p>
+  <ul>
+    <li><strong>« Abort »</strong> — affiché quand Pat compose encore. Envoie <code>/api/disconnect</code> immédiatement, puis encore 2 secondes plus tard, puis 5 secondes après ça. Attrape VARA entre les reprises.</li>
+    <li><strong>« Disconnect »</strong> — affiché quand vous êtes réellement connecté. Envoie une seule déconnexion gracieuse.</li>
+  </ul>
+  <p>Et de manière critique — Abort <strong>termine seulement la tentative de connexion en cours</strong>. Le mode lui-même (pat-http, le modem) continue de tourner. Choisissez une autre station, réessayez. Pas besoin de relancer toute la pile.</p>
+
+  <h2>Formulaires Pat — <span>intégrés à l'application</span></h2>
+  <p>Les formulaires Pat standards — la grande bibliothèque de modèles structurés de Winlink pour communications d'urgence, rapports de position, ICS-213, présences ARES, etc. — vivent normalement dans un onglet de navigateur séparé pointé vers <code>localhost:8080/forms</code>. Choisissez un formulaire, remplissez-le en HTML, le navigateur le rend à Pat, Pat compose le message.</p>
+  <p>Dans QtPatWinlink, <strong>tout ça se passe à l'intérieur de l'application</strong>. Un bouton « Forms » ouvre le sélecteur de catalogue. Choisissez un formulaire, il s'affiche dans une vue web intégrée stylisée pour correspondre au reste de l'interface. Remplissez-le, appuyez sur Submit, le message atterrit dans votre Outbox prêt à envoyer. Sans navigateur externe. Sans jonglerie avec le presse-papiers. Sans onglets.</p>
+  <p>Le catalogue est l'ensemble complet des formulaires Pat — plus de 1 200 modèles de la FEMA, ARES, NTS, RACES, groupes SAR de comté, etc. Ils sont mis à jour via le mécanisme <code>formsUpdate</code> normal de Pat ; QtPatWinlink héberge un bouton pour ça aussi.</p>
+
+  <h2>Mode Tactile — <span>prêt pour le terrain</span></h2>
+  <p>Comme chaque app touchant l'UI dans LiaisonOS, QtPatWinlink lit le drapeau Mode Tactile depuis votre config utilisateur. Réglez-le une fois dans QtDashboard et toute l'app se réorganise :</p>
+  <ul>
+    <li>Polices plus grandes partout (13&nbsp;pt vs 10&nbsp;pt sur bureau)</li>
+    <li>Les lignes de boîtes passent de 28&nbsp;px à 48&nbsp;px — cibles tactiles confortables</li>
+    <li>Les boutons passent de compacts à 48&nbsp;px épais et tactiles</li>
+    <li>Les listes déroulantes de filtres deviennent des sélecteurs plein écran</li>
+    <li>Le menu d'actions devient une pile verticale de gros boutons au lieu d'un menu système</li>
+    <li>L'appui long sélectionne le texte dans les visualiseurs de messages (puisque vous n'avez pas de souris)</li>
+  </ul>
+  <p>Le même binaire sert les deux dispositions. Les opérateurs qui utilisent un Shack bureau et une tablette tactile dans leur véhicule obtiennent une expérience cohérente sur les deux — juste un dimensionnement différent.</p>
+
+  <h2>Chaînes de modes — <span>fermez l'app, le mode s'arrête</span></h2>
+  <p>Dans LiaisonOS 2.3.4, chaque mode Winlink lance QtPatWinlink comme partie de la chaîne de mode. Fermez la fenêtre de l'app et tout le mode s'arrête proprement — Pat http, le modem, rigctld — tout disparaît. Pas de processus orphelins, pas d'états « en cours » à moitié bloqués, pas besoin de trouver manuellement le bouton Stop sur le tableau de bord.</p>
+  <p>Si vous voulez juste vous déconnecter de votre station actuelle mais garder le mode en cours pour une autre tentative, c'est le bouton <em>Disconnect</em>. Si vous avez terminé pour la session, fermez simplement la fenêtre. Le superviseur s'occupe du reste.</p>
+
+  <h2>Comment l'utiliser</h2>
+  <ol>
+    <li>Depuis QtDashboard, lancez n'importe quel mode Winlink (VARA HF, VARA FM, ARDOP, Mercury, Packet)</li>
+    <li>QtPatWinlink s'ouvre automatiquement une fois le serveur HTTP de Pat prêt</li>
+    <li>Naviguez Inbox / Outbox / Envoyés / Archive depuis la barre du haut</li>
+    <li>Composez un nouveau message ou choisissez un formulaire Pat</li>
+    <li>Tapez la vue Connect, filtrez par bande/mode/distance, double-tapez un RMS pour composer</li>
+    <li>Surveillez la console de session ; Abort / Disconnect au besoin</li>
+    <li>Fermez la fenêtre quand terminé — le mode s'arrête automatiquement</li>
+  </ol>
+
+  <h2>À venir <span>ensuite</span></h2>
+  <p>QtPatWinlink est maintenant le client Winlink canonique dans LiaisonOS. Le travail futur se concentre sur le polissage — meilleurs aperçus de pièces jointes, recherche de messages dans les quatre boîtes, possiblement un mode aperçu rapide pour trier les Inbox longues pendant les nets.</p>
+  <p>Et comme toujours, Pat lui-même reste dans la boucle. Nous sommes un client, pas un fork. Quand Pat livre de nouvelles fonctionnalités, QtPatWinlink les récupère via la même API REST que l'interface web utilise.</p>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">Introduit dans LiaisonOS 2.3.3 &middot; Affiné en 2.3.4 &middot; Client Qt natif construit au-dessus de Pat Winlink &middot; Fonctionnalité développée par VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Québec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>
