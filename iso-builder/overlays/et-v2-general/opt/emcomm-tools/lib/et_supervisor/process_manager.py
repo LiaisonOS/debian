@@ -218,6 +218,14 @@ class ProcessManager:
     def check_process(self, name):
         """Check if a process is still alive. Updates state if crashed.
 
+        Uses subprocess.Popen.poll() as the authoritative check — it
+        detects both normal exits and zombies (process exited, kernel
+        still has the table entry until the parent reaps it). os.kill(pid, 0)
+        alone misses zombies, which was the root cause of "supervisor
+        doesn't notice when the user closes VARA / Mercury / etc." Falls
+        back to signal-0 only if no Popen handle is available (shouldn't
+        happen in normal flow).
+
         Returns:
             True if process is running, False if crashed/stopped.
         """
@@ -225,25 +233,36 @@ class ProcessManager:
         if not proc_info or proc_info.state != "RUNNING":
             return False
 
-        pid = proc_info.pid
-        try:
-            os.kill(pid, 0)  # Signal 0 = just check if alive, don't send anything
-            return True  # Still running
-        except ProcessLookupError:
-            # Process is gone — check exit code via Popen if available
-            proc = proc_info.process
-            exit_code = proc.poll() if proc else None
-            proc_info.exit_code = exit_code if exit_code is not None else 0
+        proc = proc_info.process
+        if proc is not None:
+            exit_code = proc.poll()
+            if exit_code is None:
+                return True  # still running
+            proc_info.exit_code = exit_code
             proc_info.pid = None
-            if proc_info.exit_code == 0:
+            if exit_code == 0:
                 proc_info.state = "STOPPED"
                 log.info("Process %s exited normally (code 0)", name)
             else:
                 proc_info.state = "CRASHED"
-                log.warning("Process %s crashed (exit code %d)", name, proc_info.exit_code)
+                log.warning("Process %s crashed (exit code %d)",
+                            name, exit_code)
+            return False
+
+        # Fallback — should be unreachable since start_process always stores
+        # a Popen handle. Kept for safety.
+        pid = proc_info.pid
+        if pid is None:
+            return False
+        try:
+            os.kill(pid, 0)
+            return True
+        except ProcessLookupError:
+            proc_info.state = "STOPPED"
+            proc_info.pid = None
             return False
         except PermissionError:
-            return True  # Process exists but we can't signal it — still alive
+            return True
 
     def get_status(self):
         """Return status dict for all tracked processes."""

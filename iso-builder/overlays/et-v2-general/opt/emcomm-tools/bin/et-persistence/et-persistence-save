@@ -449,7 +449,7 @@ plymouth_msg "EmComm-Tools: Saving user settings..."
 
 # --- EmComm-Tools Core ---
 # SAFETY CHECK: Don't overwrite a valid callsign with N0CALL/empty!
-LOCAL_USER_JSON="${HOME}/.config/emcomm-tools/user.json"
+LOCAL_USER_JSON="${HOME}/.config/liaisonos/user.json"
 USB_USER_JSON="${PERSISTENCE_PATH}/user.json"
 
 if [[ -f "$LOCAL_USER_JSON" ]]; then
@@ -490,7 +490,7 @@ if [[ -L "$ACTIVE_RADIO" ]]; then
 fi
 
 # --- Custom Radio Configs ---
-USER_RADIOS="${HOME}/.config/emcomm-tools/radios.d"
+USER_RADIOS="${HOME}/.config/liaisonos/radios.d"
 if [[ -d "$USER_RADIOS" ]] && [[ -n "$(ls -A "$USER_RADIOS" 2>/dev/null)" ]]; then
     cp -f "$USER_RADIOS"/*.json "${PERSISTENCE_PATH}/configs/radios/" 2>/dev/null || true
     RADIO_COUNT=$(ls -1 "${PERSISTENCE_PATH}/configs/radios/"*.json 2>/dev/null | wc -l)
@@ -498,7 +498,7 @@ if [[ -d "$USER_RADIOS" ]] && [[ -n "$(ls -A "$USER_RADIOS" 2>/dev/null)" ]]; th
 fi
 
 # --- Repeater Directory Data ---
-REPEATER_DIR="${HOME}/.config/emcomm-tools/repeaters"
+REPEATER_DIR="${HOME}/.config/liaisonos/repeaters"
 if [[ -d "$REPEATER_DIR" ]] && [[ -n "$(ls -A "$REPEATER_DIR" 2>/dev/null)" ]]; then
     mkdir -p "${PERSISTENCE_PATH}/configs/repeaters"
     cp -f "$REPEATER_DIR"/*.json "${PERSISTENCE_PATH}/configs/repeaters/" 2>/dev/null || true
@@ -508,8 +508,8 @@ else
 fi
 
 # --- VarAC License (IMPORTANT!) ---
-save_file "${HOME}/.config/emcomm-tools/varac/license.flag" "${PERSISTENCE_PATH}/varac/license.flag" "VarAC license"
-save_file "${HOME}/.config/emcomm-tools/varac/license-audit.log" "${PERSISTENCE_PATH}/varac/license-audit.log" "VarAC audit log"
+save_file "${HOME}/.config/liaisonos/varac/license.flag" "${PERSISTENCE_PATH}/varac/license.flag" "VarAC license"
+save_file "${HOME}/.config/liaisonos/varac/license-audit.log" "${PERSISTENCE_PATH}/varac/license-audit.log" "VarAC audit log"
 
 # --- Pat Winlink ---
 plymouth_msg "EmComm-Tools: Saving Pat/Winlink..."
@@ -534,7 +534,7 @@ save_file "${HOME}/.config/WSJT-X.ini" "${PERSISTENCE_PATH}/configs/wsjtx/WSJT-X
 
 # --- QtMercury ---
 mkdir -p "${PERSISTENCE_PATH}/configs/QtMercury"
-save_file "${HOME}/.config/emcomm-tools/qtmercury.ini" "${PERSISTENCE_PATH}/configs/QtMercury/qtmercury.ini" "QtMercury"
+save_file "${HOME}/.config/liaisonos/qtmercury.ini" "${PERSISTENCE_PATH}/configs/QtMercury/qtmercury.ini" "QtMercury"
 
 # --- QtTermTCP ---
 mkdir -p "${PERSISTENCE_PATH}/configs/QtTermTCP"
@@ -790,8 +790,8 @@ chmod -R g+rwX "${PERSISTENCE_PATH}/" 2>/dev/null || true
 # ===========================================================================
 
 CALLSIGN="UNKNOWN"
-if [[ -f "${HOME}/.config/emcomm-tools/user.json" ]]; then
-    CALLSIGN=$(jq -r '.callsign // "UNKNOWN"' "${HOME}/.config/emcomm-tools/user.json")
+if [[ -f "${HOME}/.config/liaisonos/user.json" ]]; then
+    CALLSIGN=$(jq -r '.callsign // "UNKNOWN"' "${HOME}/.config/liaisonos/user.json")
 fi
 
 cat > "${PERSISTENCE_PATH}/manifest.json" << EOF

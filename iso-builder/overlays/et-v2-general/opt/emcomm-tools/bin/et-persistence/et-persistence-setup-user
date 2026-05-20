@@ -8,10 +8,12 @@
 # Save happens on SHUTDOWN only via system service emcomm-persistence-save.service
 #
 
-SETUP_FLAG="${HOME}/.config/emcomm-tools/.persistence-setup-complete"
+SETUP_FLAG="${HOME}/.config/liaisonos/.persistence-setup-complete"
+LEGACY_SETUP_FLAG="${HOME}/.config/emcomm-tools/.persistence-setup-complete"
 
-# Only run once
-if [[ -f "$SETUP_FLAG" ]]; then
+# Only run once. Honour the legacy flag too so existing users from
+# pre-2.3.4 don't get the welcome notification twice.
+if [[ -f "$SETUP_FLAG" ]] || [[ -f "$LEGACY_SETUP_FLAG" ]]; then
     exit 0
 fi
 

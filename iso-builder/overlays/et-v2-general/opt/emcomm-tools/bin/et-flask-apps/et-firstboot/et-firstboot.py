@@ -1282,7 +1282,7 @@ def save_to_persistence():
             config = {}
         
         # Copy VarAC license flag if it exists
-        local_varac_license = Path.home() / ".config" / "emcomm-tools" / "varac" / "license.flag"
+        local_varac_license = Path.home() / ".config" / "liaisonos" / "varac" / "license.flag"
         usb_varac_license = varac_dir / "license.flag"
         
         if local_varac_license.exists():
@@ -1292,7 +1292,7 @@ def save_to_persistence():
             print(f"[PERSISTENCE] VarAC license not yet accepted (no flag file)")
         
         # Copy VarAC audit log if it exists
-        local_varac_audit = Path.home() / ".config" / "emcomm-tools" / "varac" / "license-audit.log"
+        local_varac_audit = Path.home() / ".config" / "liaisonos" / "varac" / "license-audit.log"
         usb_varac_audit = varac_dir / "license-audit.log"
         
         if local_varac_audit.exists():

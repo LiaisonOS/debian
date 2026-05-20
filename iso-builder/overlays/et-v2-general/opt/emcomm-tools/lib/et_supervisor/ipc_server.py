@@ -2,7 +2,11 @@
 IPCServer: Unix domain socket server for dashboard/CLI communication.
 
 Listens on /run/user/$UID/et-supervisor.sock
-Protocol: newline-delimited JSON request/response.
+Protocol: newline-delimited JSON request/response. Connections are persistent —
+clients may send multiple commands on one socket, and the server pushes status
+broadcasts to all connected clients whenever the mode/process state changes.
+Broadcasts carry an "_event": "status" marker so request/response code paths
+can ignore unsolicited pushes.
 
 Commands:
   {"cmd": "status"}                          -> current mode + process states
@@ -34,6 +38,10 @@ class IPCServer:
         self._socket = None
         self._thread = None
         self._stop_event = threading.Event()
+        # Active connections: {conn_id: {"sock": socket, "lock": Lock}}
+        self._conns = {}
+        self._conns_lock = threading.Lock()
+        self._next_conn_id = 0
 
     @property
     def socket_path(self):
@@ -41,14 +49,13 @@ class IPCServer:
 
     def start(self):
         """Start the IPC server thread."""
-        # Clean up stale socket
         if os.path.exists(SOCKET_PATH):
             os.unlink(SOCKET_PATH)
 
         self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self._socket.bind(SOCKET_PATH)
         os.chmod(SOCKET_PATH, 0o600)
-        self._socket.listen(5)
+        self._socket.listen(8)
         self._socket.settimeout(1.0)
 
         self._stop_event.clear()
@@ -57,11 +64,19 @@ class IPCServer:
         log.info("IPC server listening on %s", SOCKET_PATH)
 
     def stop(self):
-        """Stop the IPC server."""
         self._stop_event.set()
         if self._socket:
             try:
                 self._socket.close()
+            except OSError:
+                pass
+        # Close active connections so handler threads exit
+        with self._conns_lock:
+            entries = list(self._conns.values())
+            self._conns.clear()
+        for entry in entries:
+            try:
+                entry["sock"].close()
             except OSError:
                 pass
         if self._thread:
@@ -70,11 +85,42 @@ class IPCServer:
             os.unlink(SOCKET_PATH)
         log.info("IPC server stopped")
 
+    def broadcast_status(self):
+        """Push current status JSON to all connected clients.
+
+        Each write is guarded by the connection's own lock so a broadcast
+        can't interleave with a command response on the same socket.
+        """
+        try:
+            payload = self._cmd_status()
+            payload["_event"] = "status"
+        except Exception:
+            log.exception("broadcast_status: failed to build status")
+            return
+        line = json.dumps(payload).encode() + b"\n"
+        with self._conns_lock:
+            entries = list(self._conns.items())
+        dead = []
+        for conn_id, entry in entries:
+            try:
+                with entry["lock"]:
+                    entry["sock"].sendall(line)
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                dead.append(conn_id)
+        if dead:
+            with self._conns_lock:
+                for conn_id in dead:
+                    entry = self._conns.pop(conn_id, None)
+                    if entry:
+                        try:
+                            entry["sock"].close()
+                        except OSError:
+                            pass
+
     def _accept_loop(self):
         while not self._stop_event.is_set():
             try:
                 conn, _ = self._socket.accept()
-                # Handle each connection in a separate thread
                 t = threading.Thread(target=self._handle_conn, args=(conn,),
                                      daemon=True)
                 t.start()
@@ -85,41 +131,75 @@ class IPCServer:
                     log.error("IPC accept error")
                 break
 
+    def _register_conn(self, conn):
+        with self._conns_lock:
+            conn_id = self._next_conn_id
+            self._next_conn_id += 1
+            self._conns[conn_id] = {"sock": conn, "lock": threading.Lock()}
+        return conn_id
+
+    def _unregister_conn(self, conn_id):
+        with self._conns_lock:
+            entry = self._conns.pop(conn_id, None)
+        if entry:
+            try:
+                entry["sock"].close()
+            except OSError:
+                pass
+
     def _handle_conn(self, conn):
+        """Persistent per-connection loop: read newline-delimited JSON
+        commands until the client disconnects."""
+        conn_id = self._register_conn(conn)
+        buf = b""
         try:
-            conn.settimeout(5.0)
-            data = conn.recv(BUFFER_SIZE)
-            if not data:
-                return
-
-            # Protocol: newline-delimited JSON
-            for line in data.decode("utf-8").strip().split("\n"):
-                if not line:
-                    continue
+            conn.settimeout(None)
+            while not self._stop_event.is_set():
                 try:
-                    request = json.loads(line)
-                except json.JSONDecodeError:
-                    response = {"status": "error", "message": "Invalid JSON"}
-                    conn.sendall(json.dumps(response).encode() + b"\n")
-                    continue
-
-                try:
-                    response = self._dispatch(request)
-                except Exception:
-                    log.exception("Unhandled error in command: %s",
-                                  request.get("cmd", "?"))
-                    response = {"status": "error",
-                                "message": "Internal supervisor error (check log)"}
-                conn.sendall(json.dumps(response).encode() + b"\n")
-        except (socket.timeout, BrokenPipeError, ConnectionResetError):
-            pass
+                    chunk = conn.recv(BUFFER_SIZE)
+                except (ConnectionResetError, OSError):
+                    break
+                if not chunk:
+                    break
+                buf += chunk
+                while b"\n" in buf:
+                    line, buf = buf.split(b"\n", 1)
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        request = json.loads(line.decode("utf-8"))
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        self._send_line(conn_id,
+                                        {"status": "error",
+                                         "message": "Invalid JSON"})
+                        continue
+                    try:
+                        response = self._dispatch(request)
+                    except Exception:
+                        log.exception("Unhandled error in command: %s",
+                                      request.get("cmd", "?"))
+                        response = {"status": "error",
+                                    "message": "Internal supervisor error "
+                                               "(check log)"}
+                    self._send_line(conn_id, response)
         finally:
-            conn.close()
+            self._unregister_conn(conn_id)
+
+    def _send_line(self, conn_id, payload):
+        with self._conns_lock:
+            entry = self._conns.get(conn_id)
+        if not entry:
+            return
+        data = json.dumps(payload).encode() + b"\n"
+        try:
+            with entry["lock"]:
+                entry["sock"].sendall(data)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            self._unregister_conn(conn_id)
 
     def _dispatch(self, request):
-        """Route a command to the appropriate handler."""
         cmd = request.get("cmd", "")
-
         if cmd == "status":
             return self._cmd_status()
         elif cmd == "start-mode":
@@ -130,8 +210,31 @@ class IPCServer:
             return self._cmd_health()
         elif cmd == "list-modes":
             return self._cmd_list_modes()
+        elif cmd == "ignore-exit":
+            return self._cmd_ignore_exit(request)
         else:
             return {"status": "error", "message": f"Unknown command: {cmd}"}
+
+    def _cmd_ignore_exit(self, request):
+        """Flip ignore_exit=True on a running process so its next exit
+        is treated as 'expected' and does NOT cascade-stop the mode.
+
+        Used by client apps that want to gracefully hand off (e.g.
+        QtPatWinlink's 'Open in Browser' safety-net — close itself but
+        keep pat-http and the modem running).
+        """
+        name = request.get("process", "")
+        if not name:
+            return {"status": "error", "message": "No process specified"}
+        proc = self._engine._pm.processes.get(name)
+        if not proc:
+            return {"status": "error",
+                    "message": f"Process '{name}' not found"}
+        proc.ignore_exit = True
+        log.info("Process %s marked ignore_exit (next exit will not cascade)",
+                 name)
+        return {"status": "ok",
+                "message": f"{name} ignore_exit set"}
 
     def _cmd_status(self):
         pm = self._engine._pm
@@ -181,7 +284,7 @@ class IPCServer:
             if config:
                 required = config.get("requires_bands", [])
                 if required and radio_bands and not set(required) & set(radio_bands):
-                    continue  # Radio doesn't support required bands
+                    continue
                 details.append({
                     "id": mode_id,
                     "name": config.get("name", {}),

@@ -83,6 +83,17 @@
             },
             "restart": "never",
             "depends_on": "mercury"
+        },
+        {
+            "name": "qtpatwinlink",
+            "command": [
+                "/usr/local/bin/QtPatWinlink",
+                "--touch", "{touch-mode}",
+                "--band", "{auto-band}",
+                "--modem", "varahf"
+            ],
+            "restart": "never",
+            "depends_on": "pat-http"
         }
     ],
     "post_start": [
@@ -93,11 +104,12 @@
             "action": "mercury-txlevel-restore"
         },
         {
-            "action": "qtmercury-start"
+            "comment": "Let QtPatWinlink finish mapping its window before we launch QtMercury — otherwise QtPatWinlink (heavier WebEngine paint) lands on top and hides QtMercury.",
+            "action": "sleep",
+            "seconds": 2
         },
         {
-            "action": "open-browser",
-            "url": "http://localhost:8080/ui?mode=varahf&band={auto-band}#"
+            "action": "qtmercury-start"
         }
     ],
     "kill_all_first": true

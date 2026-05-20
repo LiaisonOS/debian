@@ -44,7 +44,7 @@ app.secret_key = 'emcomm-tools-logger-2026'
 # ============================================================================
 
 ET_HOME = Path("/opt/emcomm-tools")
-ET_CONFIG_DIR = Path.home() / ".config" / "emcomm-tools"
+ET_CONFIG_DIR = Path.home() / ".config" / "liaisonos"
 ET_CONFIG_FILE = ET_CONFIG_DIR / "user.json"
 LOGGER_DIR = ET_CONFIG_DIR / "logger"
 DB_FILE = LOGGER_DIR / "qso.db"

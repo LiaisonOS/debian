@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "id": "messaging",
+      "title_en": "MESSAGING",
+      "title_fr": "MESSAGERIE",
+      "icon": "💬",
+      "items": [
+        {
+          "type": "multi",
+          "label": "Winlink",
+          "modes": [
+            { "id": "winlink-vara-hf", "label": "VARA HF", "label_abbr": "WL-VH", "strip_icon": "📧" },
+            { "id": "winlink-ardop",   "label": "ARDOP",   "label_abbr": "WL-AR", "strip_icon": "📧" },
+            { "id": "winlink-mercury", "label": "Mercury", "label_abbr": "WL-MC", "strip_icon": "📧" },
+            { "id": "winlink-vara-fm", "label": "VARA FM", "label_abbr": "WL-VF", "strip_icon": "📧" },
+            { "id": "winlink-packet",  "label": "Packet",  "label_abbr": "WL-PK", "strip_icon": "📧" }
+          ]
+        },
+        { "type": "mode", "id": "varac",              "label": "VarAC (VARA Chat)", "label_touch": "VARAC",     "label_abbr": "VRAC", "strip_icon": "💬" },
+        { "type": "mode", "id": "js8call",            "label": "JS8Call",           "label_abbr": "JS8",   "strip_icon": "📻" },
+        { "type": "mode", "id": "fldigi",             "label": "fldigi",            "label_touch": "Fldigi",    "label_abbr": "FLD",   "strip_icon": "〰️" },
+        { "type": "mode", "id": "chat-chattervox",    "label": "Chattervox",        "label_abbr": "CHTV",  "strip_icon": "🐺" },
+        { "type": "mode", "id": "chat-chattervox-bt", "label": "Chattervox (BT)",   "label_abbr": "CHTBT", "strip_icon": "🐺" }
+      ]
+    },
+
+    {
+      "id": "aprs",
+      "title_en": "APRS",
+      "title_fr": "APRS",
+      "icon": "📡",
+      "items": [
+        { "type": "mode", "id": "aprs-client",     "label": "Client (YAAC)",    "label_abbr": "YAAC",  "strip_icon": "📍" },
+        { "type": "mode", "id": "aprs-client-bt",  "label": "Client (YAAC BT)", "label_abbr": "YACBT", "strip_icon": "📍" },
+        { "type": "mode", "id": "aprs-digipeater", "label": "Digipeater",       "label_abbr": "DIGI",  "strip_icon": "📡" }
+      ]
+    },
+
+    {
+      "id": "bbs",
+      "title_en": "BBS",
+      "title_fr": "BBS",
+      "icon": "📟",
+      "items": [
+        {
+          "type": "param",
+          "id": "bbs-client-qttermtcp",
+          "label": "QtTermTCP",
+          "label_abbr": "QTTCP",
+          "strip_icon": "🖥️",
+          "param_key": "modem",
+          "options": [
+            { "value": "vara-hf", "label": "VARA HF" },
+            { "value": "vara-fm", "label": "VARA FM" },
+            { "value": "mercury", "label": "Mercury" },
+            { "value": "300",     "label": "HF 300" },
+            { "value": "1200",    "label": "Pkt 1200" },
+            { "value": "9600",    "label": "Pkt 9600" }
+          ]
+        },
+        {
+          "type": "param",
+          "id": "bbs-client-paracon",
+          "label": "Paracon",
+          "label_abbr": "PARA",
+          "strip_icon": "🖥️",
+          "param_key": "modem",
+          "options": [
+            { "value": "300",  "label": "HF 300" },
+            { "value": "1200", "label": "Pkt 1200" },
+            { "value": "9600", "label": "Pkt 9600" }
+          ]
+        },
+        {
+          "type": "param",
+          "id": "bbs-server",
+          "label": "LinBPQ",
+          "label_abbr": "BPQ",
+          "strip_icon": "🏢",
+          "param_key": "modem",
+          "options": [
+            { "value": "vara-hf", "label": "VARA HF" },
+            { "value": "vara-fm", "label": "VARA FM" },
+            { "value": "mercury", "label": "Mercury" },
+            { "value": "300",     "label": "HF 300" },
+            { "value": "1200",    "label": "Pkt 1200" },
+            { "value": "9600",    "label": "Pkt 9600" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "tools",
+      "title_en": "TOOLS",
+      "title_fr": "OUTILS",
+      "icon": "🛠",
+      "items": [
+        { "type": "mode", "id": "ft8",               "label": "FT8/FT4 (WSJT-X)",       "label_touch": "FT8 / FT4",    "label_abbr": "FT8",   "strip_icon": "〰️" },
+        { "type": "mode", "id": "direwolf-tnc",      "label": "Direwolf KISS TNC",      "label_touch": "Direwolf TNC", "label_abbr": "DIRE",  "strip_icon": "🐺" },
+        { "type": "mode", "id": "packet-digipeater", "label": "Packet Digipeater",      "label_touch": "Digipeater",   "label_abbr": "PKDGI", "strip_icon": "📦" },
+        { "type": "mode", "id": "vara-hf",           "label": "VARA HF (Standalone)",   "label_touch": "VARA HF",      "label_abbr": "V-HF",  "strip_icon": "⚡" },
+        { "type": "mode", "id": "vara-fm",           "label": "VARA FM (Standalone)",   "label_touch": "VARA FM",      "label_abbr": "V-FM",  "strip_icon": "⚡" },
+        { "type": "mode", "id": "mercury",           "label": "Mercury HF (Standalone)","label_touch": "Mercury HF",   "label_abbr": "MERC",  "strip_icon": "⚡" }
+      ]
+    }
+  ]
+}

@@ -35,7 +35,7 @@ app = Flask(__name__)
 app.secret_key = 'emcomm-tools-repeater-2026'
 
 # Configuration paths
-ET_CONFIG_DIR = Path.home() / ".config" / "emcomm-tools"
+ET_CONFIG_DIR = Path.home() / ".config" / "liaisonos"
 ET_CONFIG_FILE = ET_CONFIG_DIR / "user.json"
 CACHE_DIR = ET_CONFIG_DIR / "repeaters"
 CACHE_FILE = CACHE_DIR / "repeaters.json"

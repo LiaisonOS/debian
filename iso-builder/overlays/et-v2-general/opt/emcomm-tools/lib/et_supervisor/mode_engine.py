@@ -165,6 +165,22 @@ class ModeEngine:
         self._mode_config = None
         self._modes_cache = {}
         self._ipc = None  # Set by main after IPCServer is created
+        # Patch 2 + early-broadcast: thread-safety around state mutations,
+        # cancellable start, and "stopping in progress" so stop() can clear
+        # state + broadcast first, then do slow teardown in the background.
+        #
+        # _state_lock        — reentrant; protects _current_mode, _mode_config
+        #                      and the two transition flags.
+        # _cancel_start      — set by stop() to abort a mid-chain start
+        #                      (e.g. inside wait_for_port).
+        # _start_in_progress — True for the duration of start_mode body.
+        # _stopping          — True for the duration of teardown (stop /
+        #                      _cascade_stop / _stop_chain_on_crash);
+        #                      blocks new starts while processes are dying.
+        self._state_lock = threading.RLock()
+        self._cancel_start = threading.Event()
+        self._start_in_progress = False
+        self._stopping = False
 
     def set_ipc(self, ipc_server):
         """Register the IPC server so we can broadcast status updates."""
@@ -269,104 +285,124 @@ class ModeEngine:
         mode_name = config.get("name", {}).get("en", mode_id)
         log.info("Starting mode: %s (%s)", mode_id, mode_name)
 
-        # Block if a mode is already running — user must stop it first
-        # (EmComm safety: a critical message may be in transit)
-        if self._current_mode:
-            current_name = ""
-            if self._mode_config:
-                current_name = self._mode_config.get("name", {}).get(
-                    "en", self._current_mode)
-            return False, _t("mode_still_running",
-                              current_name or self._current_mode)
+        # Atomically reserve the start slot — block if a mode is already
+        # running, another start is in flight, OR a stop is still tearing
+        # down. EmComm safety: the user must explicitly stop before starting
+        # another mode (a critical message may be in transit).
+        with self._state_lock:
+            if self._current_mode or self._start_in_progress or self._stopping:
+                current_name = ""
+                if self._mode_config:
+                    current_name = self._mode_config.get("name", {}).get(
+                        "en", self._current_mode)
+                return False, _t("mode_still_running",
+                                  current_name or self._current_mode or "?")
+            self._start_in_progress = True
+            self._cancel_start.clear()
 
-        # Apply modem override (BBS client/server modes)
-        if params and params.get("modem"):
-            config = self._apply_modem_override(config, params["modem"])
+        try:
+            # Apply modem override (BBS client/server modes)
+            if params and params.get("modem"):
+                config = self._apply_modem_override(config, params["modem"])
 
-        # Kill all first if requested
-        if config.get("kill_all_first", False):
-            wine_was_running = self._run_kill_all()
-            # Only restart rigctld if Wine was running (e.g. VARA FM
-            # disrupted the serial port) and the new mode needs it
-            if wine_was_running:
-                required_services = config.get("requires", {}).get("services", [])
-                if "rigctld" in required_services:
-                    self._restart_rigctld()
+            # Kill all first if requested
+            if config.get("kill_all_first", False):
+                wine_was_running = self._run_kill_all()
+                # Only restart rigctld if Wine was running (e.g. VARA FM
+                # disrupted the serial port) and the new mode needs it
+                if wine_was_running:
+                    required_services = config.get("requires", {}).get("services", [])
+                    if "rigctld" in required_services:
+                        self._restart_rigctld()
 
-        # Run prechecks
-        checks = config.get("prechecks", [])
-        if checks:
-            ok, failures = device_checker.run_prechecks(checks)
-            if not ok:
-                msgs = "; ".join(f"{t}: {m}" for t, m in failures)
-                return False, _t("prechecks_failed", msgs)
+            # Run prechecks
+            checks = config.get("prechecks", [])
+            if checks:
+                ok, failures = device_checker.run_prechecks(checks)
+                if not ok:
+                    msgs = "; ".join(f"{t}: {m}" for t, m in failures)
+                    return False, _t("prechecks_failed", msgs)
 
-        # Apply config templates
-        configs = config.get("config", [])
-        if configs:
-            user_config = config_templater.load_user_config()
-            if not config_templater.apply_configs(configs, user_config):
-                return False, _t("config_failed")
+            # Apply config templates
+            configs = config.get("config", [])
+            if configs:
+                user_config = config_templater.load_user_config()
+                if not config_templater.apply_configs(configs, user_config):
+                    return False, _t("config_failed")
 
-        # Run pre_start actions
-        for action in config.get("pre_start", []):
-            if self._run_action(action) is False:
-                return False, _t("pre_start_failed", action.get("action", ""))
+            # Run pre_start actions
+            for action in config.get("pre_start", []):
+                if self._run_action(action) is False:
+                    return False, _t("pre_start_failed", action.get("action", ""))
 
-        # Start process chain
-        chain = config.get("chain", [])
-        for step in chain:
-            name = step["name"]
-            cmd = self._resolve_command(step["command"], config)
-
-            health_spec = step.get("health", {})
-            health_port = health_spec.get("port")
-            health_timeout = health_spec.get("timeout", 15)
-
-            # Build environment and working directory from step config
-            step_env = step.get("env")
-            if step_env:
-                step_env = {k: os.path.expanduser(v)
-                            for k, v in step_env.items()}
-            step_cwd = step.get("cwd")
-            if step_cwd:
-                step_cwd = os.path.expanduser(step_cwd)
-
-            proc_info = ProcessInfo(
-                name=name,
-                command=cmd,
-                restart_policy=step.get("restart", "never"),
-                health_port=health_port,
-                health_timeout=health_timeout,
-                env=step_env,
-                cwd=step_cwd,
-                ignore_exit=step.get("ignore_exit", False),
-            )
-
-            if not self._pm.start_process(proc_info):
-                self._pm.stop_all()
-                return False, _t("start_failed", name)
-
-            # Wait for health check if configured
-            if health_spec.get("type") == "tcp-port" and health_port:
-                if not wait_for_port(health_port, timeout=health_timeout):
+            # Start process chain
+            chain = config.get("chain", [])
+            for step in chain:
+                # Bail early if stop() was requested mid-chain
+                if self._cancel_start.is_set():
                     self._pm.stop_all()
-                    return False, _t("not_healthy", name, health_port)
-                # Disable ongoing port monitoring if requested
-                # (some apps like ardopcf treat health probes as sessions)
-                if not health_spec.get("monitor", True):
-                    proc_info.health_port = None
+                    return False, _t("mode_stopped", mode_id)
 
-            log.info("Chain step %s started and healthy", name)
+                name = step["name"]
+                cmd = self._resolve_command(step["command"], config)
 
-        # Run post_start actions
-        for action in config.get("post_start", []):
-            self._run_action(action)
+                health_spec = step.get("health", {})
+                health_port = health_spec.get("port")
+                health_timeout = health_spec.get("timeout", 15)
 
-        self._current_mode = mode_id
-        self._mode_config = config
-        self._broadcast_status()
-        return True, _t("mode_started", mode_id)
+                # Build environment and working directory from step config
+                step_env = step.get("env")
+                if step_env:
+                    step_env = {k: os.path.expanduser(v)
+                                for k, v in step_env.items()}
+                step_cwd = step.get("cwd")
+                if step_cwd:
+                    step_cwd = os.path.expanduser(step_cwd)
+
+                proc_info = ProcessInfo(
+                    name=name,
+                    command=cmd,
+                    restart_policy=step.get("restart", "never"),
+                    health_port=health_port,
+                    health_timeout=health_timeout,
+                    env=step_env,
+                    cwd=step_cwd,
+                    ignore_exit=step.get("ignore_exit", False),
+                )
+
+                if not self._pm.start_process(proc_info):
+                    self._pm.stop_all()
+                    return False, _t("start_failed", name)
+
+                # Wait for health check (cancel-aware so a stop request
+                # during start aborts promptly).
+                if health_spec.get("type") == "tcp-port" and health_port:
+                    if not wait_for_port(health_port, timeout=health_timeout,
+                                         cancel_event=self._cancel_start):
+                        self._pm.stop_all()
+                        if self._cancel_start.is_set():
+                            return False, _t("mode_stopped", mode_id)
+                        return False, _t("not_healthy", name, health_port)
+                    # Disable ongoing port monitoring if requested
+                    # (some apps like ardopcf treat health probes as sessions)
+                    if not health_spec.get("monitor", True):
+                        proc_info.health_port = None
+
+                log.info("Chain step %s started and healthy", name)
+
+            # Run post_start actions
+            for action in config.get("post_start", []):
+                self._run_action(action)
+
+            # Claim the mode under the state lock
+            with self._state_lock:
+                self._current_mode = mode_id
+                self._mode_config = config
+            self._broadcast_status()
+            return True, _t("mode_started", mode_id)
+        finally:
+            with self._state_lock:
+                self._start_in_progress = False
 
     def _apply_modem_override(self, config, modem):
         """Override config template and chain for modem selection.
@@ -521,46 +557,86 @@ class ModeEngine:
         return config
 
     def stop(self):
-        """Stop the current mode and all its processes."""
-        if not self._current_mode:
-            return True, _t("no_mode_running")
+        """Stop the current mode and all its processes.
 
-        mode_id = self._current_mode
+        Strategy:
+          1. If a start is mid-flight, signal it to cancel and wait briefly.
+          2. Atomically clear _current_mode / _mode_config and set _stopping
+             so a parallel start_mode is blocked during teardown.
+          3. Push a broadcast IMMEDIATELY — the dashboard sees "no mode"
+             within a frame, instead of waiting 5-15s for SIGTERM waits and
+             rigctld restart to finish.
+          4. Do the slow cleanup (kill wineserver, stop_all, QtMercury,
+             restart rigctld) AFTER the broadcast.
+          5. Clear _stopping.
+        """
+        # Phase 1: cancel any in-flight start
+        with self._state_lock:
+            in_progress = self._start_in_progress
+            has_mode = bool(self._current_mode)
+            if not in_progress and not has_mode and not self._stopping:
+                return True, _t("no_mode_running")
+            if in_progress:
+                self._cancel_start.set()
+
+        if in_progress:
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                with self._state_lock:
+                    if not self._start_in_progress:
+                        break
+                time.sleep(0.1)
+
+        # Phase 2: reserve the stop slot AND clear current-mode state
+        with self._state_lock:
+            mode_id = self._current_mode
+            config = self._mode_config
+            if mode_id is None and not in_progress:
+                # Another stop already finished — nothing to do.
+                return True, _t("no_mode_running")
+            self._current_mode = None
+            self._mode_config = None
+            self._stopping = True
+
+        # Phase 3: broadcast NOW — dashboard updates instantly
+        self._broadcast_status()
         log.info("Stopping mode: %s", mode_id)
 
-        # Check for Wine processes — need wineserver cleanup
-        config = self._mode_config
-        if config:
-            chain = config.get("chain", [])
-            has_wine = any("wine" in " ".join(s.get("command", [])).lower()
-                           for s in chain)
-            if has_wine:
-                self._kill_wineserver()
+        try:
+            # Phase 4: slow teardown (happens after the user already saw
+            # "no mode" in the dashboard).
+            if config:
+                chain = config.get("chain", [])
+                has_wine = any("wine" in " ".join(s.get("command", [])).lower()
+                               for s in chain)
+                if has_wine:
+                    self._kill_wineserver()
 
-        self._pm.stop_all()
+            self._pm.stop_all()
 
-        # Kill QtMercury if Mercury modem was used
-        if config:
-            chain = config.get("chain", [])
-            has_mercury = any(s.get("name") == "mercury" for s in chain)
-            if has_mercury:
-                subprocess.call(["pkill", "-f", "QtMercury"],
-                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                log.info("QtMercury stopped")
+            # Kill QtMercury if Mercury modem was used
+            if config:
+                chain = config.get("chain", [])
+                has_mercury = any(s.get("name") == "mercury" for s in chain)
+                if has_mercury:
+                    subprocess.call(["pkill", "-f", "QtMercury"],
+                                    stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL)
+                    log.info("QtMercury stopped")
 
-        # Restart rigctld after Wine modes — Wine shares the serial port
-        # and corrupts rigctld's connection. Same as unplugging/replugging.
-        if config:
-            chain = config.get("chain", [])
-            has_wine = any("wine" in " ".join(s.get("command", [])).lower()
-                           for s in chain)
-            if has_wine:
-                self._restart_rigctld()
+            # Restart rigctld after Wine modes — Wine shares the serial port
+            # and corrupts rigctld's connection. Same as unplugging/replugging.
+            if config:
+                chain = config.get("chain", [])
+                has_wine = any("wine" in " ".join(s.get("command", [])).lower()
+                               for s in chain)
+                if has_wine:
+                    self._restart_rigctld()
+        finally:
+            with self._state_lock:
+                self._stopping = False
 
-        self._current_mode = None
-        self._mode_config = None
-        self._broadcast_status()
-        return True, _t("mode_stopped", mode_id)
+        return True, _t("mode_stopped", mode_id or "(cancelled)")
 
     def handle_process_death(self, process_name, state):
         """Handle a process that has exited.
@@ -574,6 +650,15 @@ class ModeEngine:
 
         Crash: follow restart policy, notify user.
         """
+        # Defer if start_mode is mid-chain (it will see the death via
+        # its own checks) or stop() is mid-teardown (it owns the cleanup).
+        with self._state_lock:
+            if self._start_in_progress or self._stopping:
+                log.info("Death of %s during %s — deferring (state=%s)",
+                         process_name,
+                         "start" if self._start_in_progress else "stop",
+                         state)
+                return
         proc_info = self._pm.processes.get(process_name)
         if proc_info and proc_info.ignore_exit:
             log.info("Process %s exited — ignore_exit set, no cascade stop", process_name)
@@ -587,34 +672,59 @@ class ModeEngine:
     def _cascade_stop(self, process_name):
         """Cascade-stop all processes after a normal exit.
 
-        When a user closes an app (exit code 0), stop all remaining
-        processes in the chain and clear the mode. No crash notification.
+        Same early-broadcast pattern as stop(): clear state first, push a
+        broadcast so the dashboard updates instantly, THEN do the slow
+        teardown (wineserver kill, SIGTERMs, rigctld restart).
         """
-        log.info("Process %s exited normally — cascade stopping mode %s",
-                 process_name, self._current_mode)
+        # Reserve the stop slot and clear state atomically
+        with self._state_lock:
+            current = self._current_mode
+            config = self._mode_config
+            if current is None:
+                # stop() already cleared state — nothing to cascade
+                return
+            self._current_mode = None
+            self._mode_config = None
+            self._stopping = True
 
-        # Check for Wine processes — need wineserver cleanup
-        if self._mode_config:
-            chain = self._mode_config.get("chain", [])
-            has_wine = any("wine" in " ".join(s.get("command", [])).lower()
-                           for s in chain)
-            if has_wine:
-                self._kill_wineserver()
-
-        self._pm.stop_all()
-
-        # Restart rigctld after Wine modes — Wine shares the serial port
-        # and corrupts rigctld's connection. Same as unplugging/replugging.
-        if self._mode_config:
-            chain = self._mode_config.get("chain", [])
-            has_wine = any("wine" in " ".join(s.get("command", [])).lower()
-                           for s in chain)
-            if has_wine:
-                self._restart_rigctld()
-
-        self._current_mode = None
-        self._mode_config = None
+        # Push immediately — dashboard sees "no mode" within a frame
         self._broadcast_status()
+        log.info("Process %s exited normally — cascade stopping mode %s",
+                 process_name, current)
+
+        try:
+            # Check for Wine processes — need wineserver cleanup
+            if config:
+                chain = config.get("chain", [])
+                has_wine = any("wine" in " ".join(s.get("command", [])).lower()
+                               for s in chain)
+                if has_wine:
+                    self._kill_wineserver()
+
+            self._pm.stop_all()
+
+            # Kill QtMercury companion (untracked fire-and-forget) when
+            # Mercury was in the chain. Same as stop().
+            if config:
+                chain = config.get("chain", [])
+                has_mercury = any(s.get("name") == "mercury" for s in chain)
+                if has_mercury:
+                    subprocess.call(["pkill", "-f", "QtMercury"],
+                                    stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL)
+                    log.info("QtMercury stopped (cascade)")
+
+            # Restart rigctld after Wine modes — Wine shares the serial port
+            # and corrupts rigctld's connection. Same as unplugging/replugging.
+            if config:
+                chain = config.get("chain", [])
+                has_wine = any("wine" in " ".join(s.get("command", [])).lower()
+                               for s in chain)
+                if has_wine:
+                    self._restart_rigctld()
+        finally:
+            with self._state_lock:
+                self._stopping = False
 
     def _handle_crash(self, process_name):
         """Handle a crashed process based on its restart policy.
@@ -705,12 +815,38 @@ class ModeEngine:
         self._notify_user(_t("restart_success", process_name))
 
     def _stop_chain_on_crash(self, crashed_name):
-        """Stop the entire mode chain after an unrecoverable crash."""
-        log.warning("Stopping mode %s due to %s crash",
-                    self._current_mode, crashed_name)
-        self._pm.stop_all()
-        self._current_mode = None
-        self._mode_config = None
+        """Stop the entire mode chain after an unrecoverable crash.
+
+        Early-broadcast pattern: clear state first so the dashboard sees
+        the mode as gone immediately, THEN tear down.
+        """
+        with self._state_lock:
+            current = self._current_mode
+            config = self._mode_config
+            if current is None:
+                return
+            self._current_mode = None
+            self._mode_config = None
+            self._stopping = True
+
+        self._broadcast_status()
+        log.warning("Stopping mode %s due to %s crash", current, crashed_name)
+
+        try:
+            self._pm.stop_all()
+            # Kill QtMercury companion (untracked fire-and-forget) when
+            # Mercury was in the chain.
+            if config:
+                chain = config.get("chain", [])
+                has_mercury = any(s.get("name") == "mercury" for s in chain)
+                if has_mercury:
+                    subprocess.call(["pkill", "-f", "QtMercury"],
+                                    stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL)
+                    log.info("QtMercury stopped (crash)")
+        finally:
+            with self._state_lock:
+                self._stopping = False
 
     def _notify_user(self, message):
         """Send a desktop notification."""
@@ -752,6 +888,16 @@ class ModeEngine:
             if "{mercury-ini}" in part:
                 mercury_ini = os.path.expanduser("~/.config/mercury/mercury.ini")
                 part = part.replace("{mercury-ini}", mercury_ini)
+            if "{touch-mode}" in part:
+                # Resolve from user.json — apps run as config-agnostic and
+                # take touch_mode via CLI; supervisor is the sole reader.
+                user_cfg = config_templater.load_user_config()
+                touch = bool(user_cfg.get("touch_mode", False))
+                part = part.replace("{touch-mode}", "on" if touch else "off")
+            if "{auto-band}" in part:
+                # Detect the radio's current band via rigctld.
+                band = self._get_band_from_radio() or ""
+                part = part.replace("{auto-band}", band)
             resolved.append(part)
         return resolved
 
@@ -809,6 +955,10 @@ class ModeEngine:
             self._qsy_to_band_freq(action.get("frequencies", {}))
         elif action_type == "wait-audio":
             self._wait_for_audio(action.get("seconds", 3))
+        elif action_type == "sleep":
+            secs = action.get("seconds", 1)
+            log.info("sleep: pausing %s seconds", secs)
+            time.sleep(secs)
         elif action_type == "mercury-config":
             self._apply_mercury_config()
         elif action_type == "mercury-tnc-init":
@@ -1510,7 +1660,7 @@ class ModeEngine:
 
         wineprefix = os.path.expanduser("~/.wine32")
         license_file = os.path.join(wineprefix, "drive_c/VarAC/License.txt")
-        config_dir = os.path.expanduser("~/.config/emcomm-tools/varac")
+        config_dir = os.path.expanduser("~/.config/liaisonos/varac")
         flag_file = os.path.join(config_dir, "license.flag")
         audit_log = os.path.join(config_dir, "license-audit.log")
 

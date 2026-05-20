@@ -78,13 +78,19 @@
             },
             "restart": "never",
             "depends_on": "vara-fm"
-        }
-    ],
-    "post_start": [
+        },
         {
-            "action": "open-browser",
-            "url": "http://localhost:8080/ui?mode=varafm&band={auto-band}#"
+            "name": "qtpatwinlink",
+            "command": [
+                "/usr/local/bin/QtPatWinlink",
+                "--touch", "{touch-mode}",
+                "--band", "{auto-band}",
+                "--modem", "varafm"
+            ],
+            "restart": "never",
+            "depends_on": "pat-http"
         }
     ],
+    "post_start": [],
     "kill_all_first": true
 }

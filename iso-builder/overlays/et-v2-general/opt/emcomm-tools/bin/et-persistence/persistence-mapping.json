@@ -2,13 +2,13 @@
   "version": "2.0.0",
   "description": "LiaisonOS config persistence mapping",
   "apps": {
-    "emcomm-tools": {
+    "liaisonos-core": {
       "name": "LiaisonOS Core",
       "persistence_subdir": "",
       "configs": [
         {
           "source": "user.json",
-          "target": "${HOME}/.config/emcomm-tools/user.json",
+          "target": "${HOME}/.config/liaisonos/user.json",
           "type": "file",
           "required": true
         }
@@ -124,14 +124,14 @@
         },
         {
           "source": "license.flag",
-          "target": "${HOME}/.config/emcomm-tools/varac/license.flag",
+          "target": "${HOME}/.config/liaisonos/varac/license.flag",
           "type": "file",
           "required": false,
           "description": "VarAC Limited Distribution Agreement acceptance"
         },
         {
           "source": "license-audit.log",
-          "target": "${HOME}/.config/emcomm-tools/varac/license-audit.log",
+          "target": "${HOME}/.config/liaisonos/varac/license-audit.log",
           "type": "file",
           "required": false,
           "description": "VarAC license audit trail"

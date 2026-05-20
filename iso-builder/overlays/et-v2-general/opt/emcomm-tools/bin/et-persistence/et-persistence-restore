@@ -417,13 +417,13 @@ log "Starting config restores..."
 RESTORED=0
 
 # --- LiaisonOS Core (MERGE to preserve winlinkPasswd) ---
-if merge_user_json "${PERSISTENCE_PATH}/user.json" "${HOME}/.config/emcomm-tools/user.json"; then
+if merge_user_json "${PERSISTENCE_PATH}/user.json" "${HOME}/.config/liaisonos/user.json"; then
     ((RESTORED++)) || true
 fi
 
 # --- Custom Radio Configs (BEFORE active radio so custom radios are available) ---
 RADIOS_DIR="/opt/emcomm-tools/conf/radios.d"
-USER_RADIOS="${HOME}/.config/emcomm-tools/radios.d"
+USER_RADIOS="${HOME}/.config/liaisonos/radios.d"
 RADIOS_USB="${PERSISTENCE_PATH}/configs/radios"
 if [[ -d "$RADIOS_USB" ]] && [[ -n "$(ls -A "$RADIOS_USB" 2>/dev/null)" ]]; then
     mkdir -p "$USER_RADIOS"
@@ -443,7 +443,7 @@ fi
 
 # --- Repeater Directory Data ---
 REPEATER_USB="${PERSISTENCE_PATH}/configs/repeaters"
-REPEATER_DIR="${HOME}/.config/emcomm-tools/repeaters"
+REPEATER_DIR="${HOME}/.config/liaisonos/repeaters"
 if [[ -d "$REPEATER_USB" ]] && [[ -n "$(ls -A "$REPEATER_USB" 2>/dev/null)" ]]; then
     mkdir -p "$REPEATER_DIR"
     cp -f "$REPEATER_USB"/*.json "$REPEATER_DIR/" 2>/dev/null || true
@@ -487,10 +487,10 @@ else
 fi
 
 # --- VarAC License (IMPORTANT!) ---
-if restore_file "${PERSISTENCE_PATH}/varac/license.flag" "${HOME}/.config/emcomm-tools/varac/license.flag" "VarAC license"; then
+if restore_file "${PERSISTENCE_PATH}/varac/license.flag" "${HOME}/.config/liaisonos/varac/license.flag" "VarAC license"; then
     ((RESTORED++)) || true
 fi
-if restore_file "${PERSISTENCE_PATH}/varac/license-audit.log" "${HOME}/.config/emcomm-tools/varac/license-audit.log" "VarAC audit log"; then
+if restore_file "${PERSISTENCE_PATH}/varac/license-audit.log" "${HOME}/.config/liaisonos/varac/license-audit.log" "VarAC audit log"; then
     ((RESTORED++)) || true
 fi
 
@@ -513,8 +513,8 @@ if restore_file "${PERSISTENCE_PATH}/configs/wsjtx/WSJT-X.ini" "${HOME}/.config/
 fi
 
 # --- QtMercury ---
-mkdir -p "${HOME}/.config/emcomm-tools"
-if restore_file "${PERSISTENCE_PATH}/configs/QtMercury/qtmercury.ini" "${HOME}/.config/emcomm-tools/qtmercury.ini" "QtMercury"; then
+mkdir -p "${HOME}/.config/liaisonos"
+if restore_file "${PERSISTENCE_PATH}/configs/QtMercury/qtmercury.ini" "${HOME}/.config/liaisonos/qtmercury.ini" "QtMercury"; then
     ((RESTORED++)) || true
 fi
 
@@ -770,12 +770,45 @@ for user_dir in "Documents" "Downloads" "Pictures"; do
 done
 
 # ===========================================================================
+# LEGACY PATH BRIDGE (emcomm-tools -> liaisonos)
+# ---------------------------------------------------------------------------
+# LiaisonOS is migrating from ~/.config/emcomm-tools/ to ~/.config/liaisonos/.
+# Files now live at the new path; legacy callers (third-party scripts, older
+# code paths not yet refactored) still read the emcomm-tools path. Drop a
+# symlink so they transparently find the data. Idempotent.
+# ===========================================================================
+
+bridge_legacy_path() {
+    local rel="$1"
+    local new="${HOME}/.config/liaisonos/${rel}"
+    local old="${HOME}/.config/emcomm-tools/${rel}"
+    # Skip if the new file/dir doesn't exist (nothing to bridge to)
+    [[ -e "$new" ]] || return 0
+    # Skip if the old path is already a symlink (already bridged)
+    [[ -L "$old" ]] && return 0
+    # If a real file/dir lives at the old path, leave it alone — the next
+    # save cycle will pick it up. We never destroy user data here.
+    [[ -e "$old" ]] && return 0
+    mkdir -p "$(dirname "$old")"
+    ln -s "$new" "$old"
+}
+
+bridge_legacy_path "user.json"
+bridge_legacy_path "radios.d"
+bridge_legacy_path "repeaters"
+bridge_legacy_path "logger"
+bridge_legacy_path "varac/license.flag"
+bridge_legacy_path "varac/license-audit.log"
+bridge_legacy_path "qtmercury.ini"
+bridge_legacy_path "qtpatwinlink"
+
+# ===========================================================================
 # SUMMARY
 # ===========================================================================
 
 CALLSIGN="UNKNOWN"
-if [[ -f "${HOME}/.config/emcomm-tools/user.json" ]]; then
-    CALLSIGN=$(jq -r '.callsign // "UNKNOWN"' "${HOME}/.config/emcomm-tools/user.json")
+if [[ -f "${HOME}/.config/liaisonos/user.json" ]]; then
+    CALLSIGN=$(jq -r '.callsign // "UNKNOWN"' "${HOME}/.config/liaisonos/user.json")
 fi
 
 log ""

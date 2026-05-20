@@ -68,7 +68,12 @@ def _t(key, *args):
 
 
 def send_command(cmd_dict, timeout=None):
-    """Send a command to the supervisor and return the response."""
+    """Send a command to the supervisor and return the response.
+
+    The supervisor keeps connections persistent and may push unsolicited
+    status broadcasts (carrying "_event": "status"). This function skips
+    those and returns the first real response line.
+    """
     if timeout is None:
         timeout = TIMEOUT
 
@@ -82,14 +87,38 @@ def send_command(cmd_dict, timeout=None):
         sock.settimeout(timeout)
         sock.connect(SOCKET_PATH)
         sock.sendall(json.dumps(cmd_dict).encode() + b"\n")
-        data = sock.recv(8192)
+
+        deadline = time.time() + timeout
+        buf = b""
+        while time.time() < deadline:
+            remaining = max(0.1, deadline - time.time())
+            sock.settimeout(remaining)
+            try:
+                chunk = sock.recv(8192)
+            except socket.timeout:
+                break
+            if not chunk:
+                break
+            buf += chunk
+            while b"\n" in buf:
+                line, buf = buf.split(b"\n", 1)
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    payload = json.loads(line.decode("utf-8"))
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    continue
+                if payload.get("_event"):
+                    continue   # unsolicited broadcast — ignore
+                sock.close()
+                return payload
+
         sock.close()
-        return json.loads(data.decode("utf-8"))
+        print(_t("err_timeout"), file=sys.stderr)
+        sys.exit(1)
     except ConnectionRefusedError:
         print(_t("err_refused"), file=sys.stderr)
-        sys.exit(1)
-    except socket.timeout:
-        print(_t("err_timeout"), file=sys.stderr)
         sys.exit(1)
 
 

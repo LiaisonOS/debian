@@ -60,6 +60,7 @@ def main():
     engine = ModeEngine(pm)
     health = HealthMonitor(pm)
     ipc = IPCServer(engine, health)
+    engine.set_ipc(ipc)   # Wire push notifications: ModeEngine -> IPCServer
 
     # Signal handlers for clean shutdown
     shutdown_requested = False
