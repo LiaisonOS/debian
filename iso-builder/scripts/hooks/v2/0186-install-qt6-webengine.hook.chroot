@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+# Qt6 WebEngine — required by QtPatWinlink to render Pat Forms (HTML
+# templates) inside the app via embedded QWebEngineView.
+#
+# These packages currently also arrive transitively through gpsbabel-gui,
+# but pinning them explicitly here guarantees QtPatWinlink keeps working
+# even if the gpsbabel-gui dependency graph ever changes.
+
+echo "=== Installing Qt6 WebEngine (for QtPatWinlink Pat Forms) ==="
+
+apt-get install -y \
+  libqt6webenginecore6 \
+  libqt6webenginewidgets6 \
+  libqt6webengine6-data \
+  libqt6webchannel6
+
+echo "Qt6 WebEngine installation complete"
