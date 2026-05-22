@@ -19,7 +19,7 @@
 #
 . /opt/emcomm-tools/bin/et-common
 
-USER_CONF=~/.config/emcomm-tools/user.json
+USER_CONF=~/.config/liaisonos/user.json
 
 #-----------------------------------------------------------
 # Function: create_postgres_user
@@ -90,7 +90,7 @@ create_postgres_user() {
 
 if [ ! -f ${USER_CONF} ]; then
     mkdir -p $(dirname ${USER_CONF})
-    cp /etc/skel/.config/emcomm-tools/user.json ${USER_CONF}
+    cp /etc/skel/.config/liaisonos/user.json ${USER_CONF}
 fi
 
 # Read current language (default to English if not set)

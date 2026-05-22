@@ -47,7 +47,7 @@ def _get_lang():
     """Read language from user.json."""
     try:
         import pathlib
-        cfg = pathlib.Path.home() / ".config/emcomm-tools/user.json"
+        cfg = pathlib.Path.home() / ".config/liaisonos/user.json"
         if cfg.exists():
             with open(cfg) as f:
                 return json.load(f).get("language", "en")

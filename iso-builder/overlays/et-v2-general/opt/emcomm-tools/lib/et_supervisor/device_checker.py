@@ -15,7 +15,7 @@ import subprocess
 
 log = logging.getLogger("et-supervisor.device")
 
-USER_CONFIG_PATH = os.path.expanduser("~/.config/emcomm-tools/user.json")
+USER_CONFIG_PATH = os.path.expanduser("~/.config/liaisonos/user.json")
 
 
 def run_precheck(check):

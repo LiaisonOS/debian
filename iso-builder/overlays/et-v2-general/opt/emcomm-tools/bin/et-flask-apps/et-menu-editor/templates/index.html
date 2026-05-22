@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ t.title }} — LiaisonOS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h1>{{ t.title }}</h1>
+        <p class="subtitle">{{ t.subtitle }}</p>
+      </div>
+
+      <div class="card-body">
+        <div class="paths-info">
+          <div><span class="path-label">{{ t.system_path }}</span> <code>{{ system_path }}</code></div>
+          <div><span class="path-label">{{ t.your_overrides }}</span> <code>{{ overrides_path }}</code></div>
+        </div>
+
+        <!-- Column headers — only labels the two rename columns -->
+        <div class="column-headers">
+          <span class="ch-spacer"></span>
+          <span class="ch-label">{{ t.col_desktop }}</span>
+          <span class="ch-label">{{ t.col_touch }}</span>
+          <span class="ch-id-spacer"></span>
+        </div>
+
+        <form id="editor-form">
+          {% for g in groups %}
+          <div class="group-card {% if g.hidden %}group-hidden{% endif %}">
+            <div class="group-header">
+              <input type="checkbox"
+                     class="group-checkbox"
+                     data-group="{{ g.id }}"
+                     {% if not g.hidden %}checked{% endif %}>
+              {% if g.icon %}<span class="group-icon">{{ g.icon }}</span>{% endif %}
+              <input type="text"
+                     class="rename-input group-title-input"
+                     data-group="{{ g.id }}"
+                     placeholder="{{ g.default_title }}"
+                     value="{{ g.title_override }}">
+              <span class="group-id">{{ g.id }}</span>
+            </div>
+
+            <div class="group-items">
+              {% for it in g["items"] %}
+                {% if it.kind == "mode" or it.kind == "param" %}
+                  <div class="item-row">
+                    <input type="checkbox"
+                           class="mode-checkbox"
+                           data-mode="{{ it.id }}"
+                           {% if not it.hidden %}checked{% endif %}>
+                    <input type="text"
+                           class="rename-input label-input"
+                           data-mode="{{ it.id }}"
+                           placeholder="{{ it.default_label }}"
+                           value="{{ it.label_override }}"
+                           title="{{ t.ph_label }}">
+                    <input type="text"
+                           class="rename-input label-touch-input"
+                           data-mode="{{ it.id }}"
+                           placeholder="{{ it.default_label_touch or it.default_label }}"
+                           value="{{ it.label_touch_override }}"
+                           title="{{ t.ph_label_touch }}">
+                    <span class="item-id">{{ it.id }}</span>
+                    {% if it.kind == "param" %}<span class="kind-tag">param</span>{% endif %}
+                  </div>
+                {% elif it.kind == "multi" %}
+                  <div class="multi-row">
+                    <div class="multi-header">{{ it.label }} <span class="kind-tag">multi</span></div>
+                    <div class="multi-children">
+                      {% for c in it.children %}
+                      <div class="item-row item-row-nested">
+                        <input type="checkbox"
+                               class="mode-checkbox"
+                               data-mode="{{ c.id }}"
+                               {% if not c.hidden %}checked{% endif %}>
+                        <input type="text"
+                               class="rename-input label-input"
+                               data-mode="{{ c.id }}"
+                               placeholder="{{ c.default_label }}"
+                               value="{{ c.label_override }}"
+                               title="{{ t.ph_label }}">
+                        <input type="text"
+                               class="rename-input label-touch-input"
+                               data-mode="{{ c.id }}"
+                               placeholder="{{ c.default_label_touch or c.default_label }}"
+                               value="{{ c.label_touch_override }}"
+                               title="{{ t.ph_label_touch }}">
+                        <span class="item-id">{{ c.id }}</span>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% else %}
+                  <div class="item-row item-row-disabled">
+                    <span class="item-label">{{ it.label }}</span>
+                    <span class="kind-tag">{{ it.kind }}</span>
+                    <span class="cannot-hide">{{ t.cannot_hide }}</span>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </form>
+
+        <div class="actions">
+          <button id="reset-btn" type="button" class="btn btn-secondary">{{ t.reset }}</button>
+          <button id="save-btn"  type="button" class="btn btn-primary">{{ t.save }}</button>
+        </div>
+
+        <!-- Inline alert area (chattervox-style) -->
+        <div id="alert" class="alert" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const T_SAVED       = {{ t.saved | tojson }};
+      const T_RESET_DONE  = {{ t.reset_done | tojson }};
+      const T_RESET_CONFIRM = {{ t.reset_confirm | tojson }};
+      const alertEl = document.getElementById('alert');
+
+      function showAlert(message, type) {
+        alertEl.textContent = message;
+        alertEl.className = 'alert alert-' + (type || 'success');
+        alertEl.style.display = 'block';
+        clearTimeout(alertEl._timer);
+        alertEl._timer = setTimeout(() => { alertEl.style.display = 'none'; }, 4000);
+      }
+
+      // Visually dim a group card when its toggle goes off
+      document.querySelectorAll('.group-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const card = cb.closest('.group-card');
+          card.classList.toggle('group-hidden', !cb.checked);
+        });
+      });
+
+      // Save: collect hide checkboxes + rename inputs
+      document.getElementById('save-btn').addEventListener('click', async () => {
+        const hide_groups = [];
+        document.querySelectorAll('.group-checkbox').forEach(cb => {
+          if (!cb.checked) hide_groups.push(cb.dataset.group);
+        });
+        const hide_modes = [];
+        document.querySelectorAll('.mode-checkbox').forEach(cb => {
+          if (!cb.checked) hide_modes.push(cb.dataset.mode);
+        });
+
+        // Empty input = no override; non-empty trimmed value = override.
+        const relabel_groups = {};
+        document.querySelectorAll('.group-title-input').forEach(inp => {
+          const v = (inp.value || '').trim();
+          if (v) relabel_groups[inp.dataset.group] = v;
+        });
+        const relabel = {};
+        document.querySelectorAll('.label-input').forEach(inp => {
+          const v = (inp.value || '').trim();
+          if (v) relabel[inp.dataset.mode] = v;
+        });
+        const relabel_touch = {};
+        document.querySelectorAll('.label-touch-input').forEach(inp => {
+          const v = (inp.value || '').trim();
+          if (v) relabel_touch[inp.dataset.mode] = v;
+        });
+
+        try {
+          const r = await fetch('/api/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              hide_groups, hide_modes,
+              relabel, relabel_touch, relabel_groups
+            }),
+          });
+          const j = await r.json();
+          if (j.ok) showAlert(T_SAVED, 'success');
+          else showAlert(j.error || 'error', 'error');
+        } catch (e) {
+          showAlert(String(e), 'error');
+        }
+      });
+
+      document.getElementById('reset-btn').addEventListener('click', async () => {
+        if (!confirm(T_RESET_CONFIRM)) return;
+        try {
+          const r = await fetch('/api/reset', { method: 'POST' });
+          const j = await r.json();
+          if (j.ok) {
+            showAlert(T_RESET_DONE, 'success');
+            setTimeout(() => location.reload(), 500);
+          } else {
+            showAlert(j.error || 'error', 'error');
+          }
+        } catch (e) {
+          showAlert(String(e), 'error');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

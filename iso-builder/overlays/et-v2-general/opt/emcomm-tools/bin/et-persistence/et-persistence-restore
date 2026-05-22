@@ -611,7 +611,17 @@ if [[ -d "${PERSISTENCE_PATH}/configs/yaac-config" ]]; then
     mkdir -p "$YAAC_CONFIG_DIR"
     restore_file "${PERSISTENCE_PATH}/configs/yaac-config/tile-sources.json" "$YAAC_CONFIG_DIR/tile-sources.json" "YAAC tile sources"
     restore_file "${PERSISTENCE_PATH}/configs/yaac-config/station-colors.json" "$YAAC_CONFIG_DIR/station-colors.json" "YAAC station colors"
-    restore_file "${PERSISTENCE_PATH}/configs/yaac-config/sar-objects.json" "$YAAC_CONFIG_DIR/sar-objects.json" "YAAC SAR objects"
+    restore_file "${PERSISTENCE_PATH}/configs/yaac-config/sar-objects.json" "$YAAC_CONFIG_DIR/sar-objects.json" "YAAC SAR objects (legacy)"
+fi
+
+# --- LiaisonSAR plugin state (2.3.5+) ---
+LIAISONSAR_DIR="${HOME}/.config/liaisonos/YAAC"
+LIAISONSAR_BACKUP="${PERSISTENCE_PATH}/configs/yaac-config/liaisonos"
+if [[ -d "$LIAISONSAR_BACKUP" ]]; then
+    mkdir -p "$LIAISONSAR_DIR"
+    [[ -f "$LIAISONSAR_BACKUP/ptl-data.db"         ]] && restore_file "$LIAISONSAR_BACKUP/ptl-data.db"         "$LIAISONSAR_DIR/ptl-data.db"         "LiaisonSAR point store"
+    [[ -f "$LIAISONSAR_BACKUP/map-display.json"    ]] && restore_file "$LIAISONSAR_BACKUP/map-display.json"    "$LIAISONSAR_DIR/map-display.json"    "LiaisonSAR map display"
+    [[ -f "$LIAISONSAR_BACKUP/track-settings.json" ]] && restore_file "$LIAISONSAR_BACKUP/track-settings.json" "$LIAISONSAR_DIR/track-settings.json" "LiaisonSAR track settings"
 fi
 
 # --- YAAC MapCache (tile cache .db files — symlinks to USB) ---

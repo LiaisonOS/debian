@@ -1,0 +1,256 @@
+/*
+ * et-menu-editor — LiaisonOS dashboard menu editor
+ * Style matches the LiaisonOS dark theme + orange accent.
+ */
+
+:root {
+  --bg:        #1a1a1a;
+  --bg-card:   #242424;
+  --bg-row:   #2d2d2d;
+  --bg-row-alt: #333333;
+  --text:      #e0e0e0;
+  --text-sec:  #9a9a9a;
+  --accent:    #FFA500;
+  --border:    #3a3a3a;
+  --ok:        #4caf50;
+  --err:       #e53935;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+::selection { background: var(--accent); color: var(--bg); }
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 18px 22px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.card-header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: var(--accent);
+}
+.subtitle {
+  margin: 4px 0 0;
+  color: var(--text-sec);
+  font-size: 0.9rem;
+}
+
+.card-body { padding: 16px 22px 22px; }
+
+.paths-info {
+  font-size: 0.8rem;
+  color: var(--text-sec);
+  margin-bottom: 18px;
+  line-height: 1.7;
+}
+.paths-info code {
+  color: var(--text);
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+.path-label {
+  display: inline-block;
+  min-width: 110px;
+  color: var(--accent);
+}
+
+/* ── Group cards ────────────────────────────────────────────────────────── */
+.group-card {
+  background: var(--bg-row);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  transition: opacity 0.15s;
+}
+.group-card.group-hidden { opacity: 0.45; }
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-row-alt);
+  border-radius: 6px 6px 0 0;
+}
+
+.group-checkbox { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex: 0 0 auto; }
+.group-icon { flex: 0 0 auto; font-size: 1.1rem; }
+.group-id {
+  color: var(--text-sec);
+  font-weight: 400;
+  font-size: 0.8rem;
+  font-family: monospace;
+  flex: 0 0 auto;
+}
+
+/* ── Column headers — only labels the two rename columns ────────────────
+ * Layout must mirror .item-row so headers sit above the matching inputs:
+ *   item-row gap=8px, padding=6px 8px:  [16px checkbox][flex:1][flex:1][id]
+ * We add a fixed-width spacer for the checkbox column and an "id-spacer"
+ * roughly matching the right-side id column, so the two centered labels
+ * land over the two text inputs. */
+.column-headers {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-sec);
+}
+.column-headers .ch-spacer    { flex: 0 0 16px; }
+.column-headers .ch-label     { flex: 1; text-align: center; }
+.column-headers .ch-id-spacer { flex: 0 0 auto; min-width: 130px; }
+
+/* ── Rename inputs ──────────────────────────────────────────────────────── */
+.rename-input {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.rename-input:focus { border-color: var(--accent); }
+.rename-input::placeholder {
+  color: var(--text-sec);
+  font-style: italic;
+  opacity: 0.7;
+}
+.group-title-input {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.label-input, .label-touch-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.group-items { padding: 4px 14px 10px 36px; }
+
+.item-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  gap: 8px;
+  border-radius: 4px;
+}
+.item-row:hover { background: rgba(255,255,255,0.03); }
+.item-row-nested { padding-left: 24px; }
+.item-row-disabled { color: var(--text-sec); }
+.item-row-disabled:hover { background: transparent; }
+
+.mode-checkbox { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex: 0 0 auto; }
+.item-label { flex: 1; }
+.item-id {
+  color: var(--text-sec);
+  font-family: monospace;
+  font-size: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.multi-row { padding: 6px 0; }
+.multi-header {
+  padding: 4px 8px;
+  color: var(--text-sec);
+  font-size: 0.9rem;
+}
+.multi-children { padding-left: 0; }
+
+.kind-tag {
+  font-size: 0.7rem;
+  color: var(--text-sec);
+  background: var(--bg);
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.cannot-hide {
+  font-size: 0.75rem;
+  color: var(--text-sec);
+  font-style: italic;
+}
+
+/* ── Action buttons ────────────────────────────────────────────────────── */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.btn {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+}
+.btn-primary:hover { background: #ffb733; }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.05); }
+
+/* ── Inline alert (chattervox-keys pattern) ─────────────────────────────── */
+.alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+.alert-success {
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+}
+.alert-error {
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: #f87171;
+}

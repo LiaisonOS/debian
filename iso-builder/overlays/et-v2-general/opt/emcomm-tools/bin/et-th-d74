@@ -69,7 +69,7 @@ get_mac_or_exit () {
 
 update_ax25_conf() {
 
-  [ -z "$ET_USER_CONFIG" ] && ET_USER_CONFIG="${HOME}/.config/emcomm-tools/user.json"
+  [ -z "$ET_USER_CONFIG" ] && ET_USER_CONFIG="${HOME}/.config/liaisonos/user.json"
 
   CALLSIGN=$(cat ${ET_USER_CONFIG} | jq -r .callsign)
 

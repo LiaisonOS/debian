@@ -7,7 +7,7 @@
 #           - Installed system: run once on first boot only
 #
 
-MARKER_FILE="$HOME/.config/emcomm-tools/.auto-scale-done"
+MARKER_FILE="$HOME/.config/liaisonos/.auto-scale-done"
 SCRIPT_PATH="/opt/emcomm-tools/bin/et-auto-scale"
 
 # Check if running in live session

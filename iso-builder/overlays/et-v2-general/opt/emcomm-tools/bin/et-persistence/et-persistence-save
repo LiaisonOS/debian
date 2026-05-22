@@ -593,7 +593,19 @@ YAAC_CONFIG_DIR="${HOME}/.yaac"
 if [[ -d "$YAAC_CONFIG_DIR" ]]; then
     save_file "$YAAC_CONFIG_DIR/tile-sources.json" "${PERSISTENCE_PATH}/configs/yaac-config/tile-sources.json" "YAAC tile sources"
     save_file "$YAAC_CONFIG_DIR/station-colors.json" "${PERSISTENCE_PATH}/configs/yaac-config/station-colors.json" "YAAC station colors"
-    save_file "$YAAC_CONFIG_DIR/sar-objects.json" "${PERSISTENCE_PATH}/configs/yaac-config/sar-objects.json" "YAAC SAR objects"
+    save_file "$YAAC_CONFIG_DIR/sar-objects.json" "${PERSISTENCE_PATH}/configs/yaac-config/sar-objects.json" "YAAC SAR objects (legacy)"
+fi
+
+# --- LiaisonSAR plugin state (2.3.5+) ---
+# Persists everything under ~/.config/liaisonos/YAAC/ so the operator's
+# point store, map-display preferences, and track styling survive a Live
+# session. Adding new JSONs to the plugin? They land in here automatically.
+LIAISONSAR_DIR="${HOME}/.config/liaisonos/YAAC"
+if [[ -d "$LIAISONSAR_DIR" ]]; then
+    mkdir -p "${PERSISTENCE_PATH}/configs/yaac-config/liaisonos"
+    save_file "$LIAISONSAR_DIR/ptl-data.db"          "${PERSISTENCE_PATH}/configs/yaac-config/liaisonos/ptl-data.db"          "LiaisonSAR point store"
+    save_file "$LIAISONSAR_DIR/map-display.json"     "${PERSISTENCE_PATH}/configs/yaac-config/liaisonos/map-display.json"     "LiaisonSAR map display (grayscale/grid)"
+    save_file "$LIAISONSAR_DIR/track-settings.json"  "${PERSISTENCE_PATH}/configs/yaac-config/liaisonos/track-settings.json"  "LiaisonSAR track settings"
 fi
 
 # --- Chattervox (config + keystore with signing keys) ---

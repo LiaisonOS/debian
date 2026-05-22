@@ -214,7 +214,7 @@ update_navit_config() {
 
 # Read grid from user config and update Navit
 update_from_user_config() {
-    local user_config="${ET_USER_CONFIG:-${HOME}/.config/emcomm-tools/user.json}"
+    local user_config="${ET_USER_CONFIG:-${HOME}/.config/liaisonos/user.json}"
     
     if [[ ! -f "$user_config" ]]; then
         echo "WARNING: User config not found: $user_config"

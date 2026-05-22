@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Menu Editor
+Name[fr]=Editeur de menu
+Comment=Hide groups or modes from the LiaisonOS dashboard menu
+Comment[fr]=Masquer des groupes ou des modes du menu LiaisonOS
+Exec=/opt/emcomm-tools/bin/et-flask-apps/et-menu-editor/et-menu-editor.py
+Icon=/usr/share/pixmaps/emcomm-icon.png
+Terminal=false
+Categories=Settings;
+Keywords=menu;dashboard;customize;hide;visibility;

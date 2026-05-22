@@ -23,7 +23,7 @@ echo -e "${YELLOW}"
 cat /etc/motd
 echo -e "${NC}"
 
-export ET_USER_CONFIG=${HOME}/.config/emcomm-tools/user.json
+export ET_USER_CONFIG=${HOME}/.config/liaisonos/user.json
 export ET_LOG_DIR=${HOME}/.local/share/emcomm-tools
 
 # Export environment variables to support WINE installs for VARA

@@ -1022,7 +1022,7 @@ class ModeEngine:
         import socket as _socket
         import configparser
 
-        ini_path = os.path.expanduser("~/.config/emcomm-tools/qtmercury.ini")
+        ini_path = os.path.expanduser("~/.config/liaisonos/qtmercury.ini")
         txlevel = 100
         retries = 15
         callint = 5

@@ -18,7 +18,7 @@ import subprocess
 log = logging.getLogger("et-supervisor.config")
 
 ET_HOME = "/opt/emcomm-tools"
-USER_CONFIG_PATH = os.path.expanduser("~/.config/emcomm-tools/user.json")
+USER_CONFIG_PATH = os.path.expanduser("~/.config/liaisonos/user.json")
 
 
 def load_user_config():
@@ -483,18 +483,28 @@ def station_position(config_entry, user_config=None):
     grid = user_config.get("grid", "")
     callsign = user_config.get("callsign", "N0CALL")
 
-    if not grid:
-        log.warning("No grid square set, skipping station position")
-        return True
-
-    coords = grid_utils.grid_to_latlon(grid)
-    if coords is None:
-        log.error("Failed to convert grid square: %s", grid)
-        return True  # Non-fatal
-
-    lat, lon = coords
-    log.info("Station position from grid %s: lat=%s, lon=%s",
-             grid, lat, lon)
+    # Prefer precise lat/lon from user.json (written by QtDashboard's
+    # updateGpsPosition after a GPS sync). A 4-char grid like "FN35"
+    # resolves to the center of a ~110x220km square — easily 50km off
+    # from the operator's actual position. Fall back to grid-to-latlon
+    # only if lat/lon aren't stored.
+    lat_pref = user_config.get("lat")
+    lon_pref = user_config.get("lon")
+    if isinstance(lat_pref, (int, float)) and isinstance(lon_pref, (int, float)):
+        lat = round(float(lat_pref), 6)
+        lon = round(float(lon_pref), 6)
+        log.info("Station position from user.json lat/lon: lat=%s, lon=%s", lat, lon)
+    else:
+        if not grid:
+            log.warning("No grid square or lat/lon set, skipping station position")
+            return True
+        coords = grid_utils.grid_to_latlon(grid)
+        if coords is None:
+            log.error("Failed to convert grid square: %s", grid)
+            return True  # Non-fatal
+        lat, lon = coords
+        log.info("Station position from grid %s (no lat/lon available): lat=%s, lon=%s",
+                 grid, lat, lon)
 
     os.makedirs(os.path.dirname(target), exist_ok=True)
 
