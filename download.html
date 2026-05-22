@@ -10,10 +10,10 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://liaisonos.com/download.html">
   <meta property="og:title" content="Download LiaisonOS — Ham Radio Linux ISO">
-  <meta property="og:description" content="Download LiaisonOS v2.3.4 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
+  <meta property="og:description" content="Download LiaisonOS v2.3.5 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
   <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Download LiaisonOS v2.3.4">
+  <meta name="twitter:title" content="Download LiaisonOS v2.3.5">
   <meta name="twitter:description" content="Debian 13 live ISO for ham radio EMCOMM. QtDashboard, Touch Mode, JS8Call, Pat-Winlink, VARA, VarAC, fldigi — ready to go.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -214,29 +214,27 @@
         <strong>Continuous development notice —</strong> LiaisonOS uses an agile, continuous-release model. Each version is fully functional. <strong>Always boot and test from USB first</strong> before committing to a permanent install.
       </div>
       <div class="whats-new">
-        <p class="whats-new-title">What's new in v2.3.4</p>
+        <p class="whats-new-title">What's new in v2.3.5</p>
         <ul>
-          <li><strong>Dashboard Menu — Fully Customizable</strong> — The mode menu is now driven by a JSON config file. Hide modes you never use, reorder groups, rename labels, create your own custom groups — all without recompiling. Edit a single file and the dashboard reloads in real time. Same config drives Desktop and Touch layouts.</li>
-          <li><strong>Strip Mode — Reclaim your desktop</strong> — Click <code>⮕ STRIP</code> and the Desktop dashboard animates to a slim 80&nbsp;px vertical sidebar, freeing your screen while keeping clock, GPS, callsign, rig, CAT/audio, active mode and recent modes always glanceable on the right edge.</li>
-          <li><strong>GPS — Live 3-state indicator</strong> — Red (no GPS), Yellow (waiting / signal lost), Green (fix active). Signal loss is reported live, not on a delay.</li>
-          <li><strong>Modernized brand internals</strong> — Configuration paths renamed to the LiaisonOS brand with a compatibility layer for any legacy script. From an operator perspective, configurations migrate themselves on the first restore after upgrade — nothing to do.</li>
-          <li><strong>Previous — v2.3.3</strong> — QtPatWinlink (native Qt Pat-Winlink with embedded Pat Forms, Touch Mode, smart Abort/Disconnect, VARA/Mercury retries) and et-supervisor hardening (SIGCHLD process death, snappier UI, zombie fixes).</li>
+          <li><strong>LiaisonSAR — SAR mapping for YAAC</strong> — The PNGTileLayer plugin renamed and re-shaped as <strong>LiaisonSAR</strong> with a full Search-and-Rescue feature set: offline PNG tiles with on-the-fly grayscale, UTM grid overlay with snap-to-scale (1:2,500 → 1:250,000), persistent SQLite point store that survives YAAC restart or crash, operator names auto-resolved from the LiaisonOS license database in click pop-ups, configurable trail style (triangle/circle markers, two sizes, solid/dashed), SAR evidence catalog, and per-station Phase Out that finally controls how long old positions stay visible.</li>
+          <li><strong>Menu Editor — Hide &amp; rename what you don't use</strong> — A new web-based editor (Apps menu → <em>Menu Editor</em>) lets you hide entire groups or individual modes from the dashboard and rename anything — both Desktop and Touch labels. Settings live in <code>~/.config/liaisonos/dashboard-menu.overrides.json</code> and QtDashboard picks them up on next launch. One-click Reset to defaults.</li>
+          <li><strong>Previous — v2.3.4</strong> — JSON-driven Dashboard Menu, Strip Mode, GPS live 3-state indicator, LiaisonOS brand path migration with legacy compatibility.</li>
         </ul>
       </div>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.4.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.5.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label"><span class="il il-en">Latest release</span><span class="il il-fr">Dernière version</span></p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.3.4.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.3.5.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; <span class="il il-en">Released</span> <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.4</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.5</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">License</p><p class="stat-val">Ms-PL</p></div>
@@ -247,8 +245,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.3.4</span>
-      <span class="checksum-val" id="hashval">ca8ec724fefde774bbcfc0d153c738586831f34898c77e7458f70d9c4595eee5</span>
+      <span class="checksum-label">SHA256 - v2.3.5</span>
+      <span class="checksum-val" id="hashval">bcbc5aa107f06079ce025210194fa5e2c03512fd069cebf9d0ca4622225b2038</span>
       <button class="copy-btn" onclick="copyHash('hashval')"><span class="il il-en">Copy</span><span class="il il-fr">Copier</span></button>
     </div>
 
@@ -264,10 +262,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.3.4.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.3.5.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.4.iso">⬇ Download</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.5.iso">⬇ Download</a></td>
         </tr>
        
         <tr>

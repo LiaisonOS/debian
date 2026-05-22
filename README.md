@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.4-f59e0b?style=for-the-badge" alt="Version 2.3.4"></a>
+  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.5-f59e0b?style=for-the-badge" alt="Version 2.3.5"></a>
   <a href="https://liaisonos.com/download"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
@@ -56,6 +56,28 @@
 </table>
 
 ---
+
+## ✨ What's New in 2.3.5
+
+### 🗺️ LiaisonSAR — SAR Mapping for YAAC
+
+- **Renamed and re-shaped** — the PNGTileLayer YAAC plugin is now **LiaisonSAR**, with a full Search-and-Rescue feature set
+- **Offline PNG tile maps** with on-the-fly grayscale toggle for low-light or printed-map workflows
+- **UTM grid overlay** with snap-to-scale at the standard cartographic ratios: 1:2,500 / 1:5,000 / 1:10,000 / 1:25,000 / 1:50,000 / 1:100,000 / 1:250,000 — grid spacing auto-adjusts to match
+- **Persistent SQLite point store** — station positions and SAR objects survive a YAAC restart or crash, replay automatically next session
+- **Operator names in click pop-ups** — auto-resolved from the LiaisonOS amateur-radio license database (US + Canada)
+- **Configurable trail style** — triangle or circle markers, two sizes, solid or dashed lines, all-points or last-3 trail length
+- **SAR evidence catalog** — typed markers for Clothing / Fire / Food / Shelter / Traces / Tools / Bags / Custom
+- **Per-station Phase Out** — one lever now controls how long old positions stay visible (replaces YAAC's hidden 24h cap for restored stations)
+
+### 🎛️ Menu Editor — Hide & Rename What You Don't Use
+
+- **Web-based editor** — launch from the apps menu (_Menu Editor_), opens in a native window
+- **Hide groups or modes** with checkboxes — including parametrized launchers (BBS server, BBS clients, etc.)
+- **Rename anything** — Desktop label and Touch label independent per mode; group titles too
+- **Empty input = use default**, type to override — clean mental model
+- Settings written to `~/.config/liaisonos/dashboard-menu.overrides.json`, picked up by QtDashboard on next launch
+- **One-click Reset** — restore the system defaults
 
 ## ✨ What's New in 2.3.4
 

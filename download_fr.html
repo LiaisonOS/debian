@@ -134,28 +134,26 @@
     </div>
 
     <div class="whats-new">
-      <p class="whats-new-title">Nouveautés de la v2.3.4</p>
+      <p class="whats-new-title">Nouveautés de la v2.3.5</p>
       <ul>
-        <li><strong>Menu du tableau de bord — Entièrement personnalisable</strong> — Le menu des modes est désormais piloté par un fichier JSON. Masquez les modes que vous n'utilisez pas, réorganisez les groupes, renommez les libellés, créez vos propres groupes personnalisés — le tout sans recompiler. Modifiez un seul fichier et le tableau de bord se recharge en temps réel. La même configuration alimente les dispositions Bureau et Tactile.</li>
-        <li><strong>Mode Strip — Récupérez votre bureau</strong> — Cliquez sur <code>⮕ STRIP</code> et le tableau de bord Bureau se rétracte en une barre verticale fine de 80&nbsp;px, libérant votre écran tout en gardant l'horloge, le GPS, l'indicatif, la radio, le statut CAT/audio, le mode actif et les modes récents toujours visibles sur le bord droit.</li>
-        <li><strong>GPS — Indicateur 3-états en direct</strong> — Rouge (pas de GPS), Jaune (en attente / signal perdu), Vert (fix actif). Les pertes de signal sont signalées en direct, sans délai.</li>
-        <li><strong>Modernisation des chemins internes</strong> — Chemins de configuration renommés à la marque LiaisonOS avec une couche de compatibilité pour les scripts existants. Du point de vue de l'opérateur, les configurations migrent automatiquement à la première restauration après mise à niveau — rien à faire.</li>
-        <li><strong>Précédente — v2.3.3</strong> — QtPatWinlink (Pat-Winlink Qt natif avec formulaires Pat intégrés, mode Tactile, Abort/Disconnect intelligent, reprises VARA/Mercury) et solidification d'et-supervisor (détection de fin SIGCHLD, interface plus réactive, corrections zombie).</li>
+        <li><strong>LiaisonSAR — Cartographie SAR pour YAAC</strong> — Le plugin PNGTileLayer renommé et étoffé en <strong>LiaisonSAR</strong> avec un ensemble complet d'outils pour la recherche-sauvetage : tuiles PNG hors-ligne avec niveaux de gris à la volée, grille UTM avec accrochage aux échelles cartographiques (1:2 500 → 1:250 000), stockage SQLite persistant qui survit aux redémarrages ou plantages de YAAC, noms d'opérateurs résolus depuis la base de licences LiaisonOS dans les pop-ups, style de piste configurable (marqueurs triangle/cercle, deux tailles, ligne pleine/pointillée), catalogue d'indices SAR, et Phase Out par station qui contrôle enfin la durée d'affichage des anciennes positions.</li>
+        <li><strong>Éditeur de menu — Masquer et renommer</strong> — Un nouvel éditeur web (menu Applications → <em>Éditeur de menu</em>) permet de masquer des groupes entiers ou des modes individuels du tableau de bord, et de renommer n'importe quoi — étiquettes Bureau et Tactile. Les réglages sont dans <code>~/.config/liaisonos/dashboard-menu.overrides.json</code> et QtDashboard les charge au prochain lancement. Restauration des défauts en un clic.</li>
+        <li><strong>Précédente — v2.3.4</strong> — Menu du tableau de bord JSON, Mode Strip, indicateur GPS 3-états en direct, migration des chemins internes vers la marque LiaisonOS avec compatibilité legacy.</li>
       </ul>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.4.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.5.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label">Dernière version</p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.3.4.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.3.5.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; Publiée <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.4</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.5</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">Licence</p><p class="stat-val">Ms-PL</p></div>
@@ -163,8 +161,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.3.4</span>
-      <span class="checksum-val" id="hashval">ca8ec724fefde774bbcfc0d153c738586831f34898c77e7458f70d9c4595eee5</span>
+      <span class="checksum-label">SHA256 - v2.3.5</span>
+      <span class="checksum-val" id="hashval">bcbc5aa107f06079ce025210194fa5e2c03512fd069cebf9d0ca4622225b2038</span>
       <button class="copy-btn" onclick="copyHash('hashval')">Copier</button>
     </div>
 
@@ -180,10 +178,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.3.4.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.3.5.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.4.iso">⬇ Télécharger</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.5.iso">⬇ Télécharger</a></td>
         </tr>
 
         <tr>

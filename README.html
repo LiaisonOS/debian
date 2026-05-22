@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Emergency Communications for Ham Radio</h1>
-<p><em>Version 2.3.4 — May 2026</em>
+<p><em>Version 2.3.5 — May 2026</em>
 <em>Debian 13 (Trixie) Live/Installable ISO</em></p>
 <blockquote>
 <p>⚠️ <strong>Continuous Development Notice</strong></p>
@@ -82,6 +82,28 @@ footer a:hover { color: #7de8b0; }
 <p><strong>Français?</strong> Voir <a href="https://liaisonos.com/LISEZMOI">LISEZMOI</a> pour la version française.</p>
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS is a <strong>Debian 13 (Trixie) live and installable Linux ISO</strong> designed for ham radio emergency digital communications. It includes a complete suite of pre-configured digital mode software, offline maps, and a web dashboard for one-click operation. Two deployment modes: <strong>USB Live Run</strong> (boot any PC from a USB drive) or <strong>hard drive installation</strong> (permanent install via Calamares). Bilingual English/French interface. Created by Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>What's New in Version 2.3.5</h2>
+<h3>LiaisonSAR — SAR Mapping for YAAC</h3>
+<ul>
+<li><strong>Renamed and re-shaped</strong> — the PNGTileLayer YAAC plugin is now <strong>LiaisonSAR</strong>, with a full Search-and-Rescue feature set</li>
+<li><strong>Offline PNG tile maps</strong> with on-the-fly grayscale toggle for low-light or printed-map workflows</li>
+<li><strong>UTM grid overlay</strong> with snap-to-scale at the standard cartographic ratios: 1:2,500 / 1:5,000 / 1:10,000 / 1:25,000 / 1:50,000 / 1:100,000 / 1:250,000 — grid spacing auto-adjusts to match</li>
+<li><strong>Persistent SQLite point store</strong> — station positions and SAR objects survive a YAAC restart or crash, replay automatically next session</li>
+<li><strong>Operator names in click pop-ups</strong> — auto-resolved from the LiaisonOS amateur-radio license database (US + Canada)</li>
+<li><strong>Configurable trail style</strong> — triangle or circle markers, two sizes, solid or dashed lines, all-points or last-3 trail length</li>
+<li><strong>SAR evidence catalog</strong> — typed markers for Clothing / Fire / Food / Shelter / Traces / Tools / Bags / Custom</li>
+<li><strong>Per-station Phase Out</strong> — one lever now controls how long old positions stay visible (replaces YAAC's hidden 24h cap for restored stations)</li>
+</ul>
+<h3>Menu Editor — Hide &amp; Rename What You Don't Use</h3>
+<ul>
+<li><strong>Web-based editor</strong> — launch from the apps menu (<em>Menu Editor</em>), opens in a native window</li>
+<li><strong>Hide groups or modes</strong> with checkboxes — including parametrized launchers (BBS server, BBS clients, etc.)</li>
+<li><strong>Rename anything</strong> — Desktop label and Touch label independent per mode; group titles too</li>
+<li><strong>Empty input = use default</strong>, type to override — clean mental model</li>
+<li>Settings written to <code>~/.config/liaisonos/dashboard-menu.overrides.json</code>, picked up by QtDashboard on next launch</li>
+<li><strong>One-click Reset</strong> — restore the system defaults</li>
+</ul>
 <hr />
 <h2>What's New in Version 2.3.4</h2>
 <h3>Dashboard Menu — Fully Customizable</h3>
@@ -1077,7 +1099,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Ventoy Documentation:</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Document version: 2.3.4</em>
+<p><em>Document version: 2.3.5</em>
 <em>Last updated: May 2026</em>
 <em>Created for LiaisonOS Debian Edition</em></p>
 </div>

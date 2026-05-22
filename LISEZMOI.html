@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Communications d'urgence pour radioamateurs</h1>
-<p><em>Version 2.3.4 — Mai 2026</em>
+<p><em>Version 2.3.5 — Mai 2026</em>
 <em>ISO Debian 13 (Trixie) Live/Installable</em></p>
 <blockquote>
 <p>⚠️ <strong>Avis de développement continu</strong></p>
@@ -82,6 +82,28 @@ footer a:hover { color: #7de8b0; }
 <p><strong>English?</strong> See <a href="https://liaisonos.com/README">README</a> for the English version.</p>
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS est une <strong>ISO Linux Debian 13 (Trixie) live et installable</strong> conçue pour les communications numériques d'urgence en radioamateur. Elle comprend une suite complète de logiciels de modes numériques préconfigurés, des cartes hors ligne et un tableau de bord web pour une utilisation en un clic. Deux modes de déploiement : <strong>USB Live Run</strong> (démarrer n'importe quel PC depuis une clé USB) ou <strong>installation sur disque dur</strong> (installation permanente avec Calamares). Interface bilingue français/anglais. Créé par Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>Nouveautés de la version 2.3.5</h2>
+<h3>LiaisonSAR — Cartographie SAR pour YAAC</h3>
+<ul>
+<li><strong>Renommé et étoffé</strong> — le plugin YAAC PNGTileLayer devient <strong>LiaisonSAR</strong>, avec un ensemble complet d'outils pour la recherche-sauvetage</li>
+<li><strong>Cartes PNG hors-ligne</strong> avec basculement niveaux de gris à la volée pour les conditions de faible luminosité ou les cartes imprimées</li>
+<li><strong>Grille UTM</strong> avec accrochage aux échelles cartographiques standard : 1:2 500 / 1:5 000 / 1:10 000 / 1:25 000 / 1:50 000 / 1:100 000 / 1:250 000 — espacement de grille auto-ajusté</li>
+<li><strong>Stockage SQLite persistant</strong> — positions des stations et objets SAR survivent à un redémarrage ou plantage de YAAC, restaurés automatiquement à la session suivante</li>
+<li><strong>Noms d'opérateurs dans les pop-ups de clic</strong> — résolus automatiquement depuis la base de licences amateurs LiaisonOS (US + Canada)</li>
+<li><strong>Style de piste configurable</strong> — marqueurs triangle ou cercle, deux tailles, lignes pleine ou pointillée, piste complète ou 3 derniers points</li>
+<li><strong>Catalogue d'indices SAR</strong> — marqueurs typés pour Vêtements / Feu / Nourriture / Abri / Traces / Outils / Sacs / Personnalisé</li>
+<li><strong>Phase Out par station</strong> — un seul levier contrôle désormais la durée d'affichage des anciennes positions (remplace le plafond caché de 24h de YAAC pour les stations restaurées)</li>
+</ul>
+<h3>Éditeur de menu — Masquer et renommer</h3>
+<ul>
+<li><strong>Éditeur web</strong> — lancé depuis le menu Applications (<em>Éditeur de menu</em>), s'ouvre dans une fenêtre native</li>
+<li><strong>Masquer des groupes ou des modes</strong> avec des cases à cocher — y compris les lanceurs paramétrés (serveur BBS, clients BBS, etc.)</li>
+<li><strong>Renommer n'importe quoi</strong> — étiquette Bureau et étiquette Tactile indépendantes par mode ; titres de groupes aussi</li>
+<li><strong>Champ vide = défaut</strong>, tapez pour personnaliser — modèle mental propre</li>
+<li>Réglages écrits dans <code>~/.config/liaisonos/dashboard-menu.overrides.json</code>, chargés par QtDashboard au prochain lancement</li>
+<li><strong>Restauration en un clic</strong> — retour aux défauts système</li>
+</ul>
 <hr />
 <h2>Nouveautés de la version 2.3.4</h2>
 <h3>Menu du tableau de bord — Entièrement personnalisable</h3>
@@ -1070,7 +1092,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Documentation Ventoy :</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Version du document : 2.3.4</em>
+<p><em>Version du document : 2.3.5</em>
 <em>Dernière mise à jour : Mai 2026</em>
 <em>Créé pour LiaisonOS Édition Debian</em></p>
 </div>

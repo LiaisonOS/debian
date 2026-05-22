@@ -146,7 +146,7 @@
     <a class="btn-secondary" href="mailto:info@liaisonos.com">✉ Nous joindre</a>
   </div>
   <div class="badges">
-    <span class="badge"><span>v2.3.4</span></span>
+    <span class="badge"><span>v2.3.5</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Licence <span>Ms-PL</span></span>
@@ -202,26 +202,21 @@ data-beehiiv-form="12328a64-4ff4-456a-9557-fc3ecb84804d"></script></div>
   </div>
 
   <div class="section">
-    <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.4</span></h2>
+    <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.5</span></h2>
 
     <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
-      <h3 style="color:#ffa500;">Menu du tableau de bord — Entièrement personnalisable</h3>
-      <p>Le menu des modes est désormais piloté par un fichier JSON. Masquez les modes que vous n'utilisez pas, réorganisez les groupes, renommez les libellés, créez vos propres groupes personnalisés — le tout sans recompiler. Modifiez un seul fichier et le tableau de bord se recharge en temps réel. La même configuration alimente les dispositions Bureau et Tactile. Un modèle intégré documente toutes les options de personnalisation pour faciliter la découverte.</p>
+      <h3 style="color:#ffa500;">LiaisonSAR — Cartographie SAR pour YAAC</h3>
+      <p>Le plugin YAAC PNGTileLayer est renommé et étoffé en <strong>LiaisonSAR</strong>, avec un ensemble complet d'outils pour la recherche-sauvetage : cartes PNG hors-ligne avec mode niveaux de gris à la volée, grille UTM avec accrochage aux échelles cartographiques standard (1:2 500 / 1:5 000 / 1:10 000 / 1:25 000 / 1:50 000 / 1:100 000 / 1:250 000), stockage SQLite persistant qui survit aux redémarrages ou plantages de YAAC, noms d'opérateurs résolus automatiquement depuis la base de licences LiaisonOS dans les pop-ups, style de piste configurable (marqueurs triangle ou cercle, deux tailles, ligne pleine ou pointillée), catalogue d'indices SAR (Vêtements / Feu / Nourriture / Abri / Traces / Outils / Sacs / Personnalisé), et un Phase Out par station qui contrôle enfin la durée d'affichage des anciennes positions.</p>
     </div>
 
     <div class="card" style="margin-top: 8px;">
-      <h3>Mode Strip — Récupérez votre bureau</h3>
-      <p>Cliquez sur <code>⮕ STRIP</code> et le tableau de bord Bureau se rétracte en une barre verticale fine de 80&nbsp;px — libérant votre écran tout en gardant l'horloge, le GPS, l'indicatif, la radio, le statut CAT/audio, le mode actif et les modes récents toujours visibles d'un coup d'œil sur le bord droit. Cliquez sur <code>⮜</code> pour revenir à la pleine taille. Icônes et étiquettes courtes s'adaptent à la colonne étroite.</p>
+      <h3>Éditeur de menu — Masquer et renommer</h3>
+      <p>Un nouvel éditeur web (menu Applications → <em>Éditeur de menu</em>) permet de masquer des groupes entiers ou des modes individuels du tableau de bord, et de renommer n'importe quoi — étiquettes Bureau et Tactile — à votre goût. Finie l'encombrement des modes que vous n'utilisez jamais. Les réglages sont dans <code>~/.config/liaisonos/dashboard-menu.overrides.json</code> et QtDashboard les charge au prochain lancement. Restauration des défauts en un clic.</p>
     </div>
 
     <div class="card" style="margin-top: 8px;">
-      <h3>GPS — Indicateur 3-états en direct</h3>
-      <p>Le statut GPS reflète maintenant ce que le récepteur fait réellement. Rouge lorsqu'aucune source GPS n'est connectée. Jaune en attente d'un fix ou après une perte de signal. Vert quand le fix est actif. Les pertes de signal sont signalées en direct, sans délai.</p>
-    </div>
-
-    <div class="card" style="margin-top: 8px;">
-      <h3>Modernisation des chemins internes</h3>
-      <p>Les chemins de configuration interne ont été renommés à la marque LiaisonOS. Une couche de compatibilité intégrée garde tous les scripts existants fonctionnels de manière transparente. Du point de vue de l'opérateur : rien à changer — votre indicatif, vos radios, répéteurs, VARA, VarAC, journal et base POTA migrent automatiquement la première fois que vous restaurez votre configuration sur 2.3.4.</p>
+      <h3>Précédente — v2.3.4</h3>
+      <p>Menu du tableau de bord entièrement personnalisable via JSON. Mode Strip — barre latérale 80&nbsp;px qui libère le bureau. Indicateur GPS 3-états en direct. Modernisation des chemins internes vers la marque LiaisonOS, avec compatibilité legacy transparente.</p>
     </div>
 
     <div class="card" style="margin-top: 8px;">
