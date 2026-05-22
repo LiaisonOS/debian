@@ -41,14 +41,14 @@ rm -f "/tmp/${ZIP_FILE}"
 rm -rf "${LINK_PATH}"
 ln -s "${INSTALL_DIR}" "${LINK_PATH}"
 
-# Install PNGTileLayer plugin
-PLUGIN_FILE="PNGTileLayer.jar"
-echo "Downloading PNGTileLayer plugin from local cache..."
+# Install LiaisonSAR plugin (formerly PNGTileLayer — renamed 2026-05-21)
+PLUGIN_FILE="LiaisonSAR.jar"
+echo "Downloading LiaisonSAR plugin from local cache..."
 curl -s -o "/tmp/${PLUGIN_FILE}" --fail "http://127.0.0.1/${PLUGIN_FILE}"
 
 mkdir -p "${INSTALL_DIR}/plugins"
 cp "/tmp/${PLUGIN_FILE}" "${INSTALL_DIR}/plugins/"
 rm -f "/tmp/${PLUGIN_FILE}"
-echo "Installed PNGTileLayer.jar plugin"
+echo "Installed LiaisonSAR.jar plugin"
 
 echo "=== YAAC installation complete ==="
