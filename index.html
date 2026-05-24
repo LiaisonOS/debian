@@ -264,7 +264,7 @@
   </div>
 
   <div class="badges">
-    <span class="badge"><span>v2.3.5</span></span>
+    <span class="badge"><span>v2.3.5.1</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Ms-PL <span>License</span></span>
@@ -397,10 +397,12 @@
   <!-- WHATS NEW -->
   <div class="section">
     <div class="lang-en">
-      <h2 class="section-title">What's new <span class="new-badge">v2.3.5</span></h2>
+      <h2 class="section-title">What's new <span class="new-badge">v2.3.5.1</span></h2>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
-        <h3 style="color:#ffa500;">LiaisonSAR — SAR Mapping for YAAC</h3>
+        <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.3.5.1 patch</span> &nbsp; <strong>YAAC map cache restored.</strong> Fixes a long-standing bug where the offline tile cache was silently bypassed (the plugin fell back to the internet for every tile). Adds BlueMap-style smooth tile-level rendering, a <em>Cache Only</em> toggle to skip internet attempts in offline ops, a <em>Patch Missing in View</em> button that downloads just the gaps in the current viewport + a one-view buffer, "tile not in cache" placeholders so missing tiles are visible instead of blank, and et-persistence-restore self-heal that auto-corrects <code>cacheDirectory</code> after a snapshot moves between users.</p>
+        <hr style="border:none; border-top:1px solid rgba(255,165,0,0.25); margin: 10px 0;">
+        <h3 style="color:#ffa500;">LiaisonSAR — SAR Mapping for YAAC <span class="new-badge" style="vertical-align:middle;">v2.3.5</span></h3>
         <p>The PNGTileLayer YAAC plugin has been renamed and re-shaped as <strong>LiaisonSAR</strong> with a full Search-and-Rescue feature set: offline PNG tile maps with on-the-fly grayscale, a UTM grid overlay with snap-to-scale at the standard cartographic ratios (1:2,500 / 1:5,000 / 1:10,000 / 1:25,000 / 1:50,000 / 1:100,000 / 1:250,000), persistent SQLite point store that survives a YAAC restart or crash, operator names auto-resolved from the LiaisonOS license database in click pop-ups, a configurable trail style (triangle or circle markers in two sizes, solid or dashed lines), an SAR evidence catalog (Clothing / Fire / Food / Shelter / Traces / Tools / Bags / Custom), and per-station Phase Out that finally controls how long old positions stay visible.</p>
       </div>
 
@@ -430,20 +432,14 @@
         <h3>Previous — v2.3.0</h3>
         <p>GPS Sync button in the dashboard. QtGpsSync rebuilt from the ground up in C++ — connects over Bluetooth to Android devices running the LiaisonGPS app, or to serial GPS receivers (Kenwood TH-D74, TH-D75). Two modes: <em>Sync</em> sets system time and Maidenhead grid square in one tap, <em>GPS</em> provides a continuous live feed. Mercury HF modem v2 (HERMES/Rhizomatica, sponsored by ARDC) included as beta — client apps connect via VARA protocol name, Mercury running underneath.</p>
       </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Previous — v2.2.7</h3>
-        <p>GPS sync engine redesigned with Unix socket events. Instant green/yellow/red state with pulse blink on fix. No more polling timer or flag file.</p>
-      </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Previous — v2.2.6</h3>
-        <p>Bluetooth GPS Sync from Android (LiaisonGPS app) or Kenwood TH-D74/TH-D75. Bluetooth pairings and WiFi credentials saved and restored with USB persistence.</p>
-      </div>
     </div>
     <div class="lang-fr">
-      <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.5</span></h2>
+      <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.5.1</span></h2>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
-        <h3 style="color:#ffa500;">LiaisonSAR — Cartographie SAR pour YAAC</h3>
+        <p style="margin: 0 0 12px 0;"><span class="new-badge">correctif v2.3.5.1</span> &nbsp; <strong>Cache de cartes YAAC rétabli.</strong> Corrige un bogue de longue date où le cache de tuiles hors-ligne était silencieusement contourné (le plugin retombait sur Internet pour chaque tuile). Ajoute un rendu tuile-par-tuile fluide façon BlueMap, un toggle <em>Cache Only</em> pour sauter complètement les tentatives Internet en opération hors-ligne, un bouton <em>Patch Missing in View</em> qui télécharge uniquement les trous dans la vue actuelle plus un tampon d'une vue, des espaces réservés « tile not in cache » pour que les tuiles manquantes soient visibles plutôt que blanches, et l'auto-réparation d'et-persistence-restore qui corrige <code>cacheDirectory</code> quand un instantané passe d'un utilisateur à un autre.</p>
+        <hr style="border:none; border-top:1px solid rgba(255,165,0,0.25); margin: 10px 0;">
+        <h3 style="color:#ffa500;">LiaisonSAR — Cartographie SAR pour YAAC <span class="new-badge" style="vertical-align:middle;">v2.3.5</span></h3>
         <p>Le plugin YAAC PNGTileLayer est renommé et étoffé en <strong>LiaisonSAR</strong>, avec un ensemble complet d'outils pour la recherche-sauvetage : cartes PNG hors-ligne avec mode niveaux de gris à la volée, grille UTM avec accrochage aux échelles cartographiques standard (1:2 500 / 1:5 000 / 1:10 000 / 1:25 000 / 1:50 000 / 1:100 000 / 1:250 000), stockage SQLite persistant qui survit aux redémarrages ou plantages de YAAC, noms d'opérateurs résolus automatiquement depuis la base de licences LiaisonOS dans les pop-ups, style de piste configurable (marqueurs triangle ou cercle, deux tailles, ligne pleine ou pointillée), catalogue d'indices SAR (Vêtements / Feu / Nourriture / Abri / Traces / Outils / Sacs / Personnalisé), et un Phase Out par station qui contrôle enfin la durée d'affichage des anciennes positions.</p>
       </div>
 
@@ -472,14 +468,6 @@
       <div class="card" style="margin-top: 8px;">
         <h3>Précédente — v2.3.0</h3>
         <p>Bouton Sync GPS dans le tableau de bord. QtGpsSync entièrement reconstruit en C++ — connexion Bluetooth aux appareils Android via l'app LiaisonGPS, ou aux récepteurs GPS série (Kenwood TH-D74, TH-D75). Deux modes : <em>Sync</em> règle l'heure système et le locator Maidenhead en un tap, <em>GPS</em> fournit un flux continu en temps réel. Modem Mercury HF v2 (HERMES/Rhizomatica, sponsorisé par ARDC) inclus en bêta — les applications clientes se connectent via le nom de protocole VARA, Mercury tourne en dessous.</p>
-      </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Précédente — v2.2.7</h3>
-        <p>Moteur GPS refondu avec événements Unix socket. États instantanés vert/jaune/rouge avec clignotement au fix.</p>
-      </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Précédente — v2.2.6</h3>
-        <p>Synchronisation GPS Bluetooth depuis Android (app LiaisonGPS) ou Kenwood TH-D74/TH-D75. Jumelages Bluetooth et identifiants WiFi sauvegardés et restaurés avec la persistance USB.</p>
       </div>
     </div>
   </div>
