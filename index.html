@@ -264,7 +264,7 @@
   </div>
 
   <div class="badges">
-    <span class="badge"><span>v2.3.5.1</span></span>
+    <span class="badge"><span>v2.3.6</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Ms-PL <span>License</span></span>
@@ -397,9 +397,11 @@
   <!-- WHATS NEW -->
   <div class="section">
     <div class="lang-en">
-      <h2 class="section-title">What's new <span class="new-badge">v2.3.5.1</span></h2>
+      <h2 class="section-title">What's new <span class="new-badge">v2.3.6</span></h2>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
+        <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.3.6</span> &nbsp; <strong>No-CAT radio support + dashboard polish.</strong> Digirig Lite, Digirig Mobile (No CAT) and Yaesu FTX-1 are now properly recognized as no-CAT setups: CAT prechecks are skipped automatically, the CAT status tile shows "N/A" in gray instead of red ✗, and changing the active radio in the dashboard now restarts <code>rigctld</code> in the right mode (Dummy for no-CAT, full CAT otherwise) — no more "unplug/replug USB" trap. QtDashboard polish: Recent buttons use the menu label verbatim formatted <code>&lt;Mode&gt; - &lt;Modem&gt;</code> (e.g. <code>Winlink - Mercury</code>), an inline toast replaces the modal dialog for soft errors, a proactive client-side guard prevents double-launching, and supervisor prechecks now return short friendly messages ("Audio device not connected") instead of the verbose internal format.</p>
+        <hr style="border:none; border-top:1px solid rgba(255,165,0,0.25); margin: 10px 0;">
         <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.3.5.1 patch</span> &nbsp; <strong>YAAC map cache restored.</strong> Fixes a long-standing bug where the offline tile cache was silently bypassed (the plugin fell back to the internet for every tile). Adds BlueMap-style smooth tile-level rendering, a <em>Cache Only</em> toggle to skip internet attempts in offline ops, a <em>Patch Missing in View</em> button that downloads just the gaps in the current viewport + a one-view buffer, "tile not in cache" placeholders so missing tiles are visible instead of blank, and et-persistence-restore self-heal that auto-corrects <code>cacheDirectory</code> after a snapshot moves between users.</p>
         <hr style="border:none; border-top:1px solid rgba(255,165,0,0.25); margin: 10px 0;">
         <h3 style="color:#ffa500;">LiaisonSAR — SAR Mapping for YAAC <span class="new-badge" style="vertical-align:middle;">v2.3.5</span></h3>
@@ -434,9 +436,11 @@
       </div>
     </div>
     <div class="lang-fr">
-      <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.5.1</span></h2>
+      <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.6</span></h2>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
+        <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.3.6</span> &nbsp; <strong>Prise en charge des radios sans CAT et finition du tableau de bord.</strong> Digirig Lite, Digirig Mobile (Sans CAT) et Yaesu FTX-1 sont maintenant correctement reconnues comme configurations sans CAT : les vérifications CAT sont sautées automatiquement, la tuile d'état CAT affiche « N/A » en gris au lieu de ✗ rouge, et changer la radio active dans le tableau de bord redémarre maintenant <code>rigctld</code> dans le bon mode (Dummy pour sans-CAT, CAT complet autrement) — plus de piège « débrancher/rebrancher le USB ». Finition QtDashboard : les boutons Récents utilisent l'étiquette du menu verbatim sous la forme <code>&lt;Mode&gt; - &lt;Modem&gt;</code> (ex. <code>Winlink - Mercury</code>), un toast intégré remplace la boîte modale pour les erreurs légères, une garde proactive côté client empêche le double lancement, et les vérifications du superviseur retournent maintenant des messages courts et compréhensibles (« Audio device not connected ») au lieu du format interne verbeux.</p>
+        <hr style="border:none; border-top:1px solid rgba(255,165,0,0.25); margin: 10px 0;">
         <p style="margin: 0 0 12px 0;"><span class="new-badge">correctif v2.3.5.1</span> &nbsp; <strong>Cache de cartes YAAC rétabli.</strong> Corrige un bogue de longue date où le cache de tuiles hors-ligne était silencieusement contourné (le plugin retombait sur Internet pour chaque tuile). Ajoute un rendu tuile-par-tuile fluide façon BlueMap, un toggle <em>Cache Only</em> pour sauter complètement les tentatives Internet en opération hors-ligne, un bouton <em>Patch Missing in View</em> qui télécharge uniquement les trous dans la vue actuelle plus un tampon d'une vue, des espaces réservés « tile not in cache » pour que les tuiles manquantes soient visibles plutôt que blanches, et l'auto-réparation d'et-persistence-restore qui corrige <code>cacheDirectory</code> quand un instantané passe d'un utilisateur à un autre.</p>
         <hr style="border:none; border-top:1px solid rgba(255,165,0,0.25); margin: 10px 0;">
         <h3 style="color:#ffa500;">LiaisonSAR — Cartographie SAR pour YAAC <span class="new-badge" style="vertical-align:middle;">v2.3.5</span></h3>

@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.5-f59e0b?style=for-the-badge" alt="Version 2.3.5"></a>
+  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.6-f59e0b?style=for-the-badge" alt="Version 2.3.6"></a>
   <a href="https://liaisonos.com/download"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
@@ -56,6 +56,44 @@
 </table>
 
 ---
+
+## ✨ What's New in 2.3.6
+
+### 📻 No-CAT Radio Support
+
+- **Digirig Lite, Digirig Mobile (No CAT), and Yaesu FTX-1** are now properly recognized as no-CAT setups via a `"cat": false` flag in their radio profile
+- **CAT prechecks skipped automatically** — `service-active rigctld` and `device-exists /dev/et-cat` no longer block mode launches when the active radio doesn't have CAT
+- **Pre-start actions skipped** — `prime-rigctld`, `qsy-band`, `set-radio-width` are bypassed (no more 5-second wait while the Hamlib Dummy fails to respond)
+- **CAT status tile shows gray "N/A"** instead of red ✗ — only for radios explicitly flagged as no-CAT, so accidentally-disconnected CAT still shows red
+
+### 🔄 Auto rigctld Restart on Radio Switch
+
+- **Changing the active radio in the dashboard now reloads `rigctld`** in the right mode (Dummy for no-CAT, full CAT otherwise)
+- **No more "unplug/replug USB" trap** — used to leave `rigctld` pinned to the previous radio's serial port and cause a cryptic "Rig Control Error" on the next mode start
+- Uses the existing sudoers entry for passwordless `systemctl restart rigctld`
+
+### 🏷️ Dashboard Polish
+
+- **Recent buttons use verbatim labels** — `<Mode> - <Modem>` format taken directly from the menu JSON, no auto-prefix, no parentheses (e.g. `Winlink - Mercury`, `QtTermTCP - VARA HF`)
+- **Multi-child labels include the parent** — clicking Winlink → Mercury shows `Winlink - Mercury` in Recent, not just `Mercury`
+- **Inline toast for soft errors** — replaces the modal dialog when a mode is already running or a launch is rejected
+- **Proactive launch guard** — the dashboard blocks a second mode launch client-side instead of letting the supervisor reject it after the fact
+
+### 💬 Friendlier Supervisor Messages
+
+- Short, plain-English precheck failures: `Audio device not connected`, `Callsign not set`, `rigctld not running`, `Missing: <file>`
+- Dropped the verbose `"Prechecks failed: audio-tagged: ..."` wrapper
+
+## ✨ What's New in 2.3.5.1
+
+### 🗺️ YAAC / LiaisonSAR — Map Cache Restored
+
+- **Long-standing offline-cache bypass fixed** — the plugin was silently falling back to the internet for every tile (root cause: a SELECT statement referencing a column missing from legacy cache databases, plus a saved `cacheDirectory` path that didn't match the operator's home after persistence-restore)
+- **BlueMap-style smooth rendering** — tile-level paint replaces the old "regenerate the whole viewport" model. No more whole-map blanks during pan or zoom
+- **Cache Only toggle** (LiaisonOS menu) — skip the internet attempt entirely on cache miss, eliminating network timeouts in known-offline operations
+- **Patch Missing in View button** (Map Sources dialog) — downloads just the missing tiles in the current viewport plus a one-view buffer on each side
+- **"Tile not in cache" placeholders** — missing tiles paint a labeled placeholder with their z/x/y coordinates instead of leaving a blank rectangle
+- **et-persistence-restore self-heal** — when restoring a snapshot saved under a different username, `tile-sources.json`'s `cacheDirectory` is auto-corrected to the current `$HOME`
 
 ## ✨ What's New in 2.3.5
 

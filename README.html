@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Emergency Communications for Ham Radio</h1>
-<p><em>Version 2.3.5 — May 2026</em>
+<p><em>Version 2.3.6 — May 2026</em>
 <em>Debian 13 (Trixie) Live/Installable ISO</em></p>
 <blockquote>
 <p>⚠️ <strong>Continuous Development Notice</strong></p>
@@ -82,6 +82,43 @@ footer a:hover { color: #7de8b0; }
 <p><strong>Français?</strong> Voir <a href="https://liaisonos.com/LISEZMOI">LISEZMOI</a> pour la version française.</p>
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS is a <strong>Debian 13 (Trixie) live and installable Linux ISO</strong> designed for ham radio emergency digital communications. It includes a complete suite of pre-configured digital mode software, offline maps, and a web dashboard for one-click operation. Two deployment modes: <strong>USB Live Run</strong> (boot any PC from a USB drive) or <strong>hard drive installation</strong> (permanent install via Calamares). Bilingual English/French interface. Created by Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>What's New in Version 2.3.6</h2>
+<h3>No-CAT Radio Support</h3>
+<ul>
+<li><strong>Digirig Lite, Digirig Mobile (No CAT), and Yaesu FTX-1</strong> are now properly recognized as no-CAT setups via a <code>"cat": false</code> flag in their radio profile</li>
+<li><strong>CAT prechecks skipped automatically</strong> — <code>service-active rigctld</code> and <code>device-exists /dev/et-cat</code> no longer block mode launches when the active radio doesn't have CAT</li>
+<li><strong>Pre-start actions skipped</strong> — <code>prime-rigctld</code>, <code>qsy-band</code>, <code>set-radio-width</code> are bypassed (no more 5-second wait while the Hamlib Dummy fails to respond)</li>
+<li><strong>CAT status tile shows gray "N/A"</strong> instead of red ✗ — only for radios explicitly flagged as no-CAT, so accidentally-disconnected CAT still shows red</li>
+</ul>
+<h3>Auto rigctld Restart on Radio Switch</h3>
+<ul>
+<li><strong>Changing the active radio in the dashboard now reloads <code>rigctld</code></strong> in the right mode (Dummy for no-CAT, full CAT otherwise)</li>
+<li><strong>No more "unplug/replug USB" trap</strong> — used to leave <code>rigctld</code> pinned to the previous radio's serial port and cause a cryptic "Rig Control Error" on the next mode start</li>
+</ul>
+<h3>Dashboard Polish</h3>
+<ul>
+<li><strong>Recent buttons use verbatim labels</strong> — <code>&lt;Mode&gt; - &lt;Modem&gt;</code> format taken directly from the menu JSON, no auto-prefix, no parentheses (e.g. <code>Winlink - Mercury</code>, <code>QtTermTCP - VARA HF</code>)</li>
+<li><strong>Multi-child labels include the parent</strong> — clicking Winlink → Mercury shows <code>Winlink - Mercury</code> in Recent, not just <code>Mercury</code></li>
+<li><strong>Inline toast for soft errors</strong> — replaces the modal dialog when a mode is already running or a launch is rejected</li>
+<li><strong>Proactive launch guard</strong> — the dashboard blocks a second mode launch client-side instead of letting the supervisor reject it after the fact</li>
+</ul>
+<h3>Friendlier Supervisor Messages</h3>
+<ul>
+<li>Short, plain-English precheck failures: <code>Audio device not connected</code>, <code>Callsign not set</code>, <code>rigctld not running</code>, <code>Missing: &lt;file&gt;</code></li>
+<li>Dropped the verbose <code>"Prechecks failed: audio-tagged: ..."</code> wrapper</li>
+</ul>
+<hr />
+<h2>What's New in Version 2.3.5.1</h2>
+<h3>YAAC / LiaisonSAR — Map Cache Restored</h3>
+<ul>
+<li><strong>Long-standing offline-cache bypass fixed</strong> — the plugin was silently falling back to the internet for every tile</li>
+<li><strong>BlueMap-style smooth rendering</strong> — tile-level paint replaces the old full-viewport regenerate model</li>
+<li><strong>Cache Only toggle</strong> (LiaisonOS menu) — skip the internet attempt entirely on cache miss</li>
+<li><strong>Patch Missing in View</strong> button (Map Sources dialog) — download just the missing tiles in the current viewport plus a one-view buffer on each side</li>
+<li><strong>"Tile not in cache" placeholders</strong> — missing tiles paint a labeled placeholder with their z/x/y coordinates</li>
+<li><strong>et-persistence-restore self-heal</strong> — auto-corrects <code>cacheDirectory</code> when a snapshot moves between usernames</li>
+</ul>
 <hr />
 <h2>What's New in Version 2.3.5</h2>
 <h3>LiaisonSAR — SAR Mapping for YAAC</h3>
@@ -1099,7 +1136,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Ventoy Documentation:</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Document version: 2.3.5</em>
+<p><em>Document version: 2.3.6</em>
 <em>Last updated: May 2026</em>
 <em>Created for LiaisonOS Debian Edition</em></p>
 </div>

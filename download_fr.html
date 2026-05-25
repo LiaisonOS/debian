@@ -134,38 +134,29 @@
     </div>
 
     <div class="whats-new">
-      <p class="whats-new-title">Nouveautés de la v2.3.5.1 <span style="opacity:0.65;font-weight:normal;">— correctif</span></p>
+      <p class="whats-new-title">Nouveautés de la v2.3.6</p>
       <ul>
-        <li><strong>YAAC / LiaisonSAR — cache de cartes entièrement rétabli</strong> — Corrige un bogue de longue date où le cache de tuiles hors-ligne était silencieusement contourné et le plugin retombait sur Internet pour chaque tuile. Cause : une requête SELECT référençait une colonne absente des bases de données de cache anciennes, et le <code>cacheDirectory</code> enregistré ne correspondait pas au répertoire personnel de l'opérateur après une restauration de persistance.</li>
-        <li><strong>Rendu fluide façon BlueMap</strong> — Le rendu tuile-par-tuile remplace l'ancien modèle « régénération de la vue complète ». Plus de carte qui devient blanche pendant un déplacement ou un zoom ; chaque tuile s'affiche dès qu'elle est disponible.</li>
-        <li><strong>Toggle « Cache Only »</strong> (menu LiaisonOS) — Saute complètement la tentative Internet en cas de cache miss. Élimine les délais d'attente réseau en opération hors-ligne connue.</li>
-        <li><strong>Bouton « Patch Missing in View »</strong> (dialogue Map Sources) — Télécharge uniquement les tuiles manquantes dans la vue actuelle plus un tampon d'une vue de chaque côté (≈ 3× zone). Parfait pour combler les trous juste avant de partir hors-ligne.</li>
-        <li><strong>Espaces réservés « Tile not in cache »</strong> — Les tuiles manquantes affichent maintenant un cadre clair avec leurs coordonnées z/x/y au lieu d'un rectangle vide, pour voir immédiatement si le cache couvre la zone.</li>
-        <li><strong>Auto-réparation d'et-persistence-restore</strong> — Lors de la restauration d'un instantané enregistré sous un autre nom d'utilisateur (Live USB <code>user</code> → installé <code>operator</code>), le <code>cacheDirectory</code> de tile-sources.json est corrigé automatiquement vers le <code>$HOME</code> courant.</li>
+        <li><strong>Prise en charge des radios sans CAT</strong> — Digirig Lite, Digirig Mobile (Sans CAT) et Yaesu FTX-1 sont maintenant correctement reconnues comme configurations sans CAT. Les vérifications CAT sont sautées automatiquement, plus d'attente sur le Hamlib Dummy avant qu'un mode démarre, et la tuile d'état CAT affiche « N/A » en gris au lieu de ✗ rouge.</li>
+        <li><strong>Redémarrage automatique de rigctld lors du changement de radio</strong> — Changer la radio active dans le tableau de bord recharge maintenant rigctld dans le bon mode (Dummy pour les radios sans CAT, CAT complet autrement). Plus de piège « débrancher/rebrancher le USB » menant à un mystérieux « Rig Control Error » au démarrage du mode suivant.</li>
+        <li><strong>Boutons Récents — étiquettes verbatim</strong> — Les boutons Récents affichent maintenant l'étiquette du menu telle qu'elle est définie, sous la forme <code>&lt;Mode&gt; - &lt;Modem&gt;</code> (ex. <code>Winlink - Mercury</code>, <code>QtTermTCP - VARA HF</code>). Les modes multi-enfants incluent correctement l'étiquette du parent.</li>
+        <li><strong>Toast intégré au lieu d'une boîte modale</strong> — Les erreurs légères (mode déjà en cours, lancement refusé) affichent maintenant un petit avis intégré au-dessus du groupe Récents, sans interrompre l'opérateur avec une popup.</li>
+        <li><strong>Garde proactive au lancement</strong> — Le tableau de bord bloque un second lancement de mode côté client au lieu de laisser le superviseur le refuser après coup. UX plus propre, plus d'état « mode actif effacé » erroné.</li>
+        <li><strong>Messages de vérification courts et compréhensibles</strong> — « Audio device not connected » au lieu de « Prechecks failed: audio-tagged: No audio device with ET_AUDIO tag detected ». Idem pour les vérifications d'indicatif, de service et de périphérique.</li>
       </ul>
     </div>
 
-    <div class="whats-new" style="margin-top: 8px;">
-      <p class="whats-new-title">Nouveautés de la v2.3.5</p>
-      <ul>
-        <li><strong>LiaisonSAR — Cartographie SAR pour YAAC</strong> — Le plugin PNGTileLayer renommé et étoffé en <strong>LiaisonSAR</strong> avec un ensemble complet d'outils pour la recherche-sauvetage : tuiles PNG hors-ligne avec niveaux de gris à la volée, grille UTM avec accrochage aux échelles cartographiques (1:2 500 → 1:250 000), stockage SQLite persistant qui survit aux redémarrages ou plantages de YAAC, noms d'opérateurs résolus depuis la base de licences LiaisonOS dans les pop-ups, style de piste configurable (marqueurs triangle/cercle, deux tailles, ligne pleine/pointillée), catalogue d'indices SAR, et Phase Out par station qui contrôle enfin la durée d'affichage des anciennes positions.</li>
-        <li><strong>Éditeur de menu — Masquer et renommer</strong> — Un nouvel éditeur web (menu Applications → <em>Éditeur de menu</em>) permet de masquer des groupes entiers ou des modes individuels du tableau de bord, et de renommer n'importe quoi — étiquettes Bureau et Tactile. Les réglages sont dans <code>~/.config/liaisonos/dashboard-menu.overrides.json</code> et QtDashboard les charge au prochain lancement. Restauration des défauts en un clic.</li>
-        <li><strong>Précédente — v2.3.4</strong> — Menu du tableau de bord JSON, Mode Strip, indicateur GPS 3-états en direct, migration des chemins internes vers la marque LiaisonOS avec compatibilité legacy.</li>
-      </ul>
-    </div>
-
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.5.1.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.6.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label">Dernière version</p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.3.5.1.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.3.6.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; Publiée <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.5.1</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.6</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">Licence</p><p class="stat-val">Ms-PL</p></div>
@@ -173,8 +164,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.3.5.1</span>
-      <span class="checksum-val" id="hashval">e6b185dbbba6b39bda1f592fc4c025361d11b727eae86a5d01f67f33db6510e0</span>
+      <span class="checksum-label">SHA256 - v2.3.6</span>
+      <span class="checksum-val" id="hashval">49965fce78d2292b5035a2d1661258aa13347177ef50c825d1ea9a4ff53a54ab</span>
       <button class="copy-btn" onclick="copyHash('hashval')">Copier</button>
     </div>
 
@@ -190,16 +181,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.3.5.1.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.3.6.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.5.1.iso">⬇ Télécharger</a></td>
-        </tr>
-        <tr>
-          <td><span class="fname">liaisonos-debian13-v2.3.5.iso</span></td>
-          <td>~4.7 GB</td>
-          <td>2026-05-22</td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.5.iso">⬇ Télécharger</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.6.iso">⬇ Télécharger</a></td>
         </tr>
 
         <tr>
