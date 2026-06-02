@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.6-f59e0b?style=for-the-badge" alt="Version 2.3.6"></a>
+  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.7-f59e0b?style=for-the-badge" alt="Version 2.3.7"></a>
   <a href="https://liaisonos.com/download"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
@@ -57,6 +57,58 @@
 
 ---
 
+## ✨ What's New in 2.3.7
+
+### 🤖 Autonomous Comms Automation — a first in the emcomm-tools community
+
+- **New `li-automation` daemon** — runs scheduled Winlink check-ins and time-windowed presence modes (JS8, VarAC, BBS) without operator intervention
+- **JSON-driven schedule** in `~/.config/liaisonos/automation.json` (example in `~/Documents/automation.example.json` with all features covered + N0CALL placeholders)
+- **systemd `--user` service** — installs disabled, operator opts in with `systemctl --user enable --now liaisonos-automation`
+- **Legal-compliance default**: daemon ships paused — Advanced/Supérieure certified operators only, per ISED rules
+
+### 🟠 AUTOMATION Toggle in QtDashboard
+
+- **New tile in the TOOLS group** — orange when ON, gray when OFF
+- **File-backed state** at `~/.cache/liaisonos/automation-paused` (touch to pause, remove to engage)
+- **Live-watched via QFileSystemWatcher** — when the daemon auto-pauses, the UI tile flips visibly in the same frame
+
+### 🔁 Mission Orchestration: retry_alt
+
+- **`on_fail: "retry_alt"`** — list of fallback RMS callsigns walked top-to-bottom
+- Each alt entry can override mode, freq (via `connect_url`), `rig_mode`, `rig_bw`, `rig_levels`, `rig_memory`, `timeout_min` independently
+- Example flow: primary fails → in-band 40m backup → cross-band 80m → cross-mode VHF fallback
+
+### 🛡️ Operator-Safety Auto-Pause
+
+- **Manual mode start while automation is ON** → daemon detects, writes pause flag, fires `notify-send` toast
+- **Stopping the daemon's running presence** → same auto-pause + notification
+- Daemon stays out of the way until the operator explicitly hands control back via the AUTOMATION tile
+
+### 📡 Hamlib 5.0.0
+
+- **Upgraded from Debian's 4.6.2** — newer rig backends, fresh PKT/data mode handling
+- **FT-991A levels all settable via CAT** (SQL, RF gain, RFPOWER, MICGAIN, etc.) — enables true multi-band automation
+- **Parallel install** — Debian's 4.6.2 stays at `/usr/bin/rigctld` as a one-line-revert fallback
+- Built from upstream HEAD, deployed to `/usr/local/bin/rigctld` and `/usr/local/lib/libhamlib.so.5.0.0`
+
+### 📬 QtPatWinlink Mode Additions
+
+- **`--auto-mission` mode** — headless Winlink session driven by the daemon, no GUI window
+- **UDP progress broadcast** on `:7456` with `mission_id`-keyed state events (Connecting, Active, Complete, Failed) — `li-listen` tails them in colour
+- **`--mail-viewer` mode** — read/compose Winlink mail while a presence (JS8/VarAC) is on the air. Spawns its own `pat http` instance, no VARA touched, no modem chain disturbed
+
+### 🎯 JS8Call DialFreq Sync Bug Fix
+
+- **Long-standing bug fixed**: JS8Call's startup CAT sync would snap the rig back to its last-saved freq, undoing an automation QSY
+- **The supervisor now writes the target freq into `JS8Call.ini` before launch** — JS8Call's "force sync" confirms the correct freq instead of overriding
+- Enabled via new `ini_target` / `ini_key` fields on the `qsy-band` action
+
+### ⛓️ qsy-band Fallback for Cross-Band Starts
+
+- When the rig is on a band the new mode doesn't know about, the supervisor **falls back to the first defined band in the frequency table** instead of silently doing nothing
+- Eliminates "rig stayed on 2m after starting JS8" surprise
+- Mode JSON entry order now matters — put the most common HF default first
+
 ## ✨ What's New in 2.3.6
 
 ### 📻 No-CAT Radio Support
@@ -70,19 +122,12 @@
 
 - **Changing the active radio in the dashboard now reloads `rigctld`** in the right mode (Dummy for no-CAT, full CAT otherwise)
 - **No more "unplug/replug USB" trap** — used to leave `rigctld` pinned to the previous radio's serial port and cause a cryptic "Rig Control Error" on the next mode start
-- Uses the existing sudoers entry for passwordless `systemctl restart rigctld`
 
 ### 🏷️ Dashboard Polish
 
-- **Recent buttons use verbatim labels** — `<Mode> - <Modem>` format taken directly from the menu JSON, no auto-prefix, no parentheses (e.g. `Winlink - Mercury`, `QtTermTCP - VARA HF`)
-- **Multi-child labels include the parent** — clicking Winlink → Mercury shows `Winlink - Mercury` in Recent, not just `Mercury`
-- **Inline toast for soft errors** — replaces the modal dialog when a mode is already running or a launch is rejected
-- **Proactive launch guard** — the dashboard blocks a second mode launch client-side instead of letting the supervisor reject it after the fact
-
-### 💬 Friendlier Supervisor Messages
-
-- Short, plain-English precheck failures: `Audio device not connected`, `Callsign not set`, `rigctld not running`, `Missing: <file>`
-- Dropped the verbose `"Prechecks failed: audio-tagged: ..."` wrapper
+- **Recent buttons use verbatim labels** — `<Mode> - <Modem>` format
+- **Inline toast for soft errors** — replaces the modal dialog
+- **Proactive launch guard** + friendly supervisor precheck messages
 
 ## ✨ What's New in 2.3.5.1
 

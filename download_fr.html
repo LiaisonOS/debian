@@ -134,29 +134,32 @@
     </div>
 
     <div class="whats-new">
-      <p class="whats-new-title">Nouveautés de la v2.3.6</p>
+      <p class="whats-new-title">Nouveautés de la v2.3.7</p>
       <ul>
-        <li><strong>Prise en charge des radios sans CAT</strong> — Digirig Lite, Digirig Mobile (Sans CAT) et Yaesu FTX-1 sont maintenant correctement reconnues comme configurations sans CAT. Les vérifications CAT sont sautées automatiquement, plus d'attente sur le Hamlib Dummy avant qu'un mode démarre, et la tuile d'état CAT affiche « N/A » en gris au lieu de ✗ rouge.</li>
-        <li><strong>Redémarrage automatique de rigctld lors du changement de radio</strong> — Changer la radio active dans le tableau de bord recharge maintenant rigctld dans le bon mode (Dummy pour les radios sans CAT, CAT complet autrement). Plus de piège « débrancher/rebrancher le USB » menant à un mystérieux « Rig Control Error » au démarrage du mode suivant.</li>
-        <li><strong>Boutons Récents — étiquettes verbatim</strong> — Les boutons Récents affichent maintenant l'étiquette du menu telle qu'elle est définie, sous la forme <code>&lt;Mode&gt; - &lt;Modem&gt;</code> (ex. <code>Winlink - Mercury</code>, <code>QtTermTCP - VARA HF</code>). Les modes multi-enfants incluent correctement l'étiquette du parent.</li>
-        <li><strong>Toast intégré au lieu d'une boîte modale</strong> — Les erreurs légères (mode déjà en cours, lancement refusé) affichent maintenant un petit avis intégré au-dessus du groupe Récents, sans interrompre l'opérateur avec une popup.</li>
-        <li><strong>Garde proactive au lancement</strong> — Le tableau de bord bloque un second lancement de mode côté client au lieu de laisser le superviseur le refuser après coup. UX plus propre, plus d'état « mode actif effacé » erroné.</li>
-        <li><strong>Messages de vérification courts et compréhensibles</strong> — « Audio device not connected » au lieu de « Prechecks failed: audio-tagged: No audio device with ET_AUDIO tag detected ». Idem pour les vérifications d'indicatif, de service et de périphérique.</li>
+        <li><strong>Automation des communications autonomes</strong> — Un nouveau démon (<code>li-automation</code>) exécute des vérifications Winlink planifiées et des modes de présence par fenêtre horaire (JS8, VarAC, BBS) sans intervention de l'opérateur. Configurez via un horaire JSON, activez avec un seul bouton, et la station opère seule le reste de la journée. <strong>Réservé aux titulaires Supérieure</strong> selon les règles d'ISDE — le démon est mis en pause par défaut et refuse de déclencher tant qu'un opérateur Supérieur ne l'engage pas explicitement.</li>
+        <li><strong>Bouton AUTOMATION dans QtDashboard</strong> — Nouvelle tuile dans le groupe OUTILS : orange = ACTIVÉE, gris = DÉSACTIVÉE. L'état est sauvegardé dans un fichier et surveillé en direct, donc lorsque le démon met l'automation en pause suite à une intervention de l'opérateur, la tuile bascule visuellement dans la même image. Touchez pour réactiver.</li>
+        <li><strong>Orchestration de mission avec retry_alt</strong> — Les missions supportent une liste de RMS de secours : si la principale ne répond pas, le démon parcourt la liste alt (secours dans la bande, repli sur une autre bande, repli VHF en dernier recours) jusqu'à ce qu'une réponde. Chaque alt peut surcharger mode, fréquence, paramètres radio et délai indépendamment.</li>
+        <li><strong>Hamlib 5.0.0</strong> — Mise à niveau depuis le 4.6.2 de Debian. Backends radio plus récents, gestion fraîche des modes PKT/data, niveaux du FT-991A (SQL, gain RF, etc.) tous réglables via CAT pour l'automation multi-bandes. L'ancien binaire Debian reste en parallèle comme repli ; réversible en changeant une seule ligne.</li>
+        <li><strong>QtPatWinlink mode auto-mission</strong> — Session Winlink sans interface graphique pilotée par le démon d'automation. Diffusion de progression temps-réel sur UDP 7456 ; <code>li-listen</code> affiche l'état coloré (connecting, active, complete, failed) par mission.</li>
+        <li><strong>QtPatWinlink mode Lecteur de courrier</strong> — Lire et composer du courrier Winlink pendant qu'un mode de présence (JS8/VarAC/BBS) est en ondes. Lance sa propre instance <code>pat http</code>, ne touche pas VARA, ne perturbe pas la chaîne modem.</li>
+        <li><strong>Synchronisation DialFreq pour JS8Call</strong> — Bug de longue date corrigé : le sync CAT de démarrage de JS8Call ramenait la radio à la fréquence sauvegardée précédente, annulant un QSY d'automation. Le superviseur écrit maintenant la fréquence cible dans <code>JS8Call.ini</code> avant le lancement, donc le « force sync » de JS8Call confirme la bonne fréquence au lieu de la remplacer.</li>
+        <li><strong>Repli qsy-band pour les démarrages multi-bandes</strong> — Lorsque la radio n'est pas sur une bande connue du nouveau mode, le superviseur passe maintenant au premier élément défini dans la table de fréquences du mode au lieu de ne rien faire silencieusement. Élimine la surprise « radio resta sur 2m après le démarrage de JS8 ».</li>
+        <li><strong>Auto-pause de sécurité pour l'opérateur</strong> — Tout démarrage manuel de mode, ou tout arrêt de la présence en cours du démon, met automatiquement l'automation en pause et notifie l'opérateur. Le démon reste à l'écart jusqu'à ce que l'opérateur rétablisse explicitement le contrôle.</li>
       </ul>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.6.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.7.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label">Dernière version</p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.3.6.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.3.7.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; Publiée <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.6</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.7</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">Licence</p><p class="stat-val">Ms-PL</p></div>
@@ -164,8 +167,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.3.6</span>
-      <span class="checksum-val" id="hashval">49965fce78d2292b5035a2d1661258aa13347177ef50c825d1ea9a4ff53a54ab</span>
+      <span class="checksum-label">SHA256 - v2.3.7</span>
+      <span class="checksum-val" id="hashval">a47c0b14b516d6ea9a1be0bf0ae0f2576d748df0476b8dbc265a69038b0d39ce</span>
       <button class="copy-btn" onclick="copyHash('hashval')">Copier</button>
     </div>
 
@@ -181,9 +184,15 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.3.6.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.3.7.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.7.iso">⬇ Télécharger</a></td>
+        </tr>
+        <tr>
+          <td><span class="fname">liaisonos-debian13-v2.3.6.iso</span></td>
+          <td>~4.7 GB</td>
+          <td>2026-05-15</td>
           <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.6.iso">⬇ Télécharger</a></td>
         </tr>
 

@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Emergency Communications for Ham Radio</h1>
-<p><em>Version 2.3.6 — May 2026</em>
+<p><em>Version 2.3.7 — May 2026</em>
 <em>Debian 13 (Trixie) Live/Installable ISO</em></p>
 <blockquote>
 <p>⚠️ <strong>Continuous Development Notice</strong></p>
@@ -83,30 +83,70 @@ footer a:hover { color: #7de8b0; }
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS is a <strong>Debian 13 (Trixie) live and installable Linux ISO</strong> designed for ham radio emergency digital communications. It includes a complete suite of pre-configured digital mode software, offline maps, and a web dashboard for one-click operation. Two deployment modes: <strong>USB Live Run</strong> (boot any PC from a USB drive) or <strong>hard drive installation</strong> (permanent install via Calamares). Bilingual English/French interface. Created by Sylvain Deguire (VA2OPS).</p>
 <hr />
+<h2>What's New in Version 2.3.7</h2>
+<h3>Autonomous Comms Automation — a first in the emcomm-tools community</h3>
+<ul>
+<li><strong>New <code>li-automation</code> daemon</strong> — runs scheduled Winlink check-ins and time-windowed presence modes (JS8, VarAC, BBS) without operator intervention</li>
+<li><strong>JSON-driven schedule</strong> in <code>~/.config/liaisonos/automation.json</code> (example template in <code>~/Documents/automation.example.json</code> with every feature documented and N0CALL placeholders)</li>
+<li><strong>systemd <code>--user</code> service</strong> — installs disabled; operator opts in with <code>systemctl --user enable --now liaisonos-automation</code></li>
+<li><strong>Legal-compliance default</strong>: daemon ships paused — Advanced/Supérieure certified operators only, per ISED rules</li>
+</ul>
+<h3>AUTOMATION Toggle in QtDashboard</h3>
+<ul>
+<li><strong>New tile in the TOOLS group</strong> — orange when ON, gray when OFF</li>
+<li><strong>File-backed state</strong> at <code>~/.cache/liaisonos/automation-paused</code> (touch to pause, remove to engage)</li>
+<li><strong>Live-watched via <code>QFileSystemWatcher</code></strong> — when the daemon auto-pauses, the UI tile flips visibly in the same frame</li>
+</ul>
+<h3>Mission Orchestration: retry_alt</h3>
+<ul>
+<li><strong><code>on_fail: "retry_alt"</code></strong> — list of fallback RMS callsigns walked top-to-bottom on mission failure</li>
+<li>Each alt entry can override <code>mode</code>, freq (via <code>connect_url</code>), <code>rig_mode</code>, <code>rig_bw</code>, <code>rig_levels</code>, <code>rig_memory</code>, <code>timeout_min</code> independently</li>
+<li>Example flow: primary fails → in-band 40m backup → cross-band 80m → cross-mode VHF fallback</li>
+</ul>
+<h3>Operator-Safety Auto-Pause</h3>
+<ul>
+<li><strong>Manual mode start while automation is ON</strong> → daemon detects, writes pause flag, fires <code>notify-send</code> toast</li>
+<li><strong>Stopping the daemon's running presence</strong> → same auto-pause + notification</li>
+<li>Daemon stays out of the way until the operator explicitly hands control back via the AUTOMATION tile</li>
+</ul>
+<h3>Hamlib 5.0.0</h3>
+<ul>
+<li><strong>Upgraded from Debian's 4.6.2</strong> — newer rig backends, fresh PKT/data mode handling</li>
+<li><strong>FT-991A levels all settable via CAT</strong> (SQL, RF gain, RFPOWER, MICGAIN, etc.) — enables true multi-band automation</li>
+<li><strong>Parallel install</strong> — Debian's 4.6.2 stays at <code>/usr/bin/rigctld</code> as a one-line-revert fallback</li>
+<li>Built from upstream HEAD, deployed to <code>/usr/local/bin/rigctld</code> and <code>/usr/local/lib/libhamlib.so.5.0.0</code></li>
+</ul>
+<h3>QtPatWinlink Mode Additions</h3>
+<ul>
+<li><strong><code>--auto-mission</code> mode</strong> — headless Winlink session driven by the daemon, no GUI window</li>
+<li><strong>UDP progress broadcast</strong> on <code>:7456</code> with <code>mission_id</code>-keyed state events — <code>li-listen</code> tails them in colour</li>
+<li><strong><code>--mail-viewer</code> mode</strong> — read/compose Winlink mail while a presence (JS8/VarAC) is on the air. Spawns its own <code>pat http</code>, no VARA touched</li>
+</ul>
+<h3>JS8Call DialFreq Sync Bug Fix</h3>
+<ul>
+<li><strong>Long-standing bug fixed</strong>: JS8Call's startup CAT sync would snap the rig back to its last-saved freq, undoing an automation QSY</li>
+<li><strong>The supervisor now writes the target freq into <code>JS8Call.ini</code> before launch</strong> — JS8Call's "force sync" confirms the correct freq instead of overriding</li>
+</ul>
+<h3>qsy-band Fallback for Cross-Band Starts</h3>
+<ul>
+<li>When the rig is on a band the new mode doesn't know about, the supervisor <strong>falls back to the first defined band in the frequency table</strong> instead of silently doing nothing</li>
+<li>Eliminates "rig stayed on 2m after starting JS8" surprise</li>
+</ul>
+<hr />
 <h2>What's New in Version 2.3.6</h2>
 <h3>No-CAT Radio Support</h3>
 <ul>
-<li><strong>Digirig Lite, Digirig Mobile (No CAT), and Yaesu FTX-1</strong> are now properly recognized as no-CAT setups via a <code>"cat": false</code> flag in their radio profile</li>
-<li><strong>CAT prechecks skipped automatically</strong> — <code>service-active rigctld</code> and <code>device-exists /dev/et-cat</code> no longer block mode launches when the active radio doesn't have CAT</li>
-<li><strong>Pre-start actions skipped</strong> — <code>prime-rigctld</code>, <code>qsy-band</code>, <code>set-radio-width</code> are bypassed (no more 5-second wait while the Hamlib Dummy fails to respond)</li>
-<li><strong>CAT status tile shows gray "N/A"</strong> instead of red ✗ — only for radios explicitly flagged as no-CAT, so accidentally-disconnected CAT still shows red</li>
+<li><strong>Digirig Lite, Digirig Mobile (No CAT), and Yaesu FTX-1</strong> properly recognized as no-CAT setups via a <code>"cat": false</code> flag in their radio profile</li>
+<li><strong>CAT prechecks skipped automatically</strong> when the active radio doesn't have CAT</li>
+<li><strong>CAT status tile shows gray "N/A"</strong> instead of red ✗</li>
 </ul>
 <h3>Auto rigctld Restart on Radio Switch</h3>
 <ul>
 <li><strong>Changing the active radio in the dashboard now reloads <code>rigctld</code></strong> in the right mode (Dummy for no-CAT, full CAT otherwise)</li>
-<li><strong>No more "unplug/replug USB" trap</strong> — used to leave <code>rigctld</code> pinned to the previous radio's serial port and cause a cryptic "Rig Control Error" on the next mode start</li>
 </ul>
 <h3>Dashboard Polish</h3>
 <ul>
-<li><strong>Recent buttons use verbatim labels</strong> — <code>&lt;Mode&gt; - &lt;Modem&gt;</code> format taken directly from the menu JSON, no auto-prefix, no parentheses (e.g. <code>Winlink - Mercury</code>, <code>QtTermTCP - VARA HF</code>)</li>
-<li><strong>Multi-child labels include the parent</strong> — clicking Winlink → Mercury shows <code>Winlink - Mercury</code> in Recent, not just <code>Mercury</code></li>
-<li><strong>Inline toast for soft errors</strong> — replaces the modal dialog when a mode is already running or a launch is rejected</li>
-<li><strong>Proactive launch guard</strong> — the dashboard blocks a second mode launch client-side instead of letting the supervisor reject it after the fact</li>
-</ul>
-<h3>Friendlier Supervisor Messages</h3>
-<ul>
-<li>Short, plain-English precheck failures: <code>Audio device not connected</code>, <code>Callsign not set</code>, <code>rigctld not running</code>, <code>Missing: &lt;file&gt;</code></li>
-<li>Dropped the verbose <code>"Prechecks failed: audio-tagged: ..."</code> wrapper</li>
+<li>Recent buttons use verbatim labels, inline toast for soft errors, proactive launch guard, friendlier supervisor messages</li>
 </ul>
 <hr />
 <h2>What's New in Version 2.3.5.1</h2>
@@ -1136,7 +1176,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Ventoy Documentation:</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Document version: 2.3.6</em>
+<p><em>Document version: 2.3.7</em>
 <em>Last updated: May 2026</em>
 <em>Created for LiaisonOS Debian Edition</em></p>
 </div>

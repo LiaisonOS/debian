@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Communications d'urgence pour radioamateurs</h1>
-<p><em>Version 2.3.6 — Mai 2026</em>
+<p><em>Version 2.3.7 — Mai 2026</em>
 <em>ISO Debian 13 (Trixie) Live/Installable</em></p>
 <blockquote>
 <p>⚠️ <strong>Avis de développement continu</strong></p>
@@ -83,30 +83,70 @@ footer a:hover { color: #7de8b0; }
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS est une <strong>ISO Linux Debian 13 (Trixie) live et installable</strong> conçue pour les communications numériques d'urgence en radioamateur. Elle comprend une suite complète de logiciels de modes numériques préconfigurés, des cartes hors ligne et un tableau de bord web pour une utilisation en un clic. Deux modes de déploiement : <strong>USB Live Run</strong> (démarrer n'importe quel PC depuis une clé USB) ou <strong>installation sur disque dur</strong> (installation permanente avec Calamares). Interface bilingue français/anglais. Créé par Sylvain Deguire (VA2OPS).</p>
 <hr />
+<h2>Nouveautés de la version 2.3.7</h2>
+<h3>Automation des communications autonomes — une première dans la communauté emcomm-tools</h3>
+<ul>
+<li><strong>Nouveau démon <code>li-automation</code></strong> — exécute des vérifications Winlink planifiées et des modes de présence par fenêtre horaire (JS8, VarAC, BBS) sans intervention de l'opérateur</li>
+<li><strong>Horaire piloté par JSON</strong> dans <code>~/.config/liaisonos/automation.json</code> (modèle d'exemple dans <code>~/Documents/automation.example.json</code> couvrant toutes les fonctionnalités avec espaces réservés N0CALL)</li>
+<li><strong>Service systemd <code>--user</code></strong> — installé désactivé ; l'opérateur choisit d'activer avec <code>systemctl --user enable --now liaisonos-automation</code></li>
+<li><strong>Conformité légale par défaut</strong> : le démon est mis en pause à l'expédition — réservé aux titulaires Supérieure selon les règles d'ISDE</li>
+</ul>
+<h3>Bouton AUTOMATION dans QtDashboard</h3>
+<ul>
+<li><strong>Nouvelle tuile dans le groupe OUTILS</strong> — orange = ACTIVÉE, gris = DÉSACTIVÉE</li>
+<li><strong>État sauvegardé dans un fichier</strong> à <code>~/.cache/liaisonos/automation-paused</code> (touch pour mettre en pause, rm pour engager)</li>
+<li><strong>Surveillance en direct via <code>QFileSystemWatcher</code></strong> — lorsque le démon met l'automation en pause automatiquement, la tuile bascule visuellement dans la même image</li>
+</ul>
+<h3>Orchestration de mission : retry_alt</h3>
+<ul>
+<li><strong><code>on_fail: "retry_alt"</code></strong> — liste de RMS de secours parcourue de haut en bas en cas d'échec</li>
+<li>Chaque entrée alt peut surcharger <code>mode</code>, fréquence (via <code>connect_url</code>), <code>rig_mode</code>, <code>rig_bw</code>, <code>rig_levels</code>, <code>rig_memory</code>, <code>timeout_min</code> indépendamment</li>
+<li>Flux exemple : principale échoue → secours dans la bande 40m → repli 80m → repli VHF en dernier recours</li>
+</ul>
+<h3>Auto-pause de sécurité pour l'opérateur</h3>
+<ul>
+<li><strong>Démarrage manuel de mode pendant que l'automation est ACTIVÉE</strong> → le démon détecte, écrit le drapeau de pause, déclenche un toast <code>notify-send</code></li>
+<li><strong>Arrêt de la présence en cours du démon</strong> → même auto-pause + notification</li>
+<li>Le démon reste à l'écart jusqu'à ce que l'opérateur rétablisse explicitement le contrôle via la tuile AUTOMATION</li>
+</ul>
+<h3>Hamlib 5.0.0</h3>
+<ul>
+<li><strong>Mise à niveau depuis le 4.6.2 de Debian</strong> — backends radio plus récents, gestion fraîche des modes PKT/data</li>
+<li><strong>Niveaux du FT-991A tous réglables via CAT</strong> (SQL, gain RF, RFPOWER, MICGAIN, etc.) — permet la véritable automation multi-bandes</li>
+<li><strong>Installation parallèle</strong> — le 4.6.2 de Debian reste à <code>/usr/bin/rigctld</code> comme repli réversible en une ligne</li>
+<li>Compilé depuis HEAD amont, déployé à <code>/usr/local/bin/rigctld</code> et <code>/usr/local/lib/libhamlib.so.5.0.0</code></li>
+</ul>
+<h3>Ajouts de modes QtPatWinlink</h3>
+<ul>
+<li><strong>Mode <code>--auto-mission</code></strong> — session Winlink sans interface graphique pilotée par le démon</li>
+<li><strong>Diffusion de progression UDP</strong> sur <code>:7456</code> avec événements d'état indexés par <code>mission_id</code> — <code>li-listen</code> les affiche en couleur</li>
+<li><strong>Mode <code>--mail-viewer</code></strong> — lire et composer du courrier Winlink pendant qu'une présence (JS8/VarAC) est en ondes. Lance sa propre instance <code>pat http</code>, ne touche pas VARA</li>
+</ul>
+<h3>Correctif du sync DialFreq pour JS8Call</h3>
+<ul>
+<li><strong>Bug de longue date corrigé</strong> : le sync CAT de démarrage de JS8Call ramenait la radio à la fréquence sauvegardée précédente, annulant un QSY d'automation</li>
+<li><strong>Le superviseur écrit maintenant la fréquence cible dans <code>JS8Call.ini</code> avant le lancement</strong> — le « force sync » de JS8Call confirme la bonne fréquence au lieu de la remplacer</li>
+</ul>
+<h3>Repli qsy-band pour démarrages multi-bandes</h3>
+<ul>
+<li>Lorsque la radio n'est pas sur une bande connue du nouveau mode, le superviseur <strong>passe maintenant au premier élément défini dans la table de fréquences du mode</strong> au lieu de ne rien faire silencieusement</li>
+<li>Élimine la surprise « la radio resta sur 2m après le démarrage de JS8 »</li>
+</ul>
+<hr />
 <h2>Nouveautés de la version 2.3.6</h2>
 <h3>Prise en charge des radios sans CAT</h3>
 <ul>
-<li><strong>Digirig Lite, Digirig Mobile (Sans CAT) et Yaesu FTX-1</strong> sont maintenant correctement reconnues comme configurations sans CAT via un drapeau <code>"cat": false</code> dans leur profil radio</li>
-<li><strong>Vérifications CAT sautées automatiquement</strong> — <code>service-active rigctld</code> et <code>device-exists /dev/et-cat</code> ne bloquent plus le démarrage des modes quand la radio active n'a pas de CAT</li>
-<li><strong>Actions pré-démarrage sautées</strong> — <code>prime-rigctld</code>, <code>qsy-band</code>, <code>set-radio-width</code> sont contournées (plus de 5 secondes d'attente pendant que le Hamlib Dummy ne répond pas)</li>
-<li><strong>Tuile d'état CAT affiche « N/A » en gris</strong> au lieu de ✗ rouge — uniquement pour les radios explicitement marquées sans-CAT, donc un CAT accidentellement déconnecté reste rouge</li>
+<li><strong>Digirig Lite, Digirig Mobile (Sans CAT) et Yaesu FTX-1</strong> reconnues comme configurations sans CAT via un drapeau <code>"cat": false</code> dans leur profil radio</li>
+<li><strong>Vérifications CAT sautées automatiquement</strong> quand la radio active n'a pas de CAT</li>
+<li><strong>Tuile d'état CAT affiche « N/A » en gris</strong> au lieu de ✗ rouge</li>
 </ul>
 <h3>Redémarrage automatique de rigctld lors du changement de radio</h3>
 <ul>
 <li><strong>Changer la radio active dans le tableau de bord recharge maintenant <code>rigctld</code></strong> dans le bon mode (Dummy pour sans-CAT, CAT complet autrement)</li>
-<li><strong>Plus de piège « débrancher/rebrancher le USB »</strong> — laissait <code>rigctld</code> figé sur le port série de la radio précédente et causait un mystérieux « Rig Control Error » au démarrage du mode suivant</li>
 </ul>
 <h3>Finition du tableau de bord</h3>
 <ul>
-<li><strong>Boutons Récents avec étiquettes verbatim</strong> — format <code>&lt;Mode&gt; - &lt;Modem&gt;</code> tiré directement du JSON du menu, sans préfixe automatique, sans parenthèses (ex. <code>Winlink - Mercury</code>, <code>QtTermTCP - VARA HF</code>)</li>
-<li><strong>Étiquettes multi-enfants incluent le parent</strong> — cliquer Winlink → Mercury affiche <code>Winlink - Mercury</code> dans Récents, pas seulement <code>Mercury</code></li>
-<li><strong>Toast intégré pour les erreurs légères</strong> — remplace la boîte modale quand un mode est déjà en cours ou qu'un lancement est refusé</li>
-<li><strong>Garde proactive au lancement</strong> — le tableau de bord bloque un second lancement de mode côté client au lieu de laisser le superviseur le refuser après coup</li>
-</ul>
-<h3>Messages plus compréhensibles du superviseur</h3>
-<ul>
-<li>Vérifications courtes en clair : <code>Audio device not connected</code>, <code>Callsign not set</code>, <code>rigctld not running</code>, <code>Missing: &lt;fichier&gt;</code></li>
-<li>Abandon du préfixe verbeux <code>"Prechecks failed: audio-tagged: ..."</code></li>
+<li>Boutons Récents avec étiquettes verbatim, toast intégré au lieu de boîte modale, garde proactive, et messages courts du superviseur</li>
 </ul>
 <hr />
 <h2>Nouveautés de la version 2.3.5.1</h2>
@@ -1129,7 +1169,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Documentation Ventoy :</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Version du document : 2.3.6</em>
+<p><em>Version du document : 2.3.7</em>
 <em>Dernière mise à jour : Mai 2026</em>
 <em>Créé pour LiaisonOS Édition Debian</em></p>
 </div>
