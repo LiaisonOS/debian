@@ -11,6 +11,7 @@
     "id": "6",
     "ptt": "RTS"
   },
+  "cat": false,
   "notes": [
     "Set your VFO manually",
     "Adjust your volume, RF gain and squelch manually"

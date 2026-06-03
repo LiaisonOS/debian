@@ -16,6 +16,30 @@ import subprocess
 log = logging.getLogger("et-supervisor.device")
 
 USER_CONFIG_PATH = os.path.expanduser("~/.config/liaisonos/user.json")
+ACTIVE_RADIO_PATH = "/opt/emcomm-tools/conf/radios.d/active-radio.json"
+
+
+def active_radio_has_cat():
+    """Return True if the currently selected radio exposes CAT.
+    Defaults to True if the radio JSON has no explicit "cat" flag, or
+    if active-radio.json is missing/unreadable.
+    """
+    try:
+        with open(ACTIVE_RADIO_PATH) as f:
+            radio = json.load(f)
+        return bool(radio.get("cat", True))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return True
+
+
+def _is_cat_check(check):
+    """A precheck is CAT-related if it targets /dev/et-cat or the rigctld service."""
+    ctype = check.get("type", "")
+    if ctype == "device-exists" and check.get("path") == "/dev/et-cat":
+        return True
+    if ctype == "service-active" and check.get("name") == "rigctld":
+        return True
+    return False
 
 
 def run_precheck(check):
@@ -54,7 +78,12 @@ def run_prechecks(checks):
         (all_passed: bool, failures: list of (type, message) tuples)
     """
     failures = []
+    skip_cat = not active_radio_has_cat()
     for check in checks:
+        if skip_cat and _is_cat_check(check):
+            log.info("Skipping CAT precheck %s (active radio has cat:false)",
+                     check.get("type"))
+            continue
         ok, msg = run_precheck(check)
         if not ok:
             failures.append((check.get("type", "unknown"), msg))
@@ -62,12 +91,19 @@ def run_prechecks(checks):
     return len(failures) == 0, failures
 
 
+def _short_device_name(path):
+    base = os.path.basename(path) if path else ""
+    if base.startswith("et-"):
+        base = base[3:]
+    return base.upper() if base else "device"
+
+
 def _check_device_exists(path):
     if not path:
-        return False, "No device path specified"
+        return False, "Device path missing"
     if os.path.exists(path):
         return True, f"{path} found"
-    return False, f"{path} not found. Is the device connected?"
+    return False, f"{_short_device_name(path)} device not connected"
 
 
 def _check_audio_tagged(tag):
@@ -78,14 +114,14 @@ def _check_audio_tagged(tag):
         )
         if tag in result.stdout:
             return True, f"Audio device with {tag} tag found"
-        return False, f"No audio device with {tag} tag detected"
+        return False, "Audio device not connected"
     except (subprocess.TimeoutExpired, FileNotFoundError):
-        return False, "arecord command failed"
+        return False, "Audio check failed"
 
 
 def _check_service_active(name):
     if not name:
-        return False, "No service name specified"
+        return False, "Service name missing"
     try:
         result = subprocess.run(
             ["systemctl", "is-active", "--quiet", name],
@@ -93,9 +129,9 @@ def _check_service_active(name):
         )
         if result.returncode == 0:
             return True, f"{name} is active"
-        return False, f"{name} is not running. Ensure radio is selected."
+        return False, f"{name} not running"
     except (subprocess.TimeoutExpired, FileNotFoundError):
-        return False, f"Failed to check {name} status"
+        return False, f"{name} check failed"
 
 
 def _check_callsign_set():
@@ -105,15 +141,15 @@ def _check_callsign_set():
         callsign = config.get("callsign", "N0CALL")
         if callsign and callsign != "N0CALL":
             return True, f"Callsign: {callsign}"
-        return False, "Callsign not set. Run et-user first."
+        return False, "Callsign not set"
     except (FileNotFoundError, json.JSONDecodeError):
-        return False, "User config not found. Run et-firstboot first."
+        return False, "User config missing"
 
 
 def _check_file_exists(path):
     if not path:
-        return False, "No file path specified"
+        return False, "File path missing"
     expanded = os.path.expanduser(path)
     if os.path.isfile(expanded):
         return True, f"{path} found"
-    return False, f"{path} not found"
+    return False, f"Missing: {os.path.basename(path)}"

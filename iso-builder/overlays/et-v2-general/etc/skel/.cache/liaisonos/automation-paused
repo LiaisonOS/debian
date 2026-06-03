@@ -1,0 +1,3 @@
+paused-by-default ISO-ship-state
+reason: Advanced-cert ops only — operator must explicitly enable via QtDashboard AUTOMATION toggle
+re-enable: tap AUTOMATION in QtDashboard → TOOLS  (or:  rm ~/.cache/liaisonos/automation-paused)

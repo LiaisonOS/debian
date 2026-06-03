@@ -67,7 +67,8 @@
             "health": {
                 "type": "tcp-port",
                 "port": 8300,
-                "timeout": 60
+                "timeout": 60,
+                "once": true
             },
             "restart": "never"
         },
@@ -92,6 +93,15 @@
                 "--touch", "{touch-mode}",
                 "--band", "{auto-band}",
                 "--modem", "varahf"
+            ],
+            "command_when_mission": [
+                "/usr/local/bin/QtPatWinlink",
+                "--auto-mission",
+                "--modem", "varahf",
+                "--connect-url", "{params.connect_url}",
+                "--rms", "{params.rms}",
+                "--timeout-min", "{params.timeout_min}",
+                "--mission-id", "{params.mission_id}"
             ],
             "restart": "never",
             "depends_on": "pat-http"

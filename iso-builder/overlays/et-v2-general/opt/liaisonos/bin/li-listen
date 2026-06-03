@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+#
+# Author  : Sylvain Deguire (VA2OPS)
+# Date    : May 2026
+# Purpose : li-listen — tail QtPatWinlink (and any other automation source)
+#           mission status broadcasts on localhost UDP 7456. Colour-coded
+#           by state, with optional mission-id filter.
+#
+# Usage:
+#   li-listen                  # all missions, all states
+#   li-listen --mission test1  # only events from mission_id == "test1"
+#   li-listen --port 7456      # change UDP port
+#   li-listen --raw            # no colour, no formatting
+#
+
+import argparse
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+from datetime import datetime
+
+# ── ANSI colours by state (graceful no-op when --raw or non-TTY) ──────────────
+COLOR = {
+    "idle":       "\033[2;37m",   # dim grey
+    "connecting": "\033[1;33m",   # yellow
+    "active":     "\033[1;36m",   # cyan
+    "complete":   "\033[1;32m",   # green
+    "failed":     "\033[1;31m",   # red
+}
+RESET = "\033[0m"
+DIM   = "\033[2;37m"
+
+# Per-source colour for log datagrams (kind == "log").
+LOG_COLOR = {
+    "pat":        "\033[0;36m",   # cyan for Pat's session lines
+    "pat-notify": "\033[1;35m",   # magenta for notifications
+}
+
+
+def _launch_mail_viewer():
+    """Wait for the supervisor's pat-http to fully release port 8080, then
+    spawn QtPatWinlink --mail-viewer with an explicit operator env so the
+    spawned pat-http (and the mailbox it reads) match a normal shell launch.
+    """
+    print("  [li-listen] waiting for pat-http to release port 8080…",
+          file=sys.stderr, flush=True)
+    deadline = time.monotonic() + 30.0
+    while time.monotonic() < deadline:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.5)
+        try:
+            s.connect(("127.0.0.1", 8080))
+            s.close()
+            time.sleep(0.3)        # still busy — back off briefly
+        except (ConnectionRefusedError, OSError):
+            s.close()
+            break
+
+    home = os.path.expanduser("~")
+    env = dict(os.environ)
+    env["HOME"] = home
+    env.setdefault("XDG_DATA_HOME",   os.path.join(home, ".local/share"))
+    env.setdefault("XDG_CONFIG_HOME", os.path.join(home, ".config"))
+    print("  [li-listen] spawning QtPatWinlink --mail-viewer (cwd=%s)" % home,
+          file=sys.stderr, flush=True)
+    try:
+        subprocess.Popen(
+            ["QtPatWinlink", "--mail-viewer"],
+            cwd=home,
+            env=env,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except FileNotFoundError:
+        print("  [li-listen] QtPatWinlink not on PATH — skipping.",
+              file=sys.stderr, flush=True)
+
+
+def fmt(event: dict, use_colour: bool) -> str:
+    app   = event.get("app", "?")
+    mid   = event.get("mission_id", "?")
+    kind  = event.get("kind", "state")  # default keeps old broadcasters working
+    wall  = datetime.now().strftime("%H:%M:%S")
+    reset = RESET if use_colour else ""
+    dim   = DIM   if use_colour else ""
+
+    if kind == "log":
+        source  = event.get("source", "?")
+        message = event.get("message", "")
+        col = LOG_COLOR.get(source, "") if use_colour else ""
+        return (
+            f"{dim}{wall}{reset}  "
+            f"{col}{source:<10}{reset}  "
+            f"{dim}[{mid}]{reset}  "
+            f"{message}"
+        )
+
+    # state datagram (default)
+    state  = event.get("state", "unknown")
+    detail = event.get("detail", "")
+    is_hb  = event.get("heartbeat", False)
+    col    = COLOR.get(state, "") if use_colour else ""
+    hb_tag = f" {dim}(hb){reset}" if is_hb else ""
+    return (
+        f"{dim}{wall}{reset}  "
+        f"{col}{state:<10}{reset}  "
+        f"{app}  "
+        f"{dim}[{mid}]{reset}  "
+        f"{detail}{hb_tag}"
+    )
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Listen to li-automation status broadcasts.")
+    ap.add_argument("--port",    type=int, default=7456, help="UDP port (default 7456)")
+    ap.add_argument("--mission", type=str, default=None,
+                    help="Filter by mission_id (exact match). Default: all.")
+    ap.add_argument("--raw",     action="store_true",
+                    help="Print raw JSON, no colour, no formatting.")
+    args = ap.parse_args()
+
+    use_colour = (not args.raw) and sys.stdout.isatty()
+
+    # ── Try UDP bind. If li-automation already owns 7456, fall back to
+    # tailing the daemon's event-mirror file. This keeps QtTerminal-spawned
+    # li-listen windows alive and informative during daemon-driven missions.
+    EVENT_MIRROR_PATH = "/tmp/li-automation-events.jsonl"
+    sock = None
+    mirror_file = None
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind(("127.0.0.1", args.port))
+    except OSError as e:
+        if sock:
+            sock.close()
+            sock = None
+        if not os.path.exists(EVENT_MIRROR_PATH):
+            print(f"error: cannot bind UDP {args.port}: {e}", file=sys.stderr)
+            print(f"and daemon mirror file {EVENT_MIRROR_PATH} not present "
+                  "— is li-automation running?", file=sys.stderr)
+            return 2
+        if not args.raw:
+            print(f"li-listen — bind UDP {args.port} failed ({e})",
+                  file=sys.stderr)
+            print(f"  falling back to daemon mirror: {EVENT_MIRROR_PATH}",
+                  file=sys.stderr)
+        mirror_file = open(EVENT_MIRROR_PATH, "r")
+        mirror_file.seek(0, 2)            # seek to end → tail mode
+
+    if not args.raw and sock:
+        print(f"li-listen — UDP 127.0.0.1:{args.port}"
+              + (f"  filter mission_id={args.mission}" if args.mission else "")
+              + "  (Ctrl-C to quit)")
+    elif not args.raw and mirror_file:
+        print("li-listen — tailing daemon mirror"
+              + (f"  filter mission_id={args.mission}" if args.mission else "")
+              + "  (Ctrl-C to quit)")
+
+    def _next_event() -> dict | None:
+        """Get the next parsed JSON event from whichever source is active.
+        Returns None on parse failure (caller skips), or raises on EOF."""
+        if sock is not None:
+            data, _addr = sock.recvfrom(4096)
+            try:
+                return json.loads(data.decode("utf-8", errors="replace"))
+            except json.JSONDecodeError:
+                print(f"  [non-JSON datagram, {len(data)} bytes]")
+                return None
+        # Mirror-tail mode: poll the file for new lines.
+        while True:
+            line = mirror_file.readline()
+            if line:
+                try:
+                    return json.loads(line)
+                except json.JSONDecodeError:
+                    return None
+            time.sleep(0.3)
+
+    try:
+        while True:
+            event = _next_event()
+            if event is None:
+                continue
+
+            if args.mission and event.get("mission_id") != args.mission:
+                continue
+
+            if args.raw:
+                print(json.dumps(event))
+            else:
+                print(fmt(event, use_colour), flush=True)
+
+            # On a successful mission that pulled new mail, pop the mail
+            # viewer. Done from here (not MissionRunner) because the
+            # supervisor is still cascade-stopping pat-http at the moment
+            # of the broadcast — _launch_mail_viewer waits until port 8080
+            # is free before spawning.
+            if (args.mission
+                and event.get("kind", "state") == "state"
+                and event.get("state") == "complete"
+                and not event.get("heartbeat")
+                and "new mail" in event.get("detail", "")):
+                _launch_mail_viewer()
+
+            # Auto-exit when the filtered mission reaches a terminal state.
+            # Lets a wrapping QtTerminal close itself instead of piling up
+            # one window per hourly mission. With no --mission filter we
+            # stay alive (operator-driven viewer).
+            if (args.mission
+                and event.get("kind", "state") == "state"
+                and event.get("state") in ("complete", "failed")
+                and not event.get("heartbeat")):
+                return 0
+    except KeyboardInterrupt:
+        print()
+        return 0
+    finally:
+        if mirror_file:
+            mirror_file.close()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

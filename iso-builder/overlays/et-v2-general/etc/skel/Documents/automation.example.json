@@ -1,0 +1,169 @@
+{
+  "_README_1": "═══════════════════════════════════════════════════════════════════════",
+  "_README_2": "    LiaisonOS  —  li-automation  schedule example",
+  "_README_3": "═══════════════════════════════════════════════════════════════════════",
+  "_README_4": "",
+  "_README_5": "This file is an EXAMPLE only. It is NOT read by the daemon at runtime.",
+  "_README_6": "",
+  "_README_7": "To activate scheduled automation:",
+  "_README_8": "  1. Copy this file to:  ~/.config/liaisonos/automation.json",
+  "_README_9": "  2. Replace every N0CALL with real RMS / target callsigns.",
+  "_README_10": "  3. Adjust presence windows, mission times, and rig settings to your station.",
+  "_README_11": "  4. Validate the schedule:",
+  "_README_12": "       /opt/liaisonos/bin/li-automation validate",
+  "_README_13": "  5. Enable + start the daemon service (one-time):",
+  "_README_14": "       systemctl --user enable --now liaisonos-automation",
+  "_README_15": "  6. Toggle AUTOMATION = ON in QtDashboard -> TOOLS (orange tile).",
+  "_README_16": "",
+  "_README_17": "Live monitoring:",
+  "_README_18": "       journalctl --user -u liaisonos-automation -f",
+  "_README_19": "       /opt/liaisonos/bin/li-listen",
+  "_README_20": "",
+  "_README_21": "⚠ LEGAL: In Canada, automated / unattended station operation requires the",
+  "_README_22": "  Amateur Radio Operator Certificate WITH HONOURS (Advanced / Supérieure).",
+  "_README_23": "  Basic-only operators may NOT run this system unattended. RAC / ISED rules.",
+  "_README_24": "",
+  "_README_25": "Comments inside this JSON use `_comment` fields. JSON has no native comment",
+  "_README_26": "syntax; ignore any key that starts with `_`. The validator skips them.",
+  "_README_27": "═══════════════════════════════════════════════════════════════════════",
+
+  "_timezone_comment": "Ham radio operates in UTC universally — set 'timezone': 'UTC' to interpret all 'at' and 'window' time values as UTC. Use 'local' if you want naive system-local time. Default if the field is missing or unknown: UTC. The choice is read once at daemon start; restart the service after changing it.",
+  "timezone": "UTC",
+
+  "station": {
+    "_comment": "role: free-form description for journal/log only. radio: cosmetic ID. callsign_must_be_set: validator refuses to load if user.json still has N0CALL.",
+    "role": "Autonomous HF + VHF station — JS8 presence, scheduled Winlink check-ins",
+    "radio": "yaesu-ft897d",
+    "callsign_must_be_set": true
+  },
+
+  "presence": [
+    {
+      "_comment": "─ Night shift: JS8 on 40m ─ rig_mode picks Hamlib mode token (PKTUSB for HF digital). FT-897D uses FM-D for VHF data, NOT PKTFM — backend varies, verify with `rigctl -m <model> -r /dev/null` then `m`. rig_bw=0 = let the rig pick its default filter (FT-897D doesn't accept arbitrary passbands). rig_levels: Hamlib levels in normalized 0.0-1.0; only rigs whose backend exposes `Set level: SQL/RF` will honour them. FT-897D ignores most. FT-991A honours all.",
+      "window": "20:00-07:59",
+      "mode": "js8call",
+      "band": "40m",
+      "qsy_khz": 7078.0,
+      "rig_mode": "PKTUSB",
+      "rig_bw": 0,
+      "rig_levels": { "RF": 0.8 }
+    },
+    {
+      "_comment": "─ Daytime: VarAC on 20m ─ same fields. Demonstrates a second presence window. Schedule design: presence windows should COVER the full day with no gaps — validator warns if there are gaps.",
+      "window": "08:00-19:59",
+      "mode": "varac",
+      "band": "20m",
+      "qsy_khz": 14108.0,
+      "rig_mode": "PKTUSB",
+      "rig_bw": 0
+    }
+  ],
+
+  "missions": [
+    {
+      "_comment": "─ Midnight Winlink, simple skip-on-fail ─ Operator owns connect_url VERBATIM. The 'freq=' inside the URL is also used by the daemon for pre-mission QSY band-check (parses freq from URL). rms is informational only — the actual target callsign is inside connect_url. timeout_min is the mission hard-cap; the daemon kills the mission if it hasn't completed by then. days: optional list — if omitted, runs every day.",
+      "name": "Midnight Winlink (80m local)",
+      "at": "00:00",
+      "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+      "mode": "winlink-vara-hf",
+      "rms": "N0CALL",
+      "connect_url": "varahf:///N0CALL?freq=3585&bw=2300",
+      "timeout_min": 10,
+      "on_fail": "skip"
+    },
+    {
+      "_comment": "─ Morning Winlink with retry_alt ─ on_fail=retry_alt + alt_rms list. When the primary mission ends with state=failed (detected via QtPatWinlink's UDP broadcast on port 7456), the daemon walks alt_rms top-to-bottom. Each alt entry MUST have rms + connect_url. Optional overrides per alt: mode, rig_mode, rig_bw, rig_levels, rig_memory, timeout_min. Anything not overridden is inherited from the parent mission.",
+      "name": "Morning Winlink (40m regional)",
+      "at": "08:00",
+      "mode": "winlink-vara-hf",
+      "rms": "N0CALL",
+      "connect_url": "varahf:///N0CALL?freq=7102&bw=2300",
+      "rig_mode": "PKTUSB",
+      "rig_bw": 0,
+      "timeout_min": 10,
+      "on_fail": "retry_alt",
+      "alt_rms": [
+        {
+          "_comment": "Backup #1: in-band 40m. Inherits mode + rig_mode from parent.",
+          "rms": "N0CALL",
+          "connect_url": "varahf:///N0CALL?freq=7104&bw=2300",
+          "timeout_min": 8
+        },
+        {
+          "_comment": "Backup #2: different band (80m). connect_url contains the new freq, no other override needed unless the band requires a different rig_mode/rig_bw.",
+          "rms": "N0CALL",
+          "connect_url": "varahf:///N0CALL?freq=3596&bw=2300",
+          "timeout_min": 8
+        },
+        {
+          "_comment": "Backup #3: cross-mode fallback — VHF VARA FM. Overrides mode (winlink-vara-fm) and rig_mode (FM-D for FT-897D, PKTFM for FT-991A).",
+          "rms": "N0CALL-10",
+          "connect_url": "varafm:///N0CALL-10?freq=145090",
+          "mode": "winlink-vara-fm",
+          "rig_mode": "FM-D",
+          "rig_bw": 0,
+          "timeout_min": 5
+        }
+      ]
+    },
+    {
+      "_comment": "─ Midday DX Winlink (20m) ─ Demonstrates a mid-day mission overlapping with the daytime VarAC presence. Daemon stops VarAC, fires the mission, then restarts VarAC after the mission ends. on_fail=skip means: one shot, no retry.",
+      "name": "Midday DX Winlink (20m)",
+      "at": "12:00",
+      "mode": "winlink-vara-hf",
+      "rms": "N0CALL",
+      "connect_url": "varahf:///N0CALL?freq=14112&bw=2300",
+      "rig_mode": "PKTUSB",
+      "rig_bw": 0,
+      "rig_levels": { "RF": 0.6 },
+      "timeout_min": 12,
+      "on_fail": "skip"
+    },
+    {
+      "_comment": "─ Local VHF check-in via memory channel ─ rig_memory=5 ONLY works on rigs whose Hamlib backend implements set_mem (E command). FT-991A / IC-7100 = YES. FT-897D = NO (RIG_ENAVAIL). On supported rigs the daemon issues `V MEM` + `E 5` and skips rig_mode/rig_bw/rig_levels/qsy_khz — those settings live in the channel. The daemon tells the supervisor skip_qsy=true so its band-check doesn't override.",
+      "name": "Local VHF check-in (2m FM, memory channel)",
+      "at": "17:00",
+      "mode": "winlink-vara-fm",
+      "rms": "N0CALL-10",
+      "connect_url": "varafm:///N0CALL-10?freq=145090",
+      "rig_memory": 5,
+      "timeout_min": 5,
+      "on_fail": "skip"
+    },
+    {
+      "_comment": "─ Same VHF mission for FT-897D (no memory-channel CAT) ─ Uses individual rig commands instead. rig_mode=FM-D is the FT-897D Hamlib token for VHF FM-Data (PKTFM is REJECTED on this backend). Verify your rig with: rigctl -m <model> -r /dev/null then type `1` and check the `Mode list:` line.",
+      "name": "Local VHF check-in (2m FM, FT-897D)",
+      "at": "17:30",
+      "mode": "winlink-vara-fm",
+      "rms": "N0CALL-10",
+      "connect_url": "varafm:///N0CALL-10?freq=145090",
+      "rig_mode": "FM-D",
+      "rig_bw": 0,
+      "timeout_min": 5,
+      "on_fail": "skip"
+    },
+    {
+      "_comment": "─ UHF check-in (70cm FM, weekdays only) ─ days filter limits this mission to Mon-Fri. Saturday/Sunday skipped entirely. Useful for work-related check-ins, ARES nets, etc.",
+      "name": "Weekday UHF check-in (70cm)",
+      "at": "19:00",
+      "days": ["mon", "tue", "wed", "thu", "fri"],
+      "mode": "winlink-vara-fm",
+      "rms": "N0CALL-10",
+      "connect_url": "varafm:///N0CALL-10?freq=441000",
+      "rig_mode": "FM-D",
+      "rig_bw": 0,
+      "rig_levels": { "SQL": 0.3 },
+      "timeout_min": 5,
+      "on_fail": "skip"
+    }
+  ],
+
+  "boot": {
+    "_comment": "start_current_presence: when the daemon starts (e.g. after boot), should it auto-start the presence whose window covers `now`? delay_seconds: how long to wait after boot before starting (gives audio / CAT services time to come up).",
+    "start_current_presence": true,
+    "delay_seconds": 30
+  },
+
+  "_override_flag_comment": "Path to the pause sentinel. Touch this file to disable automation, remove it to enable. The QtDashboard AUTOMATION toggle (TOOLS group) writes to this same path. Also auto-written by the daemon when it detects operator intervention (manual mode start or stop of our presence).",
+  "override_flag": "~/.cache/liaisonos/automation-paused"
+}

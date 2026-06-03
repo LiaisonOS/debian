@@ -23,12 +23,13 @@ class ProcessInfo:
     __slots__ = (
         "name", "command", "pid", "state", "start_time",
         "exit_code", "restart_count", "restart_policy",
-        "health_port", "health_timeout", "process",
+        "health_port", "health_timeout", "health_check_once", "process",
         "env", "cwd", "log_file", "ignore_exit",
     )
 
     def __init__(self, name, command, restart_policy="never",
                  health_port=None, health_timeout=15,
+                 health_check_once=False,
                  env=None, cwd=None, ignore_exit=False):
         self.name = name
         self.command = command
@@ -40,6 +41,11 @@ class ProcessInfo:
         self.restart_policy = restart_policy
         self.health_port = health_port
         self.health_timeout = health_timeout
+        # When True, the monitor only verifies the port at startup; it does
+        # NOT re-probe health_port on the routine loop. Required for services
+        # that hold a single TCP slot (VARA HF/FM) where polling competes
+        # with the real client (Pat) and causes connect failures.
+        self.health_check_once = health_check_once
         self.process = None  # subprocess.Popen object
         self.env = env        # extra environment variables (merged with os.environ)
         self.cwd = cwd        # working directory for the process

@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+#
+# Author  : Sylvain Deguire (VA2OPS)
+# Date    : May 2026
+# Purpose : li-trigger-mission — fire a single Winlink mission via the
+#           et-supervisor IPC socket, as if li-automation had launched it.
+#           Standalone test tool for Phase-2 Component-2 (supervisor wiring)
+#           before the li-automation daemon exists.
+#
+# Usage:
+#   li-trigger-mission --rms VA2OPS-10 [--freq-khz 14105] [--timeout-min 10] [--mission-id test1]
+#
+# What it does:
+#   - Connects to /run/user/<uid>/et-supervisor.sock
+#   - Sends:  {"cmd":"start-mode", "mode":"winlink-vara-hf",
+#              "params":{"modem":"vara-hf", "auto_mission":true,
+#                        "rms":"...", "freq_khz":"...", "timeout_min":"...",
+#                        "mission_id":"..."}}
+#   - Prints the supervisor's response.
+#
+
+import argparse
+import json
+import os
+import socket
+import sys
+
+SOCK = f"/run/user/{os.getuid()}/et-supervisor.sock"
+
+# mode-id → default modem key sent to QtPatWinlink. Used when --modem isn't given.
+MODE_DEFAULT_MODEM = {
+    "winlink-vara-hf": "vara-hf",
+    "winlink-vara-fm": "vara-fm",
+    "winlink-packet":  "packet",
+    "winlink-ardop":   "ardop",
+}
+
+
+def send(cmd: dict, timeout: float = 60.0) -> dict:
+    if not os.path.exists(SOCK):
+        return {"status": "error", "message": f"Socket not found: {SOCK} — is et-supervisor running?"}
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.settimeout(timeout)
+    try:
+        s.connect(SOCK)
+        s.sendall((json.dumps(cmd) + "\n").encode("utf-8"))
+        buf = b""
+        while b"\n" not in buf:
+            chunk = s.recv(4096)
+            if not chunk:
+                break
+            buf += chunk
+        line = buf.split(b"\n", 1)[0].decode("utf-8", errors="replace")
+        try:
+            return json.loads(line)
+        except json.JSONDecodeError:
+            return {"status": "error", "message": f"Bad response: {line!r}"}
+    finally:
+        s.close()
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Fire one Winlink mission via et-supervisor.")
+    ap.add_argument("--mode",        default="winlink-vara-hf",
+                    help=f"Mode id (default winlink-vara-hf). Known: {sorted(MODE_DEFAULT_MODEM)}")
+    ap.add_argument("--modem",       default=None,
+                    help="Modem key (vara-hf | vara-fm | packet | ardop). "
+                         "Default derived from --mode.")
+    ap.add_argument("--connect-url", required=True,
+                    help='Pat connect URL, e.g. "varahf:///VA2OPS-10?freq=14105&bw=2300" '
+                         'or "varafm:///VE2RVR-10?freq=145090". Operator owns it.')
+    ap.add_argument("--rms",         default="", help="Informational target callsign (broadcast/log only)")
+    ap.add_argument("--timeout-min", default="10", type=str, help="Mission timeout in minutes (default 10)")
+    ap.add_argument("--mission-id",  default="cli-test", help="Mission label for the broadcast (default cli-test)")
+    args = ap.parse_args()
+
+    modem = args.modem or MODE_DEFAULT_MODEM.get(args.mode, "vara-hf")
+
+    cmd = {
+        "cmd":   "start-mode",
+        "mode":  args.mode,
+        "params": {
+            "modem":        modem,
+            "auto_mission": True,
+            "connect_url":  args.connect_url,
+            "rms":          args.rms,
+            "timeout_min":  str(args.timeout_min),
+            "mission_id":   args.mission_id,
+        },
+    }
+
+    print(f"→ {json.dumps(cmd, indent=2)}")
+    print()
+    resp = send(cmd)
+    print(f"← {json.dumps(resp, indent=2)}")
+
+    status = resp.get("status", "?")
+    if status == "ok":
+        print()
+        print("Mission start request accepted by supervisor.")
+        print("Watch progress with:  python3 /opt/liaisonos/bin/li-listen")
+        return 0
+    else:
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

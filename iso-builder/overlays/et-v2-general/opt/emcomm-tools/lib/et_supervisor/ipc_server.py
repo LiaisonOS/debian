@@ -248,6 +248,13 @@ class IPCServer:
             "status": "ok",
             "mode": self._engine.current_mode,
             "mode_name": mode_name,
+            # Internal-state flags so callers can wait for a TRUE idle
+            # (mode cleared AND teardown / start truly finished). Without
+            # these, a caller that races stop's Phase-2 sees mode=None
+            # while _stopping is still True and gets "Mode '?'" on the
+            # next start-mode.
+            "stopping":          self._engine._stopping,
+            "start_in_progress": self._engine._start_in_progress,
             "processes": processes,
         }
 

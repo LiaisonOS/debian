@@ -1,0 +1,22 @@
+[Unit]
+Description=LiaisonOS Automation Daemon
+Documentation=man:li-automation(1)
+After=graphical-session.target et-supervisor.service
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+# PYTHONUNBUFFERED=1 forces stdout/stderr to flush per line. Without this,
+# Python's default block-buffering when stdout is a pipe (systemd journal)
+# silently swallows every print() until the buffer fills — daemon looks
+# dead in journalctl even when it's running fine. Bug discovered 2026-06-01.
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/opt/liaisonos/bin/li-automation run
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=li-automation
+
+[Install]
+WantedBy=default.target

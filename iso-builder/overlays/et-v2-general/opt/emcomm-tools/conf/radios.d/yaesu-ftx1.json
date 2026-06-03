@@ -13,6 +13,7 @@
     "ptt": "RTS",
     "pttOnly": "true"
   },
+  "cat": false,
   "notes": [
     "Tune radio to desired frequency.",
     "Long press [MODE], then set accordingly for HF or VHF/UHF.",

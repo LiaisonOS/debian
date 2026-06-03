@@ -14,6 +14,7 @@ Responsibilities:
 import json
 import logging
 import os
+import re
 import subprocess
 import threading
 import time
@@ -291,6 +292,14 @@ class ModeEngine:
         # another mode (a critical message may be in transit).
         with self._state_lock:
             if self._current_mode or self._start_in_progress or self._stopping:
+                # Diagnostic: show WHY start was rejected. Without this the
+                # caller just sees "Mode '?' is still running" with no clue
+                # which internal flag is stuck.
+                log.warning(
+                    "start_mode(%s) REJECTED — current_mode=%r start_in_progress=%s stopping=%s",
+                    mode_id, self._current_mode,
+                    self._start_in_progress, self._stopping
+                )
                 current_name = ""
                 if self._mode_config:
                     current_name = self._mode_config.get("name", {}).get(
@@ -320,8 +329,8 @@ class ModeEngine:
             if checks:
                 ok, failures = device_checker.run_prechecks(checks)
                 if not ok:
-                    msgs = "; ".join(f"{t}: {m}" for t, m in failures)
-                    return False, _t("prechecks_failed", msgs)
+                    msgs = "; ".join(m for _, m in failures)
+                    return False, msgs
 
             # Apply config templates
             configs = config.get("config", [])
@@ -330,9 +339,17 @@ class ModeEngine:
                 if not config_templater.apply_configs(configs, user_config):
                     return False, _t("config_failed")
 
-            # Run pre_start actions
+            # Run pre_start actions. Skip CAT-dependent actions when the
+            # active radio is flagged cat:false — talking to a Dummy rigctld
+            # just wastes 5s on prime retries and dirties the log.
+            skip_cat_actions = not device_checker.active_radio_has_cat()
+            cat_only_actions = {"prime-rigctld", "qsy-band", "set-radio-width"}
             for action in config.get("pre_start", []):
-                if self._run_action(action) is False:
+                if skip_cat_actions and action.get("action") in cat_only_actions:
+                    log.info("Skipping %s (active radio has cat:false)",
+                             action.get("action"))
+                    continue
+                if self._run_action(action, params=params) is False:
                     return False, _t("pre_start_failed", action.get("action", ""))
 
             # Start process chain
@@ -344,7 +361,13 @@ class ModeEngine:
                     return False, _t("mode_stopped", mode_id)
 
                 name = step["name"]
-                cmd = self._resolve_command(step["command"], config)
+                # Pick the mission-mode command template when the caller passed
+                # auto_mission=true AND the step defines an alternate template.
+                # Keeps the interactive launch path untouched for the dashboard.
+                cmd_template = step["command"]
+                if params and params.get("auto_mission") and "command_when_mission" in step:
+                    cmd_template = step["command_when_mission"]
+                cmd = self._resolve_command(cmd_template, config, params or {})
 
                 health_spec = step.get("health", {})
                 health_port = health_spec.get("port")
@@ -365,6 +388,7 @@ class ModeEngine:
                     restart_policy=step.get("restart", "never"),
                     health_port=health_port,
                     health_timeout=health_timeout,
+                    health_check_once=bool(health_spec.get("once", False)),
                     env=step_env,
                     cwd=step_cwd,
                     ignore_exit=step.get("ignore_exit", False),
@@ -860,10 +884,24 @@ class ModeEngine:
         except FileNotFoundError:
             pass
 
-    def _resolve_command(self, cmd_template, config):
-        """Resolve {placeholders} in command arrays."""
+    def _resolve_command(self, cmd_template, config, params=None):
+        """Resolve {placeholders} in command arrays.
+
+        Supports `{params.<key>}` substitution from the runtime params dict
+        passed to start_mode (used by li-automation missions to inject rms,
+        freq_khz, mission_id, etc.). Missing keys substitute the empty string.
+        """
+        params = params or {}
+        # Match {params.<key>} where <key> is letters/digits/underscore/hyphen.
+        params_re = re.compile(r"\{params\.([A-Za-z0-9_\-]+)\}")
         resolved = []
         for part in cmd_template:
+            # ── per-param substitution first; other tokens may sit alongside ──
+            def _sub(m):
+                k = m.group(1)
+                v = params.get(k, "")
+                return "" if v is None else str(v)
+            part = params_re.sub(_sub, part)
             if "{direwolf_conf}" in part:
                 part = part.replace("{direwolf_conf}",
                                     os.path.join(ET_HOME, "conf/packet/direwolf.conf"))
@@ -901,7 +939,7 @@ class ModeEngine:
             resolved.append(part)
         return resolved
 
-    def _run_action(self, action):
+    def _run_action(self, action, params=None):
         """Execute a pre_start or post_start action.
 
         Returns:
@@ -952,7 +990,31 @@ class ModeEngine:
             if not self._bind_rfcomm():
                 return False
         elif action_type == "qsy-band":
-            self._qsy_to_band_freq(action.get("frequencies", {}))
+            # If the caller supplied an explicit qsy_khz_override, use it.
+            # Otherwise fall back to the band-default table in the action.
+            override_khz = (params or {}).get("qsy_khz_override")
+            applied_hz = None
+            if (params or {}).get("skip_qsy"):
+                log.info("qsy-band: skip_qsy=true — operator owns rig state, no-op")
+            elif override_khz:
+                try:
+                    freq_hz = int(float(override_khz) * 1000)
+                    log.info("qsy-band: explicit override %.1f kHz", float(override_khz))
+                    if rig.set_freq(freq_hz):
+                        log.info("qsy-band: explicit QSY ok")
+                        applied_hz = freq_hz
+                    else:
+                        log.warning("qsy-band: explicit QSY failed")
+                except (TypeError, ValueError) as e:
+                    log.warning("qsy-band: bad qsy_khz_override %r: %s", override_khz, e)
+            else:
+                applied_hz = self._qsy_to_band_freq(action.get("frequencies", {}))
+            # Sync the freq into the app's saved-state INI (e.g. JS8Call.ini's
+            # DialFreq). Without this, JS8Call's CAT-sync ~5-10s after launch
+            # reads its INI and forces the rig BACK to whatever dial freq was
+            # saved last session — silently undoing our QSY.
+            if applied_hz:
+                self._sync_dial_freq_ini(action, applied_hz)
         elif action_type == "wait-audio":
             self._wait_for_audio(action.get("seconds", 3))
         elif action_type == "sleep":
@@ -1362,20 +1424,51 @@ class ModeEngine:
             return
 
         band = self._get_band_from_radio()
-        if not band:
-            log.warning("qsy-band: could not detect current band")
-            return
 
-        freq_hz = frequencies.get(band)
-        if not freq_hz:
-            log.info("qsy-band: no frequency defined for band %s", band)
-            return
+        # Pick the target frequency:
+        #   1. Current band is in the table → use that (precise intra-band QSY)
+        #   2. Otherwise (band not in table, or band detection failed) → fall
+        #      back to the FIRST entry in the table and force-QSY there.
+        #      Mode JSON entry ORDER matters: the first listed band is the
+        #      cross-band default for "rig is on the wrong band entirely".
+        freq_hz = frequencies.get(band) if band else None
+        if freq_hz:
+            log.info("qsy-band: rig on %s, QSY to %d Hz", band, freq_hz)
+        else:
+            first_band, freq_hz = next(iter(frequencies.items()))
+            log.info("qsy-band: rig on %s (not in mode's band list), "
+                     "defaulting to %s = %d Hz",
+                     band or "unknown", first_band, freq_hz)
 
-        log.info("qsy-band: detected %s, setting frequency to %d Hz", band, freq_hz)
         if rig.set_freq(freq_hz):
             log.info("qsy-band: QSY to %d Hz successful", freq_hz)
-        else:
-            log.warning("qsy-band: QSY failed")
+            return freq_hz
+        log.warning("qsy-band: QSY failed")
+        return None
+
+    def _sync_dial_freq_ini(self, action, freq_hz):
+        """Write the just-applied freq into an app's INI so the app's
+        startup CAT-sync doesn't override our QSY. Opt-in per mode via
+        the `ini_target` / `ini_key` fields on the qsy-band action.
+
+        For JS8Call: action JSON specifies ini_target=~/.config/JS8Call.ini
+        and ini_key=DialFreq. JS8Call reads DialFreq on launch and, 5-10s
+        after CAT comes up, forces the rig to it. Writing our new freq
+        here makes JS8Call's "force" align with the supervisor's QSY.
+        """
+        ini_target = action.get("ini_target")
+        if not ini_target:
+            return
+        ini_path = os.path.expanduser(ini_target)
+        ini_key  = action.get("ini_key", "DialFreq")
+        if not os.path.isfile(ini_path):
+            log.warning("qsy-band ini-sync: %s not found, skipping", ini_path)
+            return
+        try:
+            self._update_ini_keys(ini_path, {ini_key: str(int(freq_hz))})
+            log.info("qsy-band ini-sync: %s [%s=%d]", ini_path, ini_key, freq_hz)
+        except (OSError, UnicodeDecodeError) as e:
+            log.warning("qsy-band ini-sync: failed to update %s: %s", ini_path, e)
 
     @staticmethod
     def _band_to_category(band):
@@ -1437,12 +1530,30 @@ class ModeEngine:
             return False
 
     def _kill_wineserver(self):
-        """Kill Wine server for clean shutdown."""
+        """Kill Wine server for clean shutdown.
+
+        VARA HF / VARA FM run under WINEPREFIX=~/.wine32 (32-bit Wine).
+        A bare `wineserver -k` targets the *default* WINEPREFIX (~/.wine),
+        leaving VARAFM.exe / VARA.exe still alive in the 32-bit prefix.
+        Set WINEPREFIX explicitly so we kill the right wineserver. Also
+        kill the default one as a belt-and-suspenders for older builds.
+        """
+        env_default = os.environ.copy()
+
+        # Kill the 32-bit prefix where VARA HF / VARA FM live.
+        env_wine32 = env_default.copy()
+        env_wine32["WINEPREFIX"] = os.path.expanduser("~/.wine32")
+        env_wine32["WINEARCH"]   = "win32"
         try:
-            subprocess.run(
-                ["wineserver", "-k"],
-                timeout=10, capture_output=True
-            )
+            subprocess.run(["wineserver", "-k"], env=env_wine32,
+                           timeout=10, capture_output=True)
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass
+
+        # And the default prefix, in case anything strays there.
+        try:
+            subprocess.run(["wineserver", "-k"], env=env_default,
+                           timeout=10, capture_output=True)
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
 

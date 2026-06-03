@@ -183,8 +183,11 @@ class HealthMonitor:
                     self._crash_callback(name, state)
                 continue
 
-            # Check TCP port if configured
-            if proc_info.health_port:
+            # Check TCP port if configured AND not flagged check-once.
+            # health_check_once services (e.g. VARA modems) hold a single TCP
+            # slot — re-probing competes with the real client (Pat) and can
+            # break the connection.
+            if proc_info.health_port and not proc_info.health_check_once:
                 port_ok = check_tcp_port(proc_info.health_port)
                 if not port_ok:
                     log.warning("Health check: %s port %d not responding",

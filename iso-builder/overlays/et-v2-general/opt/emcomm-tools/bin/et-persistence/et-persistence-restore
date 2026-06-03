@@ -612,6 +612,20 @@ if [[ -d "${PERSISTENCE_PATH}/configs/yaac-config" ]]; then
     restore_file "${PERSISTENCE_PATH}/configs/yaac-config/tile-sources.json" "$YAAC_CONFIG_DIR/tile-sources.json" "YAAC tile sources"
     restore_file "${PERSISTENCE_PATH}/configs/yaac-config/station-colors.json" "$YAAC_CONFIG_DIR/station-colors.json" "YAAC station colors"
     restore_file "${PERSISTENCE_PATH}/configs/yaac-config/sar-objects.json" "$YAAC_CONFIG_DIR/sar-objects.json" "YAAC SAR objects (legacy)"
+
+    # Repair tile-sources.json cacheDirectory if it points at a different
+    # user's $HOME. This happens when the snapshot was saved under one
+    # username (e.g. Live USB default 'user') and restored under another
+    # (e.g. installed 'va2ops'). Symptom: plugin shows "no map", log
+    # spams "cannot open /home/<other>/YAAC/mapcache/...". Permanent fix
+    # is also in TileSourceManager (defensive load), but doing it here
+    # too means even old plugin builds get the right path after restore.
+    TS_FILE="${YAAC_CONFIG_DIR}/tile-sources.json"
+    if [[ -f "$TS_FILE" ]] && grep -q '"cacheDirectory"' "$TS_FILE"; then
+        CURRENT_HOME_CACHE="${HOME}/YAAC/mapcache"
+        sed -i -E 's|("cacheDirectory":\s*")/home/[^/"]+(/YAAC/mapcache")|\1'"${HOME}"'\2|' "$TS_FILE" || true
+        log "✓ Repaired YAAC tile-sources.json cacheDirectory → ${CURRENT_HOME_CACHE}"
+    fi
 fi
 
 # --- LiaisonSAR plugin state (2.3.5+) ---

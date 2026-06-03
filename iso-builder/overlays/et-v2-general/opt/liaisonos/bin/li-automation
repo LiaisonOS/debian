@@ -1,0 +1,1384 @@
+#!/usr/bin/env python3
+#
+# Author  : Sylvain Deguire (VA2OPS)
+# Date    : May 2026
+# Purpose : li-automation — LiaisonOS scheduled comms automation daemon and CLI.
+#           Phase 1 ships only the `validate` subcommand: parse a schedule
+#           JSON file and emit any structural / semantic issues. No daemon,
+#           no IPC, no mode-launching yet.
+#
+# Usage:
+#   li-automation validate [<schedule.json>]   # default ~/.config/liaisonos/automation.json
+#
+
+import argparse
+import json
+import os
+import re
+import socket
+import subprocess
+import sys
+import threading
+import time
+from datetime import datetime, date, timezone
+from typing import Any
+
+DEFAULT_SCHEDULE = os.path.expanduser("~/.config/liaisonos/automation.json")
+VALID_DAYS = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
+VALID_ON_FAIL = {"skip", "retry_same", "retry_alt"}
+
+RE_TIME = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
+RE_WINDOW = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$")
+
+
+# ── Result accumulator ────────────────────────────────────────────────────────
+class Report:
+    def __init__(self):
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
+
+    def err(self, path: str, msg: str) -> None:
+        self.errors.append(f"{path}: {msg}")
+
+    def warn(self, path: str, msg: str) -> None:
+        self.warnings.append(f"{path}: {msg}")
+
+    @property
+    def ok(self) -> bool:
+        return not self.errors
+
+
+# ── Time helpers ──────────────────────────────────────────────────────────────
+def time_to_minutes(s: str) -> int:
+    """HH:MM → minute-of-day (0..1439)."""
+    h, m = s.split(":")
+    return int(h) * 60 + int(m)
+
+
+def expand_window(win: str) -> list[int]:
+    """HH:MM-HH:MM → list of minute-of-day integers covered (handles wrap)."""
+    m = RE_WINDOW.match(win)
+    if not m:
+        return []
+    start = int(m.group(1)) * 60 + int(m.group(2))
+    end = int(m.group(3)) * 60 + int(m.group(4))
+    if end >= start:
+        return list(range(start, end + 1))
+    # wraps midnight, e.g. 20:00-07:59
+    return list(range(start, 1440)) + list(range(0, end + 1))
+
+
+# ── Field-level validators ────────────────────────────────────────────────────
+def require(obj: dict, key: str, kind: type, where: str, rep: Report) -> Any:
+    if key not in obj:
+        rep.err(where, f"missing required field '{key}'")
+        return None
+    val = obj[key]
+    if not isinstance(val, kind):
+        rep.err(where, f"field '{key}' must be {kind.__name__}, got {type(val).__name__}")
+        return None
+    return val
+
+
+def validate_station(station: Any, rep: Report) -> None:
+    where = "station"
+    if not isinstance(station, dict):
+        rep.err(where, "must be an object")
+        return
+    require(station, "role", str, where, rep)
+    require(station, "radio", str, where, rep)
+    if "callsign_must_be_set" in station and not isinstance(station["callsign_must_be_set"], bool):
+        rep.err(where, "callsign_must_be_set must be boolean")
+
+
+def validate_presence(presence: Any, rep: Report) -> None:
+    where = "presence"
+    if not isinstance(presence, list):
+        rep.err(where, "must be a list")
+        return
+    if not presence:
+        rep.warn(where, "no presence windows defined — station will idle when no mission is active")
+        return
+
+    # Track which minute-of-day is covered, watch overlaps + gaps.
+    coverage: dict[int, str] = {}
+    for i, p in enumerate(presence):
+        ctx = f"presence[{i}]"
+        if not isinstance(p, dict):
+            rep.err(ctx, "must be an object")
+            continue
+        win = require(p, "window", str, ctx, rep)
+        require(p, "mode", str, ctx, rep)
+        if "band" in p and not isinstance(p["band"], str):
+            rep.err(ctx, "band must be string")
+        if "qsy_khz" in p and not isinstance(p["qsy_khz"], (int, float)):
+            rep.err(ctx, "qsy_khz must be number")
+        if "rig_mode" in p and not isinstance(p["rig_mode"], str):
+            rep.err(ctx, "rig_mode must be string (e.g. PKTUSB, PKTFM, USB)")
+        if "rig_bw" in p and not isinstance(p["rig_bw"], int):
+            rep.err(ctx, "rig_bw must be int (Hz; 0 = rig default)")
+        if "rig_levels" in p and not isinstance(p["rig_levels"], dict):
+            rep.err(ctx, "rig_levels must be an object: { 'SQL': 0.3, 'RF': 0.8, ... }")
+        if "rig_memory" in p:
+            ch = p["rig_memory"]
+            if not isinstance(ch, int) or ch < 1:
+                rep.err(ctx, "rig_memory must be positive integer (memory channel number)")
+        if win is None:
+            continue
+        if not RE_WINDOW.match(win):
+            rep.err(ctx, f"window '{win}' must be HH:MM-HH:MM")
+            continue
+        minutes = expand_window(win)
+        name = p.get("mode", "?")
+        for minute in minutes:
+            if minute in coverage:
+                rep.err(ctx, f"window '{win}' overlaps with '{coverage[minute]}' "
+                             f"at minute {minute // 60:02d}:{minute % 60:02d}")
+                break
+            coverage[minute] = f"{win} ({name})"
+
+    missing = [m for m in range(1440) if m not in coverage]
+    if missing:
+        # Coalesce contiguous missing ranges for a clean message.
+        ranges = []
+        s = missing[0]; prev = missing[0]
+        for m in missing[1:]:
+            if m == prev + 1:
+                prev = m
+            else:
+                ranges.append((s, prev)); s = m; prev = m
+        ranges.append((s, prev))
+        gap_strs = [f"{a // 60:02d}:{a % 60:02d}-{b // 60:02d}:{b % 60:02d}"
+                    for (a, b) in ranges]
+        rep.warn(where, f"day not fully covered by presence; gaps: {', '.join(gap_strs)}")
+
+
+def validate_mission(mission: dict, ctx: str, rep: Report) -> None:
+    if not isinstance(mission, dict):
+        rep.err(ctx, "must be an object")
+        return
+    require(mission, "name", str, ctx, rep)
+    at = require(mission, "at", str, ctx, rep)
+    if at and not RE_TIME.match(at):
+        rep.err(ctx, f"'at' time '{at}' must be HH:MM")
+    require(mission, "mode", str, ctx, rep)
+    require(mission, "connect_url", str, ctx, rep)   # operator owns it
+    timeout = require(mission, "timeout_min", int, ctx, rep)
+    if isinstance(timeout, int) and timeout <= 0:
+        rep.err(ctx, f"timeout_min must be > 0 (got {timeout})")
+
+    if "days" in mission:
+        days = mission["days"]
+        if not isinstance(days, list):
+            rep.err(ctx, "days must be a list of weekday names")
+        else:
+            for d in days:
+                if not isinstance(d, str) or d.lower() not in VALID_DAYS:
+                    rep.err(ctx, f"invalid day '{d}' (expected one of {sorted(VALID_DAYS)})")
+
+    if "rms" in mission and not isinstance(mission["rms"], str):
+        rep.err(ctx, "rms must be string (informational only)")
+    if "rig_mode" in mission and not isinstance(mission["rig_mode"], str):
+        rep.err(ctx, "rig_mode must be string (e.g. PKTUSB, PKTFM, USB)")
+    if "rig_bw" in mission and not isinstance(mission["rig_bw"], int):
+        rep.err(ctx, "rig_bw must be int (Hz; 0 = rig default)")
+    if "rig_levels" in mission and not isinstance(mission["rig_levels"], dict):
+        rep.err(ctx, "rig_levels must be an object: { 'SQL': 0.3, 'RF': 0.8, ... }")
+    if "rig_memory" in mission:
+        ch = mission["rig_memory"]
+        if not isinstance(ch, int) or ch < 1:
+            rep.err(ctx, "rig_memory must be positive integer (memory channel number)")
+
+    on_fail = mission.get("on_fail", "skip")
+    if not isinstance(on_fail, str) or on_fail not in VALID_ON_FAIL:
+        rep.err(ctx, f"on_fail must be one of {sorted(VALID_ON_FAIL)} (got {on_fail!r})")
+    if on_fail == "retry_alt":
+        alt = mission.get("alt_rms")
+        if not isinstance(alt, list) or not alt:
+            rep.err(ctx, "on_fail=retry_alt requires non-empty 'alt_rms' list")
+        else:
+            for j, a in enumerate(alt):
+                actx = f"{ctx}.alt_rms[{j}]"
+                if not isinstance(a, dict):
+                    rep.err(actx, "must be an object with at least 'rms' and 'connect_url'")
+                    continue
+                require(a, "rms", str, actx, rep)
+                require(a, "connect_url", str, actx, rep)
+                if "mode" in a and not isinstance(a["mode"], str):
+                    rep.err(actx, "mode override must be string (e.g. winlink-vara-fm)")
+                if "rig_mode" in a and not isinstance(a["rig_mode"], str):
+                    rep.err(actx, "rig_mode override must be string (e.g. FM-D, PKTUSB)")
+                if "rig_bw" in a and not isinstance(a["rig_bw"], int):
+                    rep.err(actx, "rig_bw override must be int (Hz; 0 = rig default)")
+                if "rig_levels" in a and not isinstance(a["rig_levels"], dict):
+                    rep.err(actx, "rig_levels override must be an object")
+                if "rig_memory" in a:
+                    ch = a["rig_memory"]
+                    if not isinstance(ch, int) or ch < 1:
+                        rep.err(actx, "rig_memory override must be positive integer (memory channel)")
+                if "timeout_min" in a:
+                    t = a["timeout_min"]
+                    if not isinstance(t, int) or t <= 0:
+                        rep.err(actx, f"timeout_min override must be > 0 (got {t!r})")
+
+
+def validate_missions(missions: Any, rep: Report) -> None:
+    where = "missions"
+    if missions is None:
+        return  # missions are optional
+    if not isinstance(missions, list):
+        rep.err(where, "must be a list")
+        return
+    seen_names: dict[str, int] = {}
+    for i, m in enumerate(missions):
+        ctx = f"missions[{i}]"
+        validate_mission(m, ctx, rep)
+        if isinstance(m, dict) and isinstance(m.get("name"), str):
+            seen_names.setdefault(m["name"], 0)
+            seen_names[m["name"]] += 1
+    for name, count in seen_names.items():
+        if count > 1:
+            rep.err("missions", f"duplicate mission name '{name}' ({count}×)")
+
+
+def validate_boot(boot: Any, rep: Report) -> None:
+    if boot is None:
+        return
+    where = "boot"
+    if not isinstance(boot, dict):
+        rep.err(where, "must be an object")
+        return
+    if "start_current_presence" in boot and not isinstance(boot["start_current_presence"], bool):
+        rep.err(where, "start_current_presence must be boolean")
+    if "delay_seconds" in boot:
+        d = boot["delay_seconds"]
+        if not isinstance(d, int) or d < 0:
+            rep.err(where, f"delay_seconds must be non-negative int (got {d!r})")
+
+
+# ── Top-level validate ────────────────────────────────────────────────────────
+def validate_schedule(doc: Any, rep: Report) -> None:
+    if not isinstance(doc, dict):
+        rep.err("root", "schedule must be a JSON object")
+        return
+    if "station" not in doc:
+        rep.err("root", "missing required section 'station'")
+    else:
+        validate_station(doc["station"], rep)
+
+    validate_presence(doc.get("presence", []), rep)
+    validate_missions(doc.get("missions"), rep)
+    validate_boot(doc.get("boot"), rep)
+
+    if "override_flag" in doc and not isinstance(doc["override_flag"], str):
+        rep.err("override_flag", "must be a path string")
+
+
+# ── CLI ───────────────────────────────────────────────────────────────────────
+def cmd_validate(args: argparse.Namespace) -> int:
+    path = os.path.expanduser(args.file or DEFAULT_SCHEDULE)
+    if not os.path.isfile(path):
+        print(f"error: schedule file not found: {path}", file=sys.stderr)
+        return 2
+
+    try:
+        with open(path) as f:
+            doc = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"error: {path} is not valid JSON: {e}", file=sys.stderr)
+        return 2
+
+    rep = Report()
+    validate_schedule(doc, rep)
+
+    print(f"li-automation validate: {path}")
+    if rep.errors:
+        print(f"\n{len(rep.errors)} error(s):")
+        for e in rep.errors:
+            print(f"  ERROR  {e}")
+    if rep.warnings:
+        print(f"\n{len(rep.warnings)} warning(s):")
+        for w in rep.warnings:
+            print(f"  WARN   {w}")
+    if rep.ok and not rep.warnings:
+        print("OK — schedule is valid.")
+        return 0
+    if rep.ok:
+        print("\nOK — schedule is valid (with warnings).")
+        return 0
+    print(f"\nFAILED — {len(rep.errors)} error(s).")
+    return 1
+
+
+# ── Scheduler runtime ─────────────────────────────────────────────────────────
+SUPERVISOR_SOCK = f"/run/user/{os.getuid()}/et-supervisor.sock"
+WEEKDAY_SHORT   = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+# mode-id → default modem string sent in params
+MODE_DEFAULT_MODEM = {
+    "winlink-vara-hf": "vara-hf",
+    "winlink-vara-fm": "vara-fm",
+    "winlink-packet":  "packet",
+    "winlink-ardop":   "ardop",
+}
+
+
+def send_supervisor(cmd: dict, timeout: float = 30.0) -> dict:
+    """Send a single JSON command over et-supervisor's Unix socket. Returns
+    the parsed JSON response (or an error dict on transport failure).
+    """
+    if not os.path.exists(SUPERVISOR_SOCK):
+        return {"status": "error",
+                "message": f"Socket not found: {SUPERVISOR_SOCK} — is et-supervisor running?"}
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.settimeout(timeout)
+    try:
+        s.connect(SUPERVISOR_SOCK)
+        s.sendall((json.dumps(cmd) + "\n").encode("utf-8"))
+        buf = b""
+        while b"\n" not in buf:
+            chunk = s.recv(4096)
+            if not chunk:
+                break
+            buf += chunk
+        line = buf.split(b"\n", 1)[0].decode("utf-8", errors="replace")
+        try:
+            return json.loads(line)
+        except json.JSONDecodeError:
+            return {"status": "error", "message": f"Bad response: {line!r}"}
+    finally:
+        s.close()
+
+
+def _mission_freq_hz(mission: dict) -> int:
+    """Extract dial freq (Hz) from a mission. Looks at qsy_khz first, then
+    parses 'freq=' from the connect_url (Pat's URL format). Returns 0 if
+    no freq is specified."""
+    qsy_khz = mission.get("qsy_khz")
+    if qsy_khz:
+        try: return int(float(qsy_khz) * 1000)
+        except (TypeError, ValueError): pass
+    url = mission.get("connect_url", "")
+    m = re.search(r"[?&]freq=([\d.]+)", url)
+    if m:
+        try: return int(float(m.group(1)) * 1000)
+        except (TypeError, ValueError): pass
+    return 0
+
+
+def fire_mission(mission: dict) -> dict:
+    """QSY to the mission's freq FIRST so supervisor's band check passes
+    (a HF presence is on the wrong band for a VHF mission). Then send
+    start-mode. Long IPC timeout — chain spawn can take 60-90s.
+
+    Retries once on `mode_still_running` (`_stopping` race window between
+    our stop's IPC response and the supervisor's internal flag clearing).
+    """
+    # Two rig setup paths:
+    #   • rig_memory=N: switch to MEM + recall channel N. Mode, freq, filter,
+    #     tone, and (on Yaesu) the knob function (SQL/RF-Gain) are baked into
+    #     the channel. Skip individual rig commands and tell the supervisor
+    #     to skip its qsy-band action so it doesn't kick the rig back to VFO.
+    #   • Otherwise: force VFOA (clean up from any prior MEM-channel state),
+    #     then set mode / levels / QSY individually.
+    if not rigctld_wait_ready():
+        _notify("critical", "LiaisonOS Automation",
+                f"Mission '{mission.get('name','?')}' SKIPPED — "
+                "rigctld unreachable.\nCheck radio is on and connected.")
+        return {"status": "error",
+                "message": "rigctld unresponsive — skipping mission, will retry next tick"}
+    used_memory = _apply_rig_memory(mission)
+    if not used_memory:
+        ok, reason = rigctld_set_vfo("VFOA")
+        print(f"  Rig VFO VFOA (mission) — {'ok' if ok else 'FAILED'}: {reason}")
+        rig_mode = mission.get("rig_mode")
+        if rig_mode:
+            ok, reason = rigctld_set_mode(rig_mode, mission.get("rig_bw", 0))
+            print(f"  Rig mode {rig_mode} (mission) — {'ok' if ok else 'FAILED'}: {reason}")
+        _apply_rig_levels(mission.get("rig_levels", {}))
+
+        freq_hz = _mission_freq_hz(mission)
+        if freq_hz:
+            ok, reason = rigctld_set_freq(freq_hz)
+            print(f"  QSY {freq_hz/1000:.1f} kHz (mission) — {'ok' if ok else 'FAILED'}: {reason}")
+            if not ok:
+                # Abort: don't send start-mode to supervisor with a
+                # half-configured rig. Run loop will retry next tick
+                # (slot stays unmarked in fired_today on supervisor error).
+                return {"status": "error",
+                        "message": f"QSY failed ({reason}) — skipping mission, retry next tick"}
+
+    mode = mission["mode"]
+    modem = MODE_DEFAULT_MODEM.get(mode, "vara-hf")
+    params = {
+        "modem":        modem,
+        "auto_mission": True,
+        "connect_url":  mission["connect_url"],
+        "rms":          mission.get("rms", ""),
+        "timeout_min":  str(mission.get("timeout_min", 10)),
+        "mission_id":   mission["name"],
+    }
+    if used_memory:
+        params["skip_qsy"] = True
+    cmd = {
+        "cmd":   "start-mode",
+        "mode":  mode,
+        "params": params,
+    }
+    resp = send_supervisor(cmd, timeout=180.0)
+    msg = (resp.get("message") or "").lower()
+    if resp.get("status") == "error" and "still running" in msg:
+        # _stopping was still set when start_mode's lock check ran. Wait for
+        # it to actually clear, then retry once.
+        print("  retry: waiting for supervisor _stopping to clear…")
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            if not supervisor_current_mode():
+                time.sleep(0.5)   # extra grace beyond mode-cleared
+                break
+            time.sleep(0.3)
+        resp = send_supervisor(cmd, timeout=180.0)
+    return resp
+
+
+def start_presence(presence: dict) -> dict:
+    """Start a presence (long-running) mode. Sets rig mode (PKTUSB/PKTFM/...)
+    if specified, then passes qsy_khz_override as a param so the supervisor's
+    qsy-band action uses the operator's exact freq.
+    """
+    # Same two paths as fire_mission — see comment there.
+    # Guard against the rigctld back-pressure window right after a mission
+    # cascade-stop (FT-897D's 4800-baud serial CAT can hold rigctld busy
+    # for a few seconds while supervisor teardown commands queue).
+    if not rigctld_wait_ready():
+        _notify("critical", "LiaisonOS Automation",
+                f"Presence '{presence.get('mode','?')}' SKIPPED — "
+                "rigctld unreachable.\nCheck radio is on and connected.")
+        return {"status": "error",
+                "message": "rigctld unresponsive — skipping presence start, will retry next tick"}
+    used_memory = _apply_rig_memory(presence)
+    if not used_memory:
+        ok, reason = rigctld_set_vfo("VFOA")
+        print(f"  Rig VFO VFOA — {'ok' if ok else 'FAILED'}: {reason}")
+        rig_mode = presence.get("rig_mode")
+        if rig_mode:
+            ok, reason = rigctld_set_mode(rig_mode, presence.get("rig_bw", 0))
+            print(f"  Rig mode {rig_mode} — {'ok' if ok else 'FAILED'}: {reason}")
+        _apply_rig_levels(presence.get("rig_levels", {}))
+        # QSY directly here (symmetric with fire_mission) — coming back from
+        # a VHF mission, the rig is on 145.090 and waiting for supervisor's
+        # qsy-band action alone left the rig stranded on VHF before JS8/VarAC
+        # came up. Daemon does the QSY; supervisor's qsy-band gets the same
+        # override as a belt-and-suspenders so both arrive at the same freq.
+        qsy_khz = presence.get("qsy_khz")
+        if qsy_khz:
+            try:
+                freq_hz = int(float(qsy_khz) * 1000)
+                ok, reason = rigctld_set_freq(freq_hz)
+                print(f"  QSY {freq_hz/1000:.1f} kHz (presence) — {'ok' if ok else 'FAILED'}: {reason}")
+                if not ok:
+                    # Abort: don't send start-mode to supervisor with a
+                    # half-configured rig. Run loop will retry next tick.
+                    return {"status": "error",
+                            "message": f"QSY failed ({reason}) — skipping start, retry next tick"}
+            except (TypeError, ValueError) as e:
+                print(f"  QSY skipped — bad qsy_khz={qsy_khz!r}: {e}")
+
+    params = {}
+    if used_memory:
+        params["skip_qsy"] = True
+    else:
+        qsy_khz = presence.get("qsy_khz")
+        if qsy_khz:
+            params["qsy_khz_override"] = qsy_khz
+    cmd = {"cmd": "start-mode", "mode": presence["mode"]}
+    if params:
+        cmd["params"] = params
+    return send_supervisor(cmd, timeout=180.0)
+
+
+def stop_current() -> dict:
+    """Synchronously stop whatever mode is running (returns when teardown is done)."""
+    return send_supervisor({"cmd": "stop"}, timeout=60.0)
+
+
+def supervisor_current_mode() -> str:
+    """Returns the mode-id currently running per the supervisor, or '' if none."""
+    resp = send_supervisor({"cmd": "status"}, timeout=10.0)
+    return resp.get("mode") or ""
+
+
+def _rigctld_cmd(sock, cmd: str) -> str:
+    sock.sendall((cmd + "\n").encode("ascii"))
+    resp = b""
+    while b"\n" not in resp and len(resp) < 256:
+        chunk = sock.recv(64)
+        if not chunk: break
+        resp += chunk
+    return resp.decode("ascii", errors="replace").strip()
+
+
+# Number of attempts and backoff for rigctld setter retries. On slow-serial
+# Yaesus the post-mission backlog (and potential rigctld restart) can hold
+# us off for 10-15s; 5 attempts at 3s backoff covers ~12s of congestion.
+# Good paths still complete on attempt 1 in <1s.
+RIGCTLD_MAX_ATTEMPTS = 5
+RIGCTLD_RETRY_BACKOFF_S = 3.0
+
+
+def _is_transient_rigctld_err(reason: str) -> bool:
+    """RPRT-level rejections (rig refused the command) are NOT retryable.
+    Transport-level failures (timeouts, connection refused) ARE retryable
+    because they typically mean rigctld is just momentarily congested.
+    """
+    return "unreachable" in reason or "timed out" in reason
+
+
+def rigctld_set_level(level: str, value: float,
+                      host: str = "127.0.0.1", port: int = 4532,
+                      timeout_s: float = 5.0) -> tuple[bool, str]:
+    """Set a Hamlib level (SQL, RF, MICGAIN, AGC, RFPOWER, ...) via rigctld.
+    value is the Hamlib normalized 0.0-1.0 range. Returns (ok, reason).
+    Retries transient transport errors with backoff.
+    """
+    last_reason = "no attempts"
+    for attempt in range(RIGCTLD_MAX_ATTEMPTS):
+        if attempt > 0:
+            time.sleep(RIGCTLD_RETRY_BACKOFF_S)
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(timeout_s)
+            s.connect((host, port))
+            resp = _rigctld_cmd(s, f"L {level} {value}")
+            s.close()
+            if resp == "RPRT 0":
+                return (True, f"set {level}={value}")
+            return (False, f"rigctld rejected: {resp}")
+        except (OSError, socket.timeout) as e:
+            last_reason = f"rigctld unreachable: {e}"
+            continue
+    return (False, f"{last_reason} (after {RIGCTLD_MAX_ATTEMPTS} attempts)")
+
+
+def _apply_rig_levels(levels: dict) -> None:
+    """Apply each level via rigctld. Bad values get warned, not fatal —
+    operator can keep the schedule running even if one rig command fails.
+    """
+    if not isinstance(levels, dict):
+        return
+    for level, value in levels.items():
+        try:
+            v = float(value)
+        except (TypeError, ValueError):
+            print(f"  Level {level}={value!r} — SKIPPED (not numeric)")
+            continue
+        ok, reason = rigctld_set_level(str(level), v)
+        print(f"  Level {level}={v} — {'ok' if ok else 'FAILED'}: {reason}")
+
+
+def rigctld_set_mode(mode: str, passband_hz: int = 0,
+                     host: str = "127.0.0.1", port: int = 4532,
+                     timeout_s: float = 10.0) -> tuple[bool, str]:
+    """Set rig mode via rigctld. Returns (ok, reason).
+    Common Hamlib mode names: PKTUSB (HF digital, e.g. JS8/VARA-HF),
+    FM-D (VHF packet on FT-897D, PKTFM on FT-991A — varies by backend),
+    USB, LSB, FM, AM, CW. passband_hz=0 = rig default for that mode.
+    If SET (M) returns RPRT 0 but readback (m) fails, trusts the SET.
+    """
+    last_reason = "no attempts"
+    for attempt in range(RIGCTLD_MAX_ATTEMPTS):
+        if attempt > 0:
+            print(f"    rigctld set_mode retry {attempt+1}/{RIGCTLD_MAX_ATTEMPTS} "
+                  f"(prev: {last_reason})")
+            time.sleep(RIGCTLD_RETRY_BACKOFF_S)
+        try:
+            t0 = time.monotonic()
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(timeout_s)
+            s.connect((host, port))
+            set_resp = _rigctld_cmd(s, f"M {mode} {int(passband_hz)}")
+            if set_resp != "RPRT 0":
+                s.close()
+                return (False, f"rigctld rejected: {set_resp}")
+            # SET accepted. Try to verify, but if readback fails, trust SET.
+            try:
+                readback = _rigctld_cmd(s, "m")
+                s.close()
+                elapsed_ms = (time.monotonic() - t0) * 1000
+                actual_mode = readback.split()[0] if readback else ""
+                if actual_mode.upper() == mode.upper():
+                    return (True, f"verified {actual_mode} in {elapsed_ms:.0f}ms")
+                return (False, f"set ok but readback shows {actual_mode!r} (rig may not support {mode})")
+            except (OSError, socket.timeout) as ve:
+                s.close()
+                elapsed_ms = (time.monotonic() - t0) * 1000
+                return (True, f"set {mode} in {elapsed_ms:.0f}ms "
+                              f"(readback unverified: {ve})")
+        except (OSError, socket.timeout) as e:
+            last_reason = f"rigctld unreachable: {e}"
+            continue
+    return (False, f"{last_reason} (after {RIGCTLD_MAX_ATTEMPTS} attempts)")
+
+
+def rigctld_wait_ready(host: str = "127.0.0.1", port: int = 4532,
+                       total_timeout_s: float = 12.0,
+                       probe_interval_s: float = 0.5) -> bool:
+    """Poll rigctld until it accepts a quick probe, or give up.
+
+    After a mission cascade-stop the supervisor flushes a burst of rig
+    commands (PTT release, mode reset, etc.). On slow-serial Yaesus like
+    the FT-897D at 4800 baud, that backlog can hold rigctld's accept
+    loop busy for several seconds. The daemon's first QSY after the
+    mission ends sees a connect timeout even though rigctld is just
+    momentarily congested. This poll waits for it to clear.
+    """
+    deadline = time.monotonic() + total_timeout_s
+    while time.monotonic() < deadline:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(1.0)
+            s.connect((host, port))
+            s.sendall(b"f\n")           # cheapest get-freq probe
+            resp = s.recv(64)
+            s.close()
+            if resp:
+                return True
+        except (OSError, socket.timeout):
+            pass
+        time.sleep(probe_interval_s)
+    return False
+
+
+def rigctld_set_vfo(vfo: str, host: str = "127.0.0.1", port: int = 4532,
+                    timeout_s: float = 10.0) -> tuple[bool, str]:
+    """Switch the rig's active VFO (VFOA, VFOB, MEM) via rigctld.
+
+    Critical for the memory-channel trick on Yaesu rigs like the FT-897D:
+    the rig remembers per-memory whether the knob acts as SQL or RF-Gain,
+    so flipping V MEM / V VFOA effectively swaps the knob function without
+    operator touch. Retries transient transport errors with backoff.
+    """
+    last_reason = "no attempts"
+    for attempt in range(RIGCTLD_MAX_ATTEMPTS):
+        if attempt > 0:
+            print(f"    rigctld set_vfo retry {attempt+1}/{RIGCTLD_MAX_ATTEMPTS} "
+                  f"(prev: {last_reason})")
+            time.sleep(RIGCTLD_RETRY_BACKOFF_S)
+        try:
+            t0 = time.monotonic()
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(timeout_s)
+            s.connect((host, port))
+            resp = _rigctld_cmd(s, f"V {vfo}")
+            s.close()
+            elapsed_ms = (time.monotonic() - t0) * 1000
+            if resp == "RPRT 0":
+                return (True, f"VFO {vfo} in {elapsed_ms:.0f}ms")
+            return (False, f"rigctld rejected: {resp}")
+        except (OSError, socket.timeout) as e:
+            last_reason = f"rigctld unreachable: {e}"
+            continue
+    return (False, f"{last_reason} (after {RIGCTLD_MAX_ATTEMPTS} attempts)")
+
+
+def rigctld_set_mem(channel: int, host: str = "127.0.0.1", port: int = 4532,
+                    timeout_s: float = 5.0) -> tuple[bool, str]:
+    """Recall a programmed memory channel via rigctld (E <n>). The rig
+    must already be in MEM mode (call rigctld_set_vfo('MEM') first).
+    Returns (ok, reason).
+    """
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout_s)
+        s.connect((host, port))
+        resp = _rigctld_cmd(s, f"E {int(channel)}")
+        s.close()
+        if resp == "RPRT 0":
+            return (True, f"channel {channel}")
+        return (False, f"rigctld rejected: {resp}")
+    except (OSError, socket.timeout) as e:
+        return (False, f"rigctld unreachable: {e}")
+
+
+def _apply_rig_memory(entry: dict) -> bool:
+    """If `entry` (presence or mission) has `rig_memory` set, switch the rig
+    to MEM and recall that channel via rigctld. Returns True if memory mode
+    was applied — caller should then SKIP rig_mode / rig_bw / rig_levels /
+    qsy and pass `skip_qsy=true` to the supervisor so the chain's qsy-band
+    action doesn't kick the rig back to VFO.
+    """
+    ch = entry.get("rig_memory")
+    if ch is None:
+        return False
+    try:
+        ch_int = int(ch)
+    except (TypeError, ValueError):
+        print(f"  rig_memory={ch!r} — SKIPPED (not integer)")
+        return False
+    ok_v, reason_v = rigctld_set_vfo("MEM")
+    print(f"  Rig VFO MEM — {'ok' if ok_v else 'FAILED'}: {reason_v}")
+    ok_m, reason_m = rigctld_set_mem(ch_int)
+    print(f"  Rig memory ch {ch_int} — {'ok' if ok_m else 'FAILED'}: {reason_m}")
+    return True
+
+
+def rigctld_set_freq(freq_hz: int, host: str = "127.0.0.1",
+                     port: int = 4532, timeout_s: float = 10.0) -> tuple[bool, str]:
+    """QSY via rigctld. If the SET (F) returns RPRT 0, trust it — even if
+    the readback (f) times out due to FT-897D's slow 4800-baud CAT under
+    cumulative mission load. The rig has accepted and moved; we just can't
+    verify within socket timeout. Retries transient transport errors.
+    """
+    last_reason = "no attempts"
+    for attempt in range(RIGCTLD_MAX_ATTEMPTS):
+        if attempt > 0:
+            print(f"    rigctld set_freq retry {attempt+1}/{RIGCTLD_MAX_ATTEMPTS} "
+                  f"(prev: {last_reason})")
+            time.sleep(RIGCTLD_RETRY_BACKOFF_S)
+        try:
+            t0 = time.monotonic()
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(timeout_s)
+            s.connect((host, port))
+            set_resp = _rigctld_cmd(s, f"F {int(freq_hz)}")
+            if set_resp != "RPRT 0":
+                s.close()
+                return (False, f"rigctld rejected: {set_resp}")
+            # SET accepted. Try to verify, but if readback fails, trust SET.
+            try:
+                readback = _rigctld_cmd(s, "f")
+                s.close()
+                actual_hz = int(readback)
+                delta = abs(actual_hz - int(freq_hz))
+                elapsed_ms = (time.monotonic() - t0) * 1000
+                if delta > 1000:
+                    return (False,
+                            f"rig stayed at {actual_hz/1000:.1f} kHz "
+                            f"(target {freq_hz/1000:.1f} kHz) — rigctld probably "
+                            "in Dummy mode (wrong active radio?) or stuck")
+                return (True, f"verified {actual_hz/1000:.1f} kHz in {elapsed_ms:.0f}ms")
+            except (OSError, socket.timeout, ValueError) as ve:
+                # SET said RPRT 0, but readback failed. Trust the SET.
+                s.close()
+                elapsed_ms = (time.monotonic() - t0) * 1000
+                return (True, f"set {freq_hz/1000:.1f} kHz in {elapsed_ms:.0f}ms "
+                              f"(readback unverified: {ve})")
+        except (OSError, socket.timeout) as e:
+            last_reason = f"rigctld unreachable: {e}"
+            continue
+    return (False, f"{last_reason} (after {RIGCTLD_MAX_ATTEMPTS} attempts)")
+
+
+def wait_until_idle(timeout_sec: float = 15.0, poll: float = 0.3) -> bool:
+    """Poll supervisor until it's TRULY idle: mode cleared AND no stop
+    teardown in flight AND no start_mode in flight. Reading just `mode`
+    is not enough — supervisor sets mode=None at the start of teardown
+    but _stopping stays True until the finally block runs.
+    Returns True if truly-idle observed, False on timeout.
+    """
+    deadline = time.monotonic() + timeout_sec
+    while time.monotonic() < deadline:
+        resp = send_supervisor({"cmd": "status"}, timeout=5.0)
+        mode = resp.get("mode") or ""
+        stopping = resp.get("stopping", False)
+        starting = resp.get("start_in_progress", False)
+        if not mode and not stopping and not starting:
+            return True
+        time.sleep(poll)
+    return False
+
+
+def next_scheduled_event(missions: list, presences: list,
+                         now: datetime, fired_today: set) -> tuple | None:
+    """Return (when_dt, kind, name) for the next upcoming event today.
+    kind is "mission" or "presence". Returns None if nothing left today.
+    """
+    from datetime import timedelta as _td
+    candidates = []
+    today_short = WEEKDAY_SHORT[now.weekday()]
+
+    # Missions remaining today
+    for m in missions:
+        if not isinstance(m, dict): continue
+        name = m.get("name")
+        at   = m.get("at", "")
+        if not name or not RE_TIME.match(at): continue
+        if name in fired_today: continue
+        days = m.get("days", WEEKDAY_SHORT)
+        if today_short not in [str(d).lower() for d in days]: continue
+        h, mn = at.split(":")
+        m_dt = now.replace(hour=int(h), minute=int(mn), second=0, microsecond=0)
+        if m_dt <= now: continue
+        candidates.append((m_dt, "mission", name))
+
+    # Next presence transition (end of current window → start of next)
+    cur = _find_presence_for_time(presences, now)
+    if cur:
+        mtch = RE_WINDOW.match(cur.get("window", ""))
+        if mtch:
+            e_h = int(mtch.group(3))
+            e_m = int(mtch.group(4))
+            end_dt = now.replace(hour=e_h, minute=e_m, second=0, microsecond=0)
+            if end_dt <= now:
+                end_dt += _td(days=1)
+            after = end_dt + _td(minutes=1)
+            nxt = _find_presence_for_time(presences, after)
+            if nxt and nxt.get("mode") != cur.get("mode"):
+                candidates.append((after, "presence", nxt["mode"]))
+
+    if not candidates:
+        return None
+    candidates.sort()
+    return candidates[0]
+
+
+def _find_presence_for_time(presences: list, now: datetime) -> dict:
+    """Return the presence dict whose window covers `now`, or None."""
+    minute = now.hour * 60 + now.minute
+    for p in presences:
+        if not isinstance(p, dict):
+            continue
+        win = p.get("window", "")
+        m = RE_WINDOW.match(win)
+        if not m:
+            continue
+        s_min = int(m.group(1)) * 60 + int(m.group(2))
+        e_min = int(m.group(3)) * 60 + int(m.group(4))
+        if e_min >= s_min:
+            in_window = s_min <= minute <= e_min
+        else:                              # window wraps midnight
+            in_window = minute >= s_min or minute <= e_min
+        if in_window:
+            return p
+    return None
+
+
+# ── MissionBroadcaster UDP subscriber ────────────────────────────────────────
+# QtPatWinlink --auto-mission emits state events on UDP 127.0.0.1:7456 with
+# JSON {app, mission_id, kind:"state", state:"idle|connecting|active|complete|failed", ...}
+# We listen in a background thread and record the latest state per mission_id
+# so the run loop can distinguish a clean Complete from a Failed mission and
+# decide whether to invoke on_fail (retry_same / retry_alt) instead of moving on.
+_MISSION_STATES: dict[str, str] = {}
+_MISSION_STATES_LOCK = threading.Lock()
+MISSION_BROADCAST_PORT = 7456
+# Path li-automation mirrors every received UDP event to. li-listen, when
+# its bind to UDP 7456 fails (daemon already owns it), tails this file
+# instead. Keeps QtTerminal-spawned li-listen windows alive and informative.
+EVENT_MIRROR_PATH = "/tmp/li-automation-events.jsonl"
+_EVENT_MIRROR_LOCK = threading.Lock()
+# Soft cap to keep the mirror from growing unbounded across long runs.
+_EVENT_MIRROR_MAX_BYTES = 2 * 1024 * 1024
+
+
+def _mirror_event(raw_line: bytes) -> None:
+    """Append a raw UDP datagram (one JSON event) to EVENT_MIRROR_PATH.
+
+    Truncates the mirror file when it exceeds _EVENT_MIRROR_MAX_BYTES so a
+    long daemon run can't fill /tmp. Caller passes the raw bytes so the
+    line going to disk matches exactly what arrived on the wire.
+    """
+    with _EVENT_MIRROR_LOCK:
+        try:
+            if (os.path.exists(EVENT_MIRROR_PATH) and
+                    os.path.getsize(EVENT_MIRROR_PATH) > _EVENT_MIRROR_MAX_BYTES):
+                os.truncate(EVENT_MIRROR_PATH, 0)
+            with open(EVENT_MIRROR_PATH, "ab") as f:
+                f.write(raw_line.rstrip(b"\n") + b"\n")
+        except OSError:
+            pass    # mirror failure is non-fatal — daemon keeps running
+
+
+def _mission_state_listener() -> None:
+    """Daemon thread: bind UDP 7456, parse state events, update _MISSION_STATES,
+    AND mirror every datagram to EVENT_MIRROR_PATH so li-listen sidecar windows
+    can tail the file when they can't dual-bind UDP.
+    """
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(("127.0.0.1", MISSION_BROADCAST_PORT))
+    except OSError as e:
+        print(f"WARN: cannot bind UDP {MISSION_BROADCAST_PORT} for mission state "
+              f"tracking ({e}) — retry/on_fail won't work but daemon continues")
+        return
+    # Truncate the mirror file at daemon start so old events from a previous
+    # session don't confuse tailing li-listen processes.
+    try:
+        open(EVENT_MIRROR_PATH, "wb").close()
+    except OSError:
+        pass
+    while True:
+        try:
+            data, _ = s.recvfrom(8192)
+            _mirror_event(data)
+            msg = json.loads(data.decode("utf-8", errors="replace"))
+            if msg.get("kind") != "state":
+                continue
+            mid   = msg.get("mission_id", "")
+            state = msg.get("state", "")
+            if mid and state:
+                with _MISSION_STATES_LOCK:
+                    _MISSION_STATES[mid] = state
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            pass
+
+
+def _get_mission_state(mission_id: str) -> str:
+    with _MISSION_STATES_LOCK:
+        return _MISSION_STATES.get(mission_id, "")
+
+
+def _clear_mission_state(mission_id: str) -> None:
+    with _MISSION_STATES_LOCK:
+        _MISSION_STATES.pop(mission_id, None)
+
+
+def _notify(level: str, title: str, message: str) -> None:
+    """Surface a daemon error/warning to the desktop via notify-send.
+
+    Without this, automation failures (rigctld unreachable, mission failed,
+    supervisor error) are silent unless the operator opens journalctl —
+    which is the wrong UX. Normal mode starts surface errors via QtDashboard
+    toast; automation should do the same via desktop notifications.
+
+    level: "low" | "normal" | "critical" — maps to notify-send urgency.
+           Critical persists until dismissed; normal auto-fades.
+    """
+    icon_map = {
+        "low":      "dialog-information",
+        "normal":   "dialog-warning",
+        "critical": "dialog-error",
+    }
+    urgency_map = {"low": "low", "normal": "normal", "critical": "critical"}
+    try:
+        subprocess.Popen(
+            ["notify-send",
+             "-u", urgency_map.get(level, "normal"),
+             "-i", icon_map.get(level, "dialog-warning"),
+             title, message],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except FileNotFoundError:
+        pass    # no notify-send installed — non-fatal
+
+
+def _auto_pause(flag_path: str, reason: str, now: datetime) -> bool:
+    """Create the automation pause flag with a reason banner and fire a
+    desktop notification. The safety rule the daemon enforces: once a
+    human touches the rig (start a mode, stop our presence, etc.), the
+    daemon stays out of the way until the operator explicitly re-enables
+    via the QtDashboard toggle (which removes the flag file).
+
+    Returns True if the flag was created (or already existed), False on
+    a write error.
+    """
+    try:
+        os.makedirs(os.path.dirname(flag_path), exist_ok=True)
+        with open(flag_path, "w") as f:
+            f.write(f"auto-paused {now:%Y-%m-%d %H:%M:%S}\n")
+            f.write(f"reason: {reason}\n")
+            f.write("re-enable: toggle AUTOMATION in QtDashboard → TOOLS\n")
+        print(f"  → automation auto-paused, flag created: {flag_path}")
+        try:
+            subprocess.Popen(
+                ["notify-send", "-u", "normal", "-i", "dialog-information",
+                 "LiaisonOS Automation",
+                 f"Auto-paused: {reason}\n"
+                 "Re-enable from QtDashboard → TOOLS."],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except FileNotFoundError:
+            pass
+        return True
+    except OSError as e:
+        print(f"  WARN: could not write pause flag {flag_path}: {e}")
+        return False
+
+
+def _build_alt_mission(parent: dict, alt: dict, attempt: int, total: int) -> dict:
+    """Merge parent mission + alt-RMS overrides into a fresh mission dict.
+
+    The alt entry contributes rms + connect_url at minimum; optionally
+    overrides mode, rig_mode, rig_bw, rig_levels, rig_memory, timeout_min.
+    Anything not specified by the alt is inherited from the parent.
+    Mission name gets a "(alt N/M — RMS)" suffix so the UDP broadcast
+    keys are distinct per attempt — operator sees each try in li-listen.
+    """
+    out = dict(parent)
+    for k in ("rms", "connect_url", "mode", "rig_mode", "rig_bw",
+              "rig_levels", "rig_memory", "timeout_min"):
+        if k in alt:
+            out[k] = alt[k]
+    rms_label = alt.get("rms", "?")
+    out["name"] = f"{parent['name']} (alt {attempt}/{total} — {rms_label})"
+    # Drop on_fail / alt_rms from the child so we don't recursively retry
+    # an alt — only the parent's retry policy drives the alt-list rotation.
+    out.pop("on_fail", None)
+    out.pop("alt_rms", None)
+    return out
+
+
+def cmd_run(args: argparse.Namespace) -> int:
+    """Scheduler daemon. Each minute:
+      1. Reload schedule (live-edit friendly).
+      2. Reap any pending mission that the supervisor has finished.
+      3. Try to fire any mission whose 'at' matches now AND today's weekday.
+         - If a presence WE started is running, stop it first.
+         - If an OPERATOR-launched mode is running, skip (safety).
+      4. Otherwise, manage presence: start the one whose window covers now,
+         or swap to a new one on a window transition (only if we own the
+         currently running mode).
+    """
+    path = os.path.expanduser(args.file or DEFAULT_SCHEDULE)
+    if not os.path.isfile(path):
+        print(f"error: schedule not found: {path}", file=sys.stderr)
+        return 2
+
+    # Read the schedule's timezone preference. Ham radio is UTC universally,
+    # so we default to UTC if the field is absent. Operators who want naive
+    # local time can opt in with "timezone": "local". The choice is read
+    # once at daemon start; restart the service to change it. This MUST run
+    # before any local-state init that uses time_now() / date_today().
+    try:
+        with open(path) as f:
+            _initial_doc = json.load(f)
+        _tz_choice = (_initial_doc.get("timezone") or "UTC").strip().lower()
+    except (OSError, json.JSONDecodeError):
+        _tz_choice = "utc"
+    if _tz_choice not in ("utc", "local"):
+        print(f"WARN: unknown timezone {_tz_choice!r}, falling back to UTC")
+        _tz_choice = "utc"
+    USE_UTC = (_tz_choice == "utc")
+
+    def time_now() -> datetime:
+        """Daemon's clock. Returns naive datetime — UTC or local based on
+        the schedule's `timezone` field. ALL daemon comparisons MUST use
+        this, not datetime.now() directly, or the user's at/window times
+        get interpreted in the wrong zone. Uses tz-aware-then-strip pattern
+        to avoid Python 3.12+ DeprecationWarning on datetime.utcnow().
+        """
+        if USE_UTC:
+            return datetime.now(timezone.utc).replace(tzinfo=None)
+        return datetime.now()
+
+    def date_today() -> date:
+        return time_now().date()
+
+    # Mutable state tracking:
+    fired_today: set[str] = set()
+    today = date_today()
+    our_presence_mode: str = ""    # mode_id we last started as presence ("" = none / operator)
+    pending_mission: dict | None = None  # mission dict currently running
+    last_announced: tuple | None = None  # last "next up" tuple we printed
+    last_tick_dt: datetime = time_now()  # for catching missions across slow ticks
+
+    print(f"li-automation run: {path}")
+    print(f"Daemon clock: {'UTC' if USE_UTC else 'LOCAL'}  "
+          f"(matches the time values in your schedule's `at` / `window` fields)")
+    print("Polling every minute. Ctrl-C to stop.")
+
+    # Start the UDP listener so we can detect mission Failed vs Complete
+    # — required for on_fail=retry_same / retry_alt to actually fire.
+    t = threading.Thread(target=_mission_state_listener, daemon=True)
+    t.start()
+    # Track the alt-rotation cursor per mission slot. Reset daily.
+    alt_cursor: dict[str, int] = {}
+
+    while True:
+        try:
+            now = time_now()
+
+            # ── New day → reset fired-today + alt cursors ────────────────────
+            if now.date() != today:
+                fired_today.clear()
+                alt_cursor.clear()
+                today = now.date()
+                print(f"[{now:%Y-%m-%d %H:%M:%S}] New day — fired-today cleared")
+
+            # ── Reload schedule each tick (live edit friendly) ───────────────
+            try:
+                with open(path) as f:
+                    doc = json.load(f)
+            except (OSError, json.JSONDecodeError) as e:
+                print(f"[{now:%H:%M:%S}] WARN: cannot read schedule: {e}")
+                _notify("normal", "LiaisonOS Automation",
+                        f"Schedule file unreadable: {e}\nDaemon idle until fixed.")
+                time.sleep(60)
+                continue
+
+            missions  = doc.get("missions", []) or []
+            presences = doc.get("presence", []) or []
+            override_flag = os.path.expanduser(
+                doc.get("override_flag", "~/.cache/liaisonos/automation-paused"))
+            paused = os.path.exists(override_flag)
+
+            expected_presence = _find_presence_for_time(presences, now)
+            expected_mode = expected_presence["mode"] if expected_presence else ""
+            current_mode  = supervisor_current_mode()
+
+            # ── 1. Reap finished mission ─────────────────────────────────────
+            if pending_mission:
+                mission_mode = pending_mission["mode"]
+                if current_mode != mission_mode:
+                    # Supervisor sets mode=None at the START of cascade-stop,
+                    # not the end. Wait for stopping=False + start_in_progress=False
+                    # before we touch rigctld for the presence restart — otherwise
+                    # our QSY races the supervisor's teardown commands on the
+                    # FT-897D's slow serial CAT and times out.
+                    ended_mission = pending_mission
+                    print(f"[{now:%H:%M:%S}] Mission '{ended_mission['name']}' "
+                          f"ended — waiting for supervisor teardown to finish…")
+                    if not wait_until_idle(timeout_sec=30.0):
+                        print("  WARN: supervisor still busy after 30s — "
+                              "proceeding anyway, may retry next tick")
+
+                    # Check the UDP-tracked terminal state to distinguish
+                    # Complete from Failed. Without this, on_fail can't fire
+                    # because the daemon doesn't know the mission failed.
+                    last_state = _get_mission_state(ended_mission["name"])
+                    print(f"  Mission terminal state: {last_state or 'unknown'}")
+
+                    # Determine if on_fail policy should fire a retry.
+                    # Only acts when state is explicitly "failed" — an
+                    # "unknown" state (no broadcast received) is treated
+                    # as success to avoid spurious retries on missions that
+                    # finished before the UDP listener bound, etc.
+                    retry_mission = None
+                    if last_state == "failed":
+                        # Look up the policy on the PARENT mission (alts
+                        # don't carry on_fail). The parent's name is the
+                        # base label — alt entries derive their name from it.
+                        parent_name = ended_mission.get("_parent_name",
+                                                       ended_mission["name"])
+                        parent = next((m for m in missions
+                                       if isinstance(m, dict)
+                                       and m.get("name") == parent_name), None)
+                        if parent:
+                            on_fail = parent.get("on_fail", "skip")
+                            if on_fail == "retry_alt":
+                                alts = parent.get("alt_rms", []) or []
+                                idx = alt_cursor.get(parent_name, 0)
+                                if idx < len(alts):
+                                    a = alts[idx]
+                                    retry_mission = _build_alt_mission(
+                                        parent, a, idx + 1, len(alts))
+                                    retry_mission["_parent_name"] = parent_name
+                                    alt_cursor[parent_name] = idx + 1
+                                    print(f"  retry_alt: trying alt "
+                                          f"{idx+1}/{len(alts)} — RMS "
+                                          f"{a.get('rms','?')}")
+                                else:
+                                    print(f"  retry_alt: exhausted all "
+                                          f"{len(alts)} alts — giving up")
+                                    _notify("critical",
+                                            "LiaisonOS Automation",
+                                            f"Mission '{parent_name}' "
+                                            f"FAILED — all {len(alts)} alt "
+                                            "RMS exhausted.")
+                            elif on_fail == "retry_same":
+                                # Not yet wired beyond the placeholder — skip.
+                                print("  retry_same: not yet implemented "
+                                      "— falling through to skip")
+                        # Even when on_fail==skip (or no parent found),
+                        # the operator should know the mission failed.
+                        if retry_mission is None:
+                            _notify("normal", "LiaisonOS Automation",
+                                    f"Mission '{ended_mission['name']}' "
+                                    "FAILED.")
+
+                    # Clean state for the ended mission before reusing IDs.
+                    _clear_mission_state(ended_mission["name"])
+
+                    if retry_mission:
+                        # Fire the retry. Supervisor is idle (wait_until_idle
+                        # ran above), rigctld is free.
+                        print(f"  FIRE retry: {retry_mission['name']}")
+                        resp = fire_mission(retry_mission)
+                        if resp.get("status") == "ok":
+                            pending_mission = retry_mission
+                            current_mode = retry_mission["mode"]
+                        else:
+                            print(f"  retry supervisor: {resp.get('status')} "
+                                  f"— {resp.get('message','?')}")
+                            pending_mission = None
+                            current_mode = supervisor_current_mode()
+                    else:
+                        pending_mission = None
+                        current_mode = supervisor_current_mode()
+
+            today_short = WEEKDAY_SHORT[now.weekday()]
+
+            # ── 2. Mission firing ────────────────────────────────────────────
+            # Match missions whose 'at' time has been CROSSED since the
+            # last tick — not just "current minute equals at". Otherwise
+            # a slow tick (presence-start can take 60-90s) blows right
+            # past the slot and the mission is silently skipped.
+            if not paused and not pending_mission:
+                for m in missions:
+                    if not isinstance(m, dict): continue
+                    name = m.get("name")
+                    if not name or name in fired_today: continue
+                    at = m.get("at", "")
+                    if not RE_TIME.match(at): continue
+                    days = m.get("days", WEEKDAY_SHORT)
+                    if today_short not in [str(d).lower() for d in days]:
+                        continue
+                    h, mn = at.split(":")
+                    at_dt = now.replace(hour=int(h), minute=int(mn),
+                                         second=0, microsecond=0)
+                    # Fire if at_dt was crossed between last_tick_dt and now.
+                    if not (last_tick_dt < at_dt <= now):
+                        continue
+
+                    print(f"[{now:%H:%M:%S}] Mission slot: {name}")
+
+                    # If something is running, decide: stop or skip
+                    if current_mode:
+                        if current_mode == our_presence_mode:
+                            print(f"  Stopping our presence '{our_presence_mode}' "
+                                  f"to make room for mission")
+                            resp = stop_current()
+                            if resp.get("status") != "ok":
+                                print(f"  Stop failed: {resp.get('message','?')} — skipping")
+                                fired_today.add(name)
+                                continue
+                            our_presence_mode = ""
+                            current_mode = ""
+                            # Belt-and-suspenders: wait until supervisor
+                            # confirms idle before firing. Avoids the
+                            # "Mode '?' is still running" race seen when
+                            # stop's response races with cascade-stop
+                            # teardown.
+                            if not wait_until_idle(timeout_sec=15.0):
+                                print("  Stop didn't reach idle in 15s — skipping")
+                                fired_today.add(name)
+                                continue
+                        else:
+                            # Operator owns the radio — declined slot, don't
+                            # bombard them every minute. Mark as handled.
+                            print(f"  SKIPPED — operator is in '{current_mode}'")
+                            fired_today.add(name)
+                            continue  # don't break; check other missions same minute
+
+                    # Final supervisor state check before firing — useful
+                    # diagnostic when we get the "Mode '?'" error.
+                    pre_fire_mode = supervisor_current_mode()
+                    print(f"  pre-fire supervisor mode: '{pre_fire_mode or 'idle'}'")
+
+                    # Radio clear — fire
+                    print(f"  FIRE: {name}")
+                    resp = fire_mission(m)
+                    status = resp.get("status", "?")
+                    msg    = resp.get("message", "")
+                    if status == "ok":
+                        pending_mission = m
+                        current_mode = m["mode"]
+                        fired_today.add(name)
+                    else:
+                        # Don't mark fired_today on supervisor error —
+                        # otherwise next_scheduled_event hides the slot
+                        # and the operator thinks nothing's planned.
+                        print(f"  supervisor: {status}"
+                              + (f" — {msg}" if msg else ""))
+                    break  # one mission per tick regardless
+
+            # ── 3. Presence management (only when nothing mission-related) ───
+            if not paused and not pending_mission:
+                # Operator-stopped-our-presence: we had a presence running,
+                # nothing is running now, and we aren't between mission slots.
+                # → operator hit Stop. Auto-pause until they re-enable.
+                if our_presence_mode and not current_mode:
+                    print(f"[{now:%H:%M:%S}] Our presence '{our_presence_mode}' "
+                          f"is no longer running — operator stopped it")
+                    _auto_pause(override_flag,
+                                f"operator stopped '{our_presence_mode}'", now)
+                    our_presence_mode = ""
+                    paused = True
+                elif not current_mode and expected_mode:
+                    # Nothing running, expected presence has a slot — start it
+                    print(f"[{now:%H:%M:%S}] Starting presence '{expected_mode}' "
+                          f"(window {expected_presence.get('window','?')})")
+                    resp = start_presence(expected_presence)
+                    if resp.get("status") == "ok":
+                        our_presence_mode = expected_mode
+                    else:
+                        print(f"  supervisor: {resp.get('message','?')}")
+                elif current_mode and current_mode == our_presence_mode \
+                        and expected_mode and current_mode != expected_mode:
+                    # Window changed AND we own the current mode — swap
+                    print(f"[{now:%H:%M:%S}] Presence window changed: "
+                          f"swap '{current_mode}' → '{expected_mode}'")
+                    stop_current()
+                    our_presence_mode = ""
+                    resp = start_presence(expected_presence)
+                    if resp.get("status") == "ok":
+                        our_presence_mode = expected_mode
+                elif current_mode and current_mode != our_presence_mode:
+                    # Operator launched a mode we don't own → AUTO-PAUSE.
+                    # Once a human starts driving the rig, we stand down
+                    # until they explicitly hand control back via the
+                    # QtDashboard AUTOMATION toggle.
+                    if our_presence_mode:
+                        print(f"[{now:%H:%M:%S}] Operator took over with "
+                              f"'{current_mode}' (was running '{our_presence_mode}')")
+                    else:
+                        print(f"[{now:%H:%M:%S}] Operator started '{current_mode}'")
+                    _auto_pause(override_flag,
+                                f"operator launched '{current_mode}'", now)
+                    our_presence_mode = ""
+                    paused = True
+
+            # Announce next upcoming event (only when it changes — so the
+            # operator sees what's next without spamming every minute).
+            nxt = next_scheduled_event(missions, presences,
+                                       time_now(), fired_today)
+            if nxt != last_announced:
+                if nxt:
+                    when, kind, name = nxt
+                    mins = int((when - time_now()).total_seconds() / 60)
+                    print(f"  Next {kind}: '{name}' at {when:%H:%M}  "
+                          f"(in {mins} min)")
+                else:
+                    print("  Nothing else scheduled today.")
+                last_announced = nxt
+
+            # Update tick boundary BEFORE sleeping so next iteration knows
+            # which slots were already considered.
+            last_tick_dt = now
+            # Sleep strategy:
+            #   • If a mission is running → poll every 5s so the moment the
+            #     supervisor cascade-stops the chain we see it and restart
+            #     presence immediately (no waiting for the next minute boundary).
+            #   • Otherwise → sleep until the top of the next minute (cheap
+            #     and aligns nicely with mission "at" timestamps).
+            if pending_mission:
+                time.sleep(5)
+            else:
+                time.sleep(max(1, 60 - time_now().second))
+        except KeyboardInterrupt:
+            print("\nStopped.")
+            return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        prog="li-automation",
+        description="LiaisonOS scheduled comms automation."
+    )
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_val = sub.add_parser("validate", help="Parse and validate a schedule JSON file.")
+    p_val.add_argument("file", nargs="?", default=None,
+                        help=f"schedule file (default: {DEFAULT_SCHEDULE})")
+    p_val.set_defaults(func=cmd_validate)
+
+    p_run = sub.add_parser("run", help="Run the scheduler daemon (polls every minute).")
+    p_run.add_argument("file", nargs="?", default=None,
+                        help=f"schedule file (default: {DEFAULT_SCHEDULE})")
+    p_run.set_defaults(func=cmd_run)
+
+    args = parser.parse_args()
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

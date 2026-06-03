@@ -37,9 +37,12 @@
         {"action": "kill-all"},
         {"action": "audio-config"},
         {"action": "prime-rigctld"},
-        {"action": "qsy-band", "frequencies": {
-            "80m": 3578000,
+        {"action": "qsy-band",
+         "ini_target": "~/.config/JS8Call.ini",
+         "ini_key": "DialFreq",
+         "frequencies": {
             "40m": 7078000,
+            "80m": 3578000,
             "30m": 10130000,
             "20m": 14078000,
             "17m": 18104000,

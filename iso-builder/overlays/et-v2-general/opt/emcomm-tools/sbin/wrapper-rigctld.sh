@@ -81,10 +81,10 @@ start() {
       PTT_ONLY=$(cat ${ET_HOME}/conf/radios.d/active-radio.json | jq -r .rigctrl.pttOnly)
       if [ "${PTT_ONLY}" = "true" ]; then
         wait_for_serial_port "${CAT_DEVICE}"
-        CMD="/usr/bin/rigctld -m ${ID} -p ${CAT_DEVICE} -P ${PTT} "
+        CMD="/usr/local/bin/rigctld -m ${ID} -p ${CAT_DEVICE} -P ${PTT} "
         echo "Starting rigctld in PTT-only mode with: ${CMD}"
       else
-        CMD="/usr/bin/rigctld -m ${ID} -P ${PTT} "
+        CMD="/usr/local/bin/rigctld -m ${ID} -P ${PTT} "
         echo "Starting rigctld in VOX mode with: ${CMD}"
       fi
 
@@ -117,7 +117,7 @@ start() {
   # Special case for DigiRig Mobile for radios with no CAT control.
   if [ "${ID}" = "6" ]; then
     PTT=$(cat ${ET_HOME}/conf/radios.d/active-radio.json | jq -r .rigctrl.ptt)
-    CMD="/usr/bin/rigctld -p ${CAT_DEVICE} -P ${PTT} "
+    CMD="/usr/local/bin/rigctld -p ${CAT_DEVICE} -P ${PTT} "
     echo "Starting rigctld in RTS PTT only mode with: ${CMD}"
     wait_for_serial_port "${CAT_DEVICE}"
     exec $CMD
@@ -133,7 +133,7 @@ start() {
   wait_for_serial_port "${CAT_DEVICE}"
 
   # Generate command
-  CMD="/usr/bin/rigctld -m ${ID} -r ${CAT_DEVICE} -s ${BAUD} -P ${PTT} ${SET_CONF}"
+  CMD="/usr/local/bin/rigctld -m ${ID} -r ${CAT_DEVICE} -s ${BAUD} -P ${PTT} ${SET_CONF}"
   echo "Starting rigctld with: ${CMD}"
   exec $CMD
 }
