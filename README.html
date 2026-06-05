@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Emergency Communications for Ham Radio</h1>
-<p><em>Version 2.3.7 — May 2026</em>
+<p><em>Version 2.3.8 — June 2026</em>
 <em>Debian 13 (Trixie) Live/Installable ISO</em></p>
 <blockquote>
 <p>⚠️ <strong>Continuous Development Notice</strong></p>
@@ -82,6 +82,41 @@ footer a:hover { color: #7de8b0; }
 <p><strong>Français?</strong> Voir <a href="https://liaisonos.com/LISEZMOI">LISEZMOI</a> pour la version française.</p>
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS is a <strong>Debian 13 (Trixie) live and installable Linux ISO</strong> designed for ham radio emergency digital communications. It includes a complete suite of pre-configured digital mode software, offline maps, and a web dashboard for one-click operation. Two deployment modes: <strong>USB Live Run</strong> (boot any PC from a USB drive) or <strong>hard drive installation</strong> (permanent install via Calamares). Bilingual English/French interface. Created by Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>What's New in Version 2.3.8</h2>
+<h3>Automation Editor (web UI)</h3>
+<ul>
+<li><strong>New Flask app</strong> at Applications → Ham Radio → <em>Automation Editor</em>. Replaces hand-editing <code>~/.config/liaisonos/automation.json</code></li>
+<li><strong>Presence cards</strong> for JS8Call / VarAC / BBS Server with full modem dropdown (VARA HF, VARA FM, Mercury, HF 300, Pkt 1200, Pkt 9600)</li>
+<li><strong>Mission cards</strong> with day-of-week picker, on_fail policy, alt_rms inline editor when <code>retry_alt</code> is selected</li>
+<li><strong>Integrated RMS picker</strong> — queries <code>pat rmslist --json</code> for chosen modem + band, auto-builds <code>connect_url</code> from the selected gateway</li>
+<li>Validates with <code>li-automation validate</code> before saving · one-click daemon restart · timestamped backup on every save</li>
+</ul>
+<h3>Engagement toast — instant feedback</h3>
+<ul>
+<li>Daemon's idle sleep changed from blocking 60-second wait to 2-second fast-poll on the pause flag</li>
+<li>Toggling AUTOMATION ON surfaces a desktop toast within ~2s naming the next scheduled event</li>
+<li>30-second engagement grace window suppresses false auto-pause on rapid AUTOMATION toggle (race-condition fix)</li>
+</ul>
+<h3>Visible failures across the board</h3>
+<ul>
+<li>Daemon errors that were silent in 2.3.7 now fire <code>notify-send</code> desktop toasts with explicit causes</li>
+<li><code>DBUS_SESSION_BUS_ADDRESS</code> and <code>DISPLAY</code> set explicitly so notifications reach the XFCE tray from inside a systemd <code>--user</code> service</li>
+</ul>
+<h3>System-wide systemd user service</h3>
+<ul>
+<li>Unit moved from per-user <code>/etc/skel/.config/systemd/user/</code> to system-wide <code>/etc/systemd/user/</code></li>
+<li>Every user — Live boot, HDD install, future accounts — gets it auto-enabled at session start</li>
+</ul>
+<h3>Multi-modem BBS Server presence</h3>
+<ul>
+<li>Presence schedule now accepts a <code>modem</code> field; BBS Server presence can run with VARA HF, VARA FM, Mercury, HF 300, Pkt 1200, or Pkt 9600</li>
+</ul>
+<h3>Debug mode</h3>
+<ul>
+<li><code>LI_DEBUG=1</code> (env) or <code>--debug</code> (CLI) → per-tick state + notify-send rc + in-grace flag in the journal</li>
+<li>Enabled by default after <code>install-all.sh</code></li>
+</ul>
 <hr />
 <h2>What's New in Version 2.3.7</h2>
 <h3>Autonomous Comms Automation — a first in the emcomm-tools community</h3>
@@ -1176,7 +1211,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Ventoy Documentation:</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Document version: 2.3.7</em>
+<p><em>Document version: 2.3.8</em>
 <em>Last updated: May 2026</em>
 <em>Created for LiaisonOS Debian Edition</em></p>
 </div>

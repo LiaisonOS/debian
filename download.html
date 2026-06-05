@@ -10,10 +10,10 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://liaisonos.com/download.html">
   <meta property="og:title" content="Download LiaisonOS — Ham Radio Linux ISO">
-  <meta property="og:description" content="Download LiaisonOS v2.3.7 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
+  <meta property="og:description" content="Download LiaisonOS v2.3.8 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
   <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Download LiaisonOS v2.3.7">
+  <meta name="twitter:title" content="Download LiaisonOS v2.3.8">
   <meta name="twitter:description" content="Debian 13 live ISO for ham radio EMCOMM. QtDashboard, Touch Mode, JS8Call, Pat-Winlink, VARA, VarAC, fldigi — ready to go.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -214,34 +214,31 @@
         <strong>Continuous development notice —</strong> LiaisonOS uses an agile, continuous-release model. Each version is fully functional. <strong>Always boot and test from USB first</strong> before committing to a permanent install.
       </div>
       <div class="whats-new">
-        <p class="whats-new-title">What's new in v2.3.7</p>
+        <p class="whats-new-title">What's new in v2.3.8</p>
         <ul>
-          <li><strong>Autonomous comms automation</strong> — A new daemon (<code>li-automation</code>) runs scheduled Winlink check-ins and time-windowed presence modes (JS8, VarAC, BBS) without operator intervention. Configure with a JSON schedule, enable from a single toggle, and the station works the rest of the day on its own. <strong>Advanced-cert ops only</strong> per ISED rules — the daemon ships paused by default and refuses to fire until an Advanced-licensed operator explicitly engages it.</li>
-          <li><strong>AUTOMATION toggle in QtDashboard</strong> — New tile in the TOOLS group: orange when ON, gray when OFF. State is file-backed and live-watched, so when the daemon auto-pauses on operator intervention the tile flips visibly in the same frame. Tap to re-engage.</li>
-          <li><strong>Mission orchestration with retry_alt</strong> — Missions support a list of fallback RMS callsigns: if the primary doesn't answer, the daemon walks the alt list (in-band backups, cross-band fallback, cross-mode VHF as last resort) until one connects. Each alt can override mode, freq, rig settings, and timeout independently.</li>
-          <li><strong>Hamlib 5.0.0</strong> — Upgraded from Debian's 4.6.2. Newer rig backends, fresh PKT/data mode handling, FT-991A levels (SQL, RF gain, etc.) all settable via CAT for cross-band automation. Old Debian binary stays alongside as fallback; reversible with a single line change.</li>
-          <li><strong>QtPatWinlink auto-mission mode</strong> — Headless Winlink session driven by the automation daemon. Real-time progress broadcasts on UDP 7456; <code>li-listen</code> shows colour-coded state (connecting, active, complete, failed) per mission.</li>
-          <li><strong>QtPatWinlink Mail Viewer mode</strong> — Read and compose Winlink mail while a presence mode (JS8/VarAC/BBS) is on the air. Spawns its own <code>pat http</code> instance, no VARA touched, no modem chain disturbed.</li>
-          <li><strong>JS8Call DialFreq sync</strong> — Long-standing bug fixed where JS8Call's startup CAT sync would snap the rig back to its last-saved freq, undoing an automation QSY. The supervisor now writes the target freq into <code>JS8Call.ini</code> before launch, so JS8Call's "force sync" confirms the correct freq instead of overriding.</li>
-          <li><strong>qsy-band fallback for cross-band starts</strong> — When the rig isn't on a band the new mode knows about, the supervisor now falls back to the first defined band in the mode's frequency table instead of silently doing nothing. Eliminates the "rig stayed on 2m after starting JS8" surprise.</li>
-          <li><strong>Operator-safety auto-pause</strong> — Any manual mode start, or any stop of the daemon's running presence, automatically pauses automation and notifies the operator. The daemon stays out of the way until the operator explicitly hands control back.</li>
+          <li><strong>Automation Editor (web UI)</strong> — A new Flask app (Applications → Ham Radio → <em>Automation Editor</em>) replaces hand-editing <code>~/.config/liaisonos/automation.json</code>. Presence cards for JS8Call / VarAC / BBS Server (with full modem dropdown: VARA HF, VARA FM, Mercury, HF 300, Pkt 1200/9600). Mission cards with day-of-week picker, on_fail policy, and inline alt_rms list when retry_alt is selected. Validates with <code>li-automation validate</code> before saving and offers a one-click daemon restart.</li>
+          <li><strong>Integrated RMS picker</strong> — Mission editor's <em>Pick RMS</em> button queries <code>pat rmslist --json</code> for the chosen modem and band, then auto-builds the <code>connect_url</code> from the selected gateway. No more hand-typing <code>varahf:///CALL?freq=X&amp;bw=Y</code>.</li>
+          <li><strong>Engagement toast — instant feedback</strong> — Toggling AUTOMATION ON now surfaces a desktop notification within ~2 seconds naming the next scheduled event ("Presence 'js8call' starting within 1 min · Next mission: 'Morning Winlink' at 14:30, in 47 min"). The daemon's idle sleep was changed from a 60-second block to a 2-second poll that wakes on flag transitions, so the engagement → toast → action loop is no longer a minute long.</li>
+          <li><strong>System-wide systemd user service</strong> — The daemon's unit moved from per-user <code>/etc/skel/.config/systemd/user/</code> to system-wide <code>/etc/systemd/user/</code>. Every user that logs in (Live boot, HDD install, accounts created later) gets it auto-enabled by systemd at session start — no operator action, no skel-timing dependency.</li>
+          <li><strong>Visible failures across the board</strong> — Daemon errors that were previously silent (rigctld unreachable, mission failed, retry_alt exhausted, bad schedule reload) now fire <code>notify-send</code> desktop toasts with explicit causes. <code>DBUS_SESSION_BUS_ADDRESS</code> and <code>DISPLAY</code> are set explicitly so notifications actually reach the XFCE tray from inside a systemd <code>--user</code> service.</li>
+          <li><strong>Multi-modem BBS Server presence</strong> — Presence schedule now accepts a <code>modem</code> field; the daemon forwards it to the supervisor's param-mode start. BBS Server presence can run with VARA HF, VARA FM, Mercury, HF 300, Pkt 1200, or Pkt 9600 — same six options as the dashboard's LinBPQ launcher.</li>
         </ul>
       </div>
 
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.7.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.8.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label"><span class="il il-en">Latest release</span><span class="il il-fr">Dernière version</span></p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.3.7.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.3.8.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; <span class="il il-en">Released</span> <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.7</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.8</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">License</p><p class="stat-val">Ms-PL</p></div>
@@ -252,8 +249,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.3.7</span>
-      <span class="checksum-val" id="hashval">a47c0b14b516d6ea9a1be0bf0ae0f2576d748df0476b8dbc265a69038b0d39ce</span>
+      <span class="checksum-label">SHA256 - v2.3.8</span>
+      <span class="checksum-val" id="hashval">41e8f534e226fff2a8939dc3edd655eb69109acaaf4d6c981cd7fb73123d09a3</span>
       <button class="copy-btn" onclick="copyHash('hashval')"><span class="il il-en">Copy</span><span class="il il-fr">Copier</span></button>
     </div>
 
@@ -269,10 +266,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.3.7.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.3.8.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.7.iso">⬇ Download</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.8.iso">⬇ Download</a></td>
         </tr>
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span></td>

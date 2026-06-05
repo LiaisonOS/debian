@@ -134,32 +134,29 @@
     </div>
 
     <div class="whats-new">
-      <p class="whats-new-title">Nouveautés de la v2.3.7</p>
+      <p class="whats-new-title">Nouveautés de la v2.3.8</p>
       <ul>
-        <li><strong>Automation des communications autonomes</strong> — Un nouveau démon (<code>li-automation</code>) exécute des vérifications Winlink planifiées et des modes de présence par fenêtre horaire (JS8, VarAC, BBS) sans intervention de l'opérateur. Configurez via un horaire JSON, activez avec un seul bouton, et la station opère seule le reste de la journée. <strong>Réservé aux titulaires Supérieure</strong> selon les règles d'ISDE — le démon est mis en pause par défaut et refuse de déclencher tant qu'un opérateur Supérieur ne l'engage pas explicitement.</li>
-        <li><strong>Bouton AUTOMATION dans QtDashboard</strong> — Nouvelle tuile dans le groupe OUTILS : orange = ACTIVÉE, gris = DÉSACTIVÉE. L'état est sauvegardé dans un fichier et surveillé en direct, donc lorsque le démon met l'automation en pause suite à une intervention de l'opérateur, la tuile bascule visuellement dans la même image. Touchez pour réactiver.</li>
-        <li><strong>Orchestration de mission avec retry_alt</strong> — Les missions supportent une liste de RMS de secours : si la principale ne répond pas, le démon parcourt la liste alt (secours dans la bande, repli sur une autre bande, repli VHF en dernier recours) jusqu'à ce qu'une réponde. Chaque alt peut surcharger mode, fréquence, paramètres radio et délai indépendamment.</li>
-        <li><strong>Hamlib 5.0.0</strong> — Mise à niveau depuis le 4.6.2 de Debian. Backends radio plus récents, gestion fraîche des modes PKT/data, niveaux du FT-991A (SQL, gain RF, etc.) tous réglables via CAT pour l'automation multi-bandes. L'ancien binaire Debian reste en parallèle comme repli ; réversible en changeant une seule ligne.</li>
-        <li><strong>QtPatWinlink mode auto-mission</strong> — Session Winlink sans interface graphique pilotée par le démon d'automation. Diffusion de progression temps-réel sur UDP 7456 ; <code>li-listen</code> affiche l'état coloré (connecting, active, complete, failed) par mission.</li>
-        <li><strong>QtPatWinlink mode Lecteur de courrier</strong> — Lire et composer du courrier Winlink pendant qu'un mode de présence (JS8/VarAC/BBS) est en ondes. Lance sa propre instance <code>pat http</code>, ne touche pas VARA, ne perturbe pas la chaîne modem.</li>
-        <li><strong>Synchronisation DialFreq pour JS8Call</strong> — Bug de longue date corrigé : le sync CAT de démarrage de JS8Call ramenait la radio à la fréquence sauvegardée précédente, annulant un QSY d'automation. Le superviseur écrit maintenant la fréquence cible dans <code>JS8Call.ini</code> avant le lancement, donc le « force sync » de JS8Call confirme la bonne fréquence au lieu de la remplacer.</li>
-        <li><strong>Repli qsy-band pour les démarrages multi-bandes</strong> — Lorsque la radio n'est pas sur une bande connue du nouveau mode, le superviseur passe maintenant au premier élément défini dans la table de fréquences du mode au lieu de ne rien faire silencieusement. Élimine la surprise « radio resta sur 2m après le démarrage de JS8 ».</li>
-        <li><strong>Auto-pause de sécurité pour l'opérateur</strong> — Tout démarrage manuel de mode, ou tout arrêt de la présence en cours du démon, met automatiquement l'automation en pause et notifie l'opérateur. Le démon reste à l'écart jusqu'à ce que l'opérateur rétablisse explicitement le contrôle.</li>
+        <li><strong>Éditeur d'Automation (UI web)</strong> — Une nouvelle app Flask (Applications → Radio amateur → <em>Éditeur d'Automation</em>) remplace l'édition manuelle de <code>~/.config/liaisonos/automation.json</code>. Cartes de présence pour JS8Call / VarAC / Serveur BBS (avec menu modem complet : VARA HF, VARA FM, Mercury, HF 300, Pkt 1200/9600). Cartes de mission avec sélecteur de jours, politique on_fail, et liste alt_rms intégrée quand retry_alt est sélectionné. Validation avec <code>li-automation validate</code> avant sauvegarde et redémarrage du démon en un clic.</li>
+        <li><strong>Sélecteur RMS intégré</strong> — Le bouton <em>Choisir un RMS</em> de l'éditeur de mission interroge <code>pat rmslist --json</code> pour le modem et la bande choisis, puis construit automatiquement la <code>connect_url</code> à partir de la passerelle sélectionnée. Plus besoin de taper à la main <code>varahf:///CALL?freq=X&amp;bw=Y</code>.</li>
+        <li><strong>Toast d'engagement — feedback instantané</strong> — Activer AUTOMATION fait maintenant apparaître une notification de bureau en ~2 secondes nommant le prochain événement planifié (« Présence 'js8call' démarrant dans 1 min · Prochaine mission : 'Morning Winlink' à 14:30, dans 47 min »). La pause inactive du démon est passée d'un blocage de 60 secondes à un sondage de 2 secondes qui se réveille sur les transitions de drapeau.</li>
+        <li><strong>Service systemd utilisateur à l'échelle du système</strong> — L'unité du démon est passée de <code>/etc/skel/.config/systemd/user/</code> par utilisateur à <code>/etc/systemd/user/</code> à l'échelle du système. Chaque utilisateur qui se connecte (démarrage Live, installation disque, comptes créés plus tard) l'obtient auto-activé par systemd au démarrage de session — aucune action opérateur, aucune dépendance de minutage skel.</li>
+        <li><strong>Échecs visibles partout</strong> — Les erreurs du démon précédemment silencieuses (rigctld inaccessible, mission échouée, retry_alt épuisé, mauvaise relecture d'horaire) déclenchent maintenant des toasts <code>notify-send</code> de bureau avec causes explicites. <code>DBUS_SESSION_BUS_ADDRESS</code> et <code>DISPLAY</code> sont définis explicitement pour que les notifications atteignent la barre XFCE depuis un service systemd <code>--user</code>.</li>
+        <li><strong>Présence Serveur BBS multi-modems</strong> — L'horaire de présence accepte maintenant un champ <code>modem</code> ; le démon le transmet au superviseur. La présence Serveur BBS peut fonctionner avec VARA HF, VARA FM, Mercury, HF 300, Pkt 1200 ou Pkt 9600 — mêmes six options que le lanceur LinBPQ du tableau de bord.</li>
       </ul>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.7.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.8.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label">Dernière version</p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.3.7.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.3.8.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; Publiée <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.7</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.8</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">Licence</p><p class="stat-val">Ms-PL</p></div>
@@ -167,8 +164,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.3.7</span>
-      <span class="checksum-val" id="hashval">a47c0b14b516d6ea9a1be0bf0ae0f2576d748df0476b8dbc265a69038b0d39ce</span>
+      <span class="checksum-label">SHA256 - v2.3.8</span>
+      <span class="checksum-val" id="hashval">41e8f534e226fff2a8939dc3edd655eb69109acaaf4d6c981cd7fb73123d09a3</span>
       <button class="copy-btn" onclick="copyHash('hashval')">Copier</button>
     </div>
 
@@ -184,10 +181,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.3.7.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.3.8.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.7.iso">⬇ Télécharger</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.8.iso">⬇ Télécharger</a></td>
         </tr>
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span></td>

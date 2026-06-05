@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.7-f59e0b?style=for-the-badge" alt="Version 2.3.7"></a>
+  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.8-f59e0b?style=for-the-badge" alt="Version 2.3.8"></a>
   <a href="https://liaisonos.com/download"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
@@ -56,6 +56,43 @@
 </table>
 
 ---
+
+## ✨ What's New in 2.3.8
+
+### 🖥️ Automation Editor (web UI)
+
+- **New Flask app** at Applications → Ham Radio → *Automation Editor*. Replaces hand-editing `~/.config/liaisonos/automation.json`
+- **Presence cards** for JS8Call / VarAC / BBS Server with full modem dropdown (VARA HF, VARA FM, Mercury, HF 300, Pkt 1200, Pkt 9600)
+- **Mission cards** with day-of-week picker, on_fail policy, alt_rms inline editor when `retry_alt` is selected
+- **Integrated RMS picker** — queries `pat rmslist --json` for chosen modem + band, auto-builds `connect_url` from the selected gateway
+- Validates with `li-automation validate` before saving · one-click daemon restart · timestamped backup on every save
+
+### ⚡ Engagement toast — instant feedback
+
+- Daemon's idle sleep changed from blocking 60-second wait to 2-second fast-poll on the pause flag
+- Toggling AUTOMATION ON surfaces a desktop toast within ~2s naming the next scheduled event
+- 30-second engagement grace window suppresses false auto-pause on rapid AUTOMATION toggle (race-condition fix)
+
+### 🔔 Visible failures across the board
+
+- Daemon errors that were silent in 2.3.7 (rigctld unreachable, mission failed, retry_alt exhausted, schedule reload error) now fire `notify-send` desktop toasts with explicit causes
+- `DBUS_SESSION_BUS_ADDRESS` and `DISPLAY` are now set explicitly so notifications actually reach the XFCE tray from inside a systemd `--user` service
+
+### ⚙️ System-wide systemd user service
+
+- Unit moved from per-user `/etc/skel/.config/systemd/user/` to system-wide `/etc/systemd/user/`
+- Every user — Live boot, HDD install, future accounts — gets it auto-enabled at session start
+- No operator action, no skel-timing dependency
+
+### 📡 Multi-modem BBS Server presence
+
+- Presence schedule now accepts a `modem` field; daemon forwards it to the supervisor
+- BBS Server presence can run with VARA HF, VARA FM, Mercury, HF 300, Pkt 1200, or Pkt 9600
+
+### 🐛 Debug mode
+
+- `LI_DEBUG=1` (env) or `--debug` (CLI) → per-tick state + notify-send rc + in-grace flag in the journal
+- Enabled by default after `install-all.sh` — debug drop-in at `~/.config/systemd/user/liaisonos-automation.service.d/debug.conf`
 
 ## ✨ What's New in 2.3.7
 

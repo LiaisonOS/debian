@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Communications d'urgence pour radioamateurs</h1>
-<p><em>Version 2.3.7 — Mai 2026</em>
+<p><em>Version 2.3.8 — Juin 2026</em>
 <em>ISO Debian 13 (Trixie) Live/Installable</em></p>
 <blockquote>
 <p>⚠️ <strong>Avis de développement continu</strong></p>
@@ -82,6 +82,41 @@ footer a:hover { color: #7de8b0; }
 <p><strong>English?</strong> See <a href="https://liaisonos.com/README">README</a> for the English version.</p>
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS est une <strong>ISO Linux Debian 13 (Trixie) live et installable</strong> conçue pour les communications numériques d'urgence en radioamateur. Elle comprend une suite complète de logiciels de modes numériques préconfigurés, des cartes hors ligne et un tableau de bord web pour une utilisation en un clic. Deux modes de déploiement : <strong>USB Live Run</strong> (démarrer n'importe quel PC depuis une clé USB) ou <strong>installation sur disque dur</strong> (installation permanente avec Calamares). Interface bilingue français/anglais. Créé par Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>Nouveautés de la version 2.3.8</h2>
+<h3>Éditeur d'Automation (UI web)</h3>
+<ul>
+<li><strong>Nouvelle app Flask</strong> à Applications → Radio amateur → <em>Éditeur d'Automation</em>. Remplace l'édition manuelle de <code>~/.config/liaisonos/automation.json</code></li>
+<li><strong>Cartes de présence</strong> pour JS8Call / VarAC / Serveur BBS avec menu modem complet (VARA HF, VARA FM, Mercury, HF 300, Pkt 1200, Pkt 9600)</li>
+<li><strong>Cartes de mission</strong> avec sélecteur de jours, politique on_fail, éditeur alt_rms intégré quand <code>retry_alt</code> est sélectionné</li>
+<li><strong>Sélecteur RMS intégré</strong> — interroge <code>pat rmslist --json</code> pour le modem et la bande choisis, construit automatiquement la <code>connect_url</code></li>
+<li>Valide avec <code>li-automation validate</code> avant sauvegarde · redémarrage du démon en un clic · sauvegarde horodatée à chaque enregistrement</li>
+</ul>
+<h3>Toast d'engagement — feedback instantané</h3>
+<ul>
+<li>La pause inactive du démon est passée d'un blocage de 60 secondes à un sondage rapide de 2 secondes</li>
+<li>Activer AUTOMATION fait apparaître un toast de bureau en ~2 secondes nommant le prochain événement</li>
+<li>Fenêtre de grâce d'engagement de 30 secondes pour éviter les fausses auto-pauses sur basculement rapide</li>
+</ul>
+<h3>Échecs visibles partout</h3>
+<ul>
+<li>Les erreurs du démon silencieuses dans 2.3.7 déclenchent maintenant des toasts <code>notify-send</code> avec causes explicites</li>
+<li><code>DBUS_SESSION_BUS_ADDRESS</code> et <code>DISPLAY</code> sont définis explicitement pour que les notifications atteignent la barre XFCE</li>
+</ul>
+<h3>Service systemd utilisateur à l'échelle du système</h3>
+<ul>
+<li>L'unité est passée de <code>/etc/skel/.config/systemd/user/</code> à <code>/etc/systemd/user/</code></li>
+<li>Chaque utilisateur — démarrage Live, installation disque, comptes futurs — l'obtient auto-activé à la connexion</li>
+</ul>
+<h3>Présence Serveur BBS multi-modems</h3>
+<ul>
+<li>L'horaire de présence accepte maintenant un champ <code>modem</code> ; la présence Serveur BBS peut fonctionner avec VARA HF, VARA FM, Mercury, HF 300, Pkt 1200 ou Pkt 9600</li>
+</ul>
+<h3>Mode debug</h3>
+<ul>
+<li><code>LI_DEBUG=1</code> (env) ou <code>--debug</code> (CLI) → état par tick + code retour de notify-send + drapeau in-grace dans le journal</li>
+<li>Activé par défaut après <code>install-all.sh</code></li>
+</ul>
 <hr />
 <h2>Nouveautés de la version 2.3.7</h2>
 <h3>Automation des communications autonomes — une première dans la communauté emcomm-tools</h3>
@@ -1169,7 +1204,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Documentation Ventoy :</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Version du document : 2.3.7</em>
+<p><em>Version du document : 2.3.8</em>
 <em>Dernière mise à jour : Mai 2026</em>
 <em>Créé pour LiaisonOS Édition Debian</em></p>
 </div>
