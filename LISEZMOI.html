@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Communications d'urgence pour radioamateurs</h1>
-<p><em>Version 2.3.8 — Juin 2026</em>
+<p><em>Version 2.3.9 — Juin 2026</em>
 <em>ISO Debian 13 (Trixie) Live/Installable</em></p>
 <blockquote>
 <p>⚠️ <strong>Avis de développement continu</strong></p>
@@ -82,6 +82,35 @@ footer a:hover { color: #7de8b0; }
 <p><strong>English?</strong> See <a href="https://liaisonos.com/README">README</a> for the English version.</p>
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS est une <strong>ISO Linux Debian 13 (Trixie) live et installable</strong> conçue pour les communications numériques d'urgence en radioamateur. Elle comprend une suite complète de logiciels de modes numériques préconfigurés, des cartes hors ligne et un tableau de bord web pour une utilisation en un clic. Deux modes de déploiement : <strong>USB Live Run</strong> (démarrer n'importe quel PC depuis une clé USB) ou <strong>installation sur disque dur</strong> (installation permanente avec Calamares). Interface bilingue français/anglais. Créé par Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>Nouveautés de la version 2.3.9</h2>
+<h3>Programme QSY par présence</h3>
+<ul>
+<li><strong>Table QSY chronologique par présence</strong> — chaque présence (JS8Call, VarAC, Serveur BBS, …) dispose maintenant d'un <code>qsy_schedule</code> d'événements <code>{at: "HH:MM", qsy_khz: …}</code> avec <code>band</code>, <code>rig_mode</code>, <code>rig_bw</code>, <code>rig_levels</code> optionnels</li>
+<li><strong>Rattrapage à l'activation</strong> — lorsqu'une présence devient active en cours de journée (engagement opérateur, (re)démarrage du démon), le démon déclenche la dernière entrée passée, donc une présence démarrée la veille adopte la bonne fréquence au lever du soleil</li>
+<li><strong>Synchronisation DialFreq de JS8Call</strong> — l'écriture pré-lancement du superviseur dans <code>JS8Call.ini</code> est réutilisée pour les QSY en cours de présence, donc le « force sync » de démarrage de JS8Call n'annule jamais un saut planifié</li>
+<li><strong>Modifiable depuis l'Éditeur d'Automation</strong> — nouveau sous-bloc QSY par carte de présence</li>
+</ul>
+<h3>Lanceur Lecteur de courriel Winlink</h3>
+<ul>
+<li><strong>Nouvelle entrée Applications → Radio amateur → <em>Lecteur de courriel Winlink</em></strong> — lance QtPatWinlink en mode courriel seul (<code>--mail-viewer</code>)</li>
+<li><strong>Démarre son propre <code>pat http</code></strong> — lire, composer et mettre en file les messages Winlink pendant qu'un mode présence garde la radio sur VARA. Sans conflit, sans vue Connect, sans seconde chaîne modem</li>
+<li><strong>Cas d'usage</strong> — l'opérateur gère son courrier pendant une fenêtre de présence sans perturber la session active</li>
+</ul>
+<h3>Sélecteur RMS amélioré dans l'Éditeur d'Automation</h3>
+<ul>
+<li><strong>Bascule vers l'analyse texte de <code>pat rmslist</code></strong> — <code>pat rmslist --json</code> n'existe pas dans Pat amont ; le sélecteur analyse maintenant la sortie texte standard et fonctionne avec toutes les versions de Pat</li>
+<li><strong>Colonne bande auto-dérivée</strong> — quand Pat n'imprime pas la bande, le sélecteur mappe la fréquence à la bande amateur canonique (160m à 70cm)</li>
+<li><strong>Tri par distance</strong> — passerelles les plus proches d'abord ; les milles se convertissent en km pour que les versions Pat à unités mixtes se trient correctement</li>
+<li><strong>Filtre indicatif en direct</strong> — correspondance par sous-chaîne, côté client, donc la frappe ne réinterroge pas Pat (qui peut prendre 5–30 s aller-retour)</li>
+<li><strong>Vraies erreurs en ligne</strong> — pas d'Internet, indicatif non configuré, mauvais mode → le sélecteur affiche le code de sortie de Pat, stderr et la commande exacte au lieu d'une liste vide silencieuse</li>
+</ul>
+<h3>Plus de fausse « intervention de l'opérateur » après Enregistrer et redémarrer</h3>
+<ul>
+<li><strong>Bug de longue date corrigé</strong> — enregistrer l'horaire (<em>Enregistrer et redémarrer</em> dans l'éditeur) mettait à tort l'automatisation en pause ~30 s plus tard avec un toast trompeur « opérateur a lancé 'varac' », parce que le drapeau de propriété en mémoire du démon était perdu au redémarrage</li>
+<li><strong>Le démon adopte maintenant la présence en cours au (re)démarrage</strong> lorsqu'elle correspond à la fenêtre attendue — modifier l'horaire en cours de présence n'a aucun effet sur la radio</li>
+<li><strong>Le même correctif couvre</strong> le <code>systemctl --user restart liaisonos-automation</code> manuel, la récupération après plantage du démon, et le basculement AUTOMATION off→on pendant qu'une présence est en cours</li>
+</ul>
 <hr />
 <h2>Nouveautés de la version 2.3.8</h2>
 <h3>Éditeur d'Automation (UI web)</h3>
@@ -1204,7 +1233,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Documentation Ventoy :</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Version du document : 2.3.8</em>
+<p><em>Version du document : 2.3.9</em>
 <em>Dernière mise à jour : Mai 2026</em>
 <em>Créé pour LiaisonOS Édition Debian</em></p>
 </div>

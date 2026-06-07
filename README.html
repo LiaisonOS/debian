@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Emergency Communications for Ham Radio</h1>
-<p><em>Version 2.3.8 — June 2026</em>
+<p><em>Version 2.3.9 — June 2026</em>
 <em>Debian 13 (Trixie) Live/Installable ISO</em></p>
 <blockquote>
 <p>⚠️ <strong>Continuous Development Notice</strong></p>
@@ -82,6 +82,35 @@ footer a:hover { color: #7de8b0; }
 <p><strong>Français?</strong> Voir <a href="https://liaisonos.com/LISEZMOI">LISEZMOI</a> pour la version française.</p>
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS is a <strong>Debian 13 (Trixie) live and installable Linux ISO</strong> designed for ham radio emergency digital communications. It includes a complete suite of pre-configured digital mode software, offline maps, and a web dashboard for one-click operation. Two deployment modes: <strong>USB Live Run</strong> (boot any PC from a USB drive) or <strong>hard drive installation</strong> (permanent install via Calamares). Bilingual English/French interface. Created by Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>What's New in Version 2.3.9</h2>
+<h3>QSY Schedule per presence</h3>
+<ul>
+<li><strong>Per-presence time-based QSY table</strong> — each presence (JS8Call, VarAC, BBS Server, …) now carries a <code>qsy_schedule</code> of <code>{at: "HH:MM", qsy_khz: …}</code> events with optional <code>band</code>, <code>rig_mode</code>, <code>rig_bw</code>, <code>rig_levels</code> overrides</li>
+<li><strong>Catch-up on activation</strong> — when a presence becomes active mid-day (operator engagement, daemon (re)start), the daemon fires the most-recent past entry so an overnight presence still adopts the right frequency at sunrise</li>
+<li><strong>JS8Call DialFreq sync</strong> — the supervisor's pre-launch <code>JS8Call.ini</code> write is reused for in-presence QSY, so JS8Call's startup "force sync" never undoes a scheduled hop</li>
+<li><strong>Editable from the Automation Editor</strong> — new QSY sub-block per presence card</li>
+</ul>
+<h3>Winlink Mail Viewer launcher</h3>
+<ul>
+<li><strong>New Applications → Ham Radio → <em>Winlink Mail Viewer</em> desktop entry</strong> — launches QtPatWinlink in mail-only mode (<code>--mail-viewer</code>)</li>
+<li><strong>Spawns its own <code>pat http</code></strong> — read, compose and queue Winlink messages while a presence mode keeps the rig on VARA. No conflict, no Connect view, no second modem chain</li>
+<li><strong>Use case</strong> — operator does mail housekeeping during a presence window without disturbing the active session</li>
+</ul>
+<h3>Smarter RMS picker in the Automation Editor</h3>
+<ul>
+<li><strong>Switched to text-parsing <code>pat rmslist</code></strong> — <code>pat rmslist --json</code> doesn't exist in upstream Pat; the picker now parses the standard text output and works across every Pat version</li>
+<li><strong>Auto-derived band column</strong> — when Pat doesn't print the band, the picker maps the frequency to the canonical amateur band (160m through 70cm)</li>
+<li><strong>Sort by distance</strong> — closest gateways first; miles convert to km so mixed-unit Pat builds sort consistently</li>
+<li><strong>Live callsign filter</strong> — substring match, client-side, so typing doesn't re-hit Pat (which can be 5–30 s round-trip)</li>
+<li><strong>Real errors inline</strong> — no internet, callsign not configured, wrong mode → the picker shows Pat's exit code, stderr and the exact command instead of returning a silent empty list</li>
+</ul>
+<h3>No more bogus "operator override" after Save &amp; restart</h3>
+<ul>
+<li><strong>Long-standing bug fixed</strong> — saving the schedule (<em>Save &amp; restart</em> in the editor) would false-auto-pause automation ~30 s later with a misleading "operator launched 'varac'" toast, because the daemon's in-memory ownership flag was lost on restart</li>
+<li><strong>Daemon now adopts the in-flight presence on (re)start</strong> when it matches the expected window — editing the schedule mid-presence is a no-op for the rig</li>
+<li><strong>Same fix covers</strong> manual <code>systemctl --user restart liaisonos-automation</code>, daemon crash recovery, and toggling AUTOMATION off→on while a presence is running</li>
+</ul>
 <hr />
 <h2>What's New in Version 2.3.8</h2>
 <h3>Automation Editor (web UI)</h3>
@@ -1211,7 +1240,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Ventoy Documentation:</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Document version: 2.3.8</em>
+<p><em>Document version: 2.3.9</em>
 <em>Last updated: May 2026</em>
 <em>Created for LiaisonOS Debian Edition</em></p>
 </div>

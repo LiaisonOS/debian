@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.8-f59e0b?style=for-the-badge" alt="Version 2.3.8"></a>
+  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.9-f59e0b?style=for-the-badge" alt="Version 2.3.9"></a>
   <a href="https://liaisonos.com/download"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
@@ -56,6 +56,35 @@
 </table>
 
 ---
+
+## ✨ What's New in 2.3.9
+
+### 📡 QSY Schedule per presence
+
+- **Per-presence time-based QSY table** — each presence (JS8Call, VarAC, BBS Server, …) now carries a `qsy_schedule` of `{at: "HH:MM", qsy_khz: …}` events with optional `band`, `rig_mode`, `rig_bw`, `rig_levels` overrides
+- **Catch-up on activation** — when a presence becomes active mid-day (operator engagement, daemon (re)start), the daemon fires the most-recent past entry so an overnight presence still adopts the right frequency at sunrise
+- **JS8Call DialFreq sync** — the supervisor's pre-launch `JS8Call.ini` write is reused for in-presence QSY, so JS8Call's startup "force sync" never undoes a scheduled hop
+- **Editable from the Automation Editor** — new QSY sub-block per presence card
+
+### 📬 Winlink Mail Viewer launcher
+
+- **New Applications → Ham Radio → *Winlink Mail Viewer* desktop entry** — launches QtPatWinlink in mail-only mode (`--mail-viewer`)
+- **Spawns its own `pat http`** — read, compose and queue Winlink messages while a presence mode keeps the rig on VARA. No conflict, no Connect view, no second modem chain
+- **Use case** — operator does mail housekeeping during a presence window without disturbing the active session
+
+### 🔍 Smarter RMS picker in the Automation Editor
+
+- **Switched to text-parsing `pat rmslist`** — `pat rmslist --json` doesn't exist in upstream Pat; the picker now parses the standard text output and works across every Pat version
+- **Auto-derived band column** — when Pat doesn't print the band, the picker maps the frequency to the canonical amateur band (160m through 70cm)
+- **Sort by distance** — closest gateways first; miles convert to km so mixed-unit Pat builds sort consistently
+- **Live callsign filter** — substring match, client-side, so typing doesn't re-hit Pat (which can be 5–30 s round-trip)
+- **Real errors inline** — no internet, callsign not configured, wrong mode → the picker shows Pat's exit code, stderr and the exact command instead of returning a silent empty list
+
+### 🔧 No more bogus "operator override" after Save & restart
+
+- **Long-standing bug fixed** — saving the schedule (*Save & restart* in the editor) would false-auto-pause automation ~30 s later with a misleading "operator launched 'varac'" toast, because the daemon's in-memory ownership flag was lost on restart
+- **Daemon now adopts the in-flight presence on (re)start** when it matches the expected window — editing the schedule mid-presence is a no-op for the rig
+- **Same fix covers** manual `systemctl --user restart liaisonos-automation`, daemon crash recovery, and toggling AUTOMATION off→on while a presence is running
 
 ## ✨ What's New in 2.3.8
 
