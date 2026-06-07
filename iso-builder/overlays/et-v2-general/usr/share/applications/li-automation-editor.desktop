@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Automation Editor
+Name[fr]=Éditeur d'Automation
+Comment=Edit ~/.config/liaisonos/automation.json — presence windows, scheduled Winlink missions, RMS picker
+Comment[fr]=Modifier ~/.config/liaisonos/automation.json — présence, missions Winlink, choix RMS
+Exec=/opt/liaisonos/bin/li-automation-editor/li-automation-editor.py
+Icon=/usr/share/pixmaps/emcomm-icon.png
+Terminal=false
+Categories=HamRadio;
+Keywords=automation;winlink;presence;mission;rms;schedule;

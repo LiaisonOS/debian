@@ -25,6 +25,19 @@ from typing import Any
 
 DEFAULT_SCHEDULE = os.path.expanduser("~/.config/liaisonos/automation.json")
 VALID_DAYS = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
+
+# Debug switch — flipped on by either `--debug` on the CLI or LI_DEBUG=1 in the
+# environment. When on, every internal decision gets printed with a [dbg] tag,
+# notify-send attempts include the env they ran with, and tick boundaries +
+# expected-mode + paused state get dumped each minute. Lets you watch what
+# the daemon actually thinks without spelunking journalctl.
+DEBUG = os.environ.get("LI_DEBUG", "").strip() in ("1", "true", "yes", "on")
+
+
+def _dbg(msg: str) -> None:
+    """Debug print. No-op unless DEBUG is on."""
+    if DEBUG:
+        print(f"  [dbg] {msg}", flush=True)
 VALID_ON_FAIL = {"skip", "retry_same", "retry_alt"}
 
 RE_TIME = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
@@ -119,10 +132,48 @@ def validate_presence(presence: Any, rep: Report) -> None:
             rep.err(ctx, "rig_bw must be int (Hz; 0 = rig default)")
         if "rig_levels" in p and not isinstance(p["rig_levels"], dict):
             rep.err(ctx, "rig_levels must be an object: { 'SQL': 0.3, 'RF': 0.8, ... }")
+        if "modem" in p and not isinstance(p["modem"], str):
+            rep.err(ctx, "modem must be string (e.g. vara-hf, vara-fm, mercury, 300, 1200, 9600)")
         if "rig_memory" in p:
             ch = p["rig_memory"]
             if not isinstance(ch, int) or ch < 1:
                 rep.err(ctx, "rig_memory must be positive integer (memory channel number)")
+        # qsy_schedule: list of timed QSY events that fire while this presence
+        # is active. Each entry needs at (HH:MM) + qsy_khz; band / rig_mode /
+        # rig_bw / rig_levels are optional per-entry overrides applied when the
+        # entry fires. Daemon catches up to the most-recent past entry on
+        # start (so a daemon restart at 15:00 ends up where it should be).
+        if "qsy_schedule" in p:
+            qs = p["qsy_schedule"]
+            if not isinstance(qs, list):
+                rep.err(ctx, "qsy_schedule must be a list of QSY events")
+            else:
+                seen_at: dict[str, int] = {}
+                for j, q in enumerate(qs):
+                    qctx = f"{ctx}.qsy_schedule[{j}]"
+                    if not isinstance(q, dict):
+                        rep.err(qctx, "must be an object with at + qsy_khz")
+                        continue
+                    qat = require(q, "at", str, qctx, rep)
+                    if qat is not None and not RE_TIME.match(qat):
+                        rep.err(qctx, f"'at' = {qat!r} must match HH:MM (zero-padded 24h)")
+                    qkhz = require(q, "qsy_khz", (int, float), qctx, rep)
+                    if isinstance(qkhz, (int, float)) and qkhz <= 0:
+                        rep.err(qctx, f"qsy_khz must be > 0 (got {qkhz})")
+                    if "band" in q and not isinstance(q["band"], str):
+                        rep.err(qctx, "band must be string (e.g. 40m)")
+                    if "rig_mode" in q and not isinstance(q["rig_mode"], str):
+                        rep.err(qctx, "rig_mode must be string (e.g. PKTUSB)")
+                    if "rig_bw" in q and not isinstance(q["rig_bw"], int):
+                        rep.err(qctx, "rig_bw must be int (Hz; 0 = rig default)")
+                    if "rig_levels" in q and not isinstance(q["rig_levels"], dict):
+                        rep.err(qctx, "rig_levels must be an object")
+                    if isinstance(qat, str):
+                        seen_at[qat] = seen_at.get(qat, 0) + 1
+                for atstr, count in seen_at.items():
+                    if count > 1:
+                        rep.warn(ctx, f"qsy_schedule has {count} entries at "
+                                      f"{atstr} — only the first will fire")
         if win is None:
             continue
         if not RE_WINDOW.match(win):
@@ -441,6 +492,104 @@ def fire_mission(mission: dict) -> dict:
     return resp
 
 
+def _apply_qsy_event(presence: dict, event: dict, why: str) -> bool:
+    """Apply a single qsy_schedule event: QSY the rig, optionally set mode,
+    rig_bw, rig_levels. Updates JS8Call.ini DialFreq when the presence mode
+    is js8call so JS8Call's startup CAT-sync doesn't fight us. Silent (no
+    desktop toast — operator opted out). Returns True on success.
+    """
+    try:
+        freq_hz = int(float(event["qsy_khz"]) * 1000)
+    except (KeyError, TypeError, ValueError):
+        print(f"  qsy_schedule: bad qsy_khz {event.get('qsy_khz')!r} — skipped")
+        return False
+    ok, reason = rigctld_set_freq(freq_hz)
+    band_lbl = f" ({event.get('band', '?')})" if event.get("band") else ""
+    print(f"  qsy_schedule QSY → {freq_hz/1000:.1f} kHz{band_lbl} "
+          f"[{why}] — {'ok' if ok else 'FAILED'}: {reason}")
+    if not ok:
+        return False
+    rm = event.get("rig_mode")
+    if rm:
+        m_ok, m_reason = rigctld_set_mode(rm, event.get("rig_bw", 0))
+        print(f"  qsy_schedule mode {rm} — {'ok' if m_ok else 'FAILED'}: {m_reason}")
+    if event.get("rig_levels"):
+        _apply_rig_levels(event["rig_levels"])
+    # JS8Call.ini sync — if this presence is JS8 and we just QSY'd, write the
+    # new DialFreq so the next JS8Call launch doesn't fight us.
+    if presence.get("mode") == "js8call":
+        try:
+            ini_path = os.path.expanduser("~/.config/JS8Call.ini")
+            if os.path.isfile(ini_path):
+                with open(ini_path, encoding="latin-1") as f:
+                    lines = f.readlines()
+                for i, line in enumerate(lines):
+                    if line.startswith("DialFreq="):
+                        lines[i] = f"DialFreq={freq_hz}\n"
+                        break
+                with open(ini_path, "w", encoding="latin-1") as f:
+                    f.writelines(lines)
+                _dbg(f"qsy_schedule: synced DialFreq={freq_hz} → {ini_path}")
+        except OSError as e:
+            print(f"  qsy_schedule: JS8Call.ini sync failed: {e}")
+    return True
+
+
+def _process_qsy_schedule(presence: dict, now: datetime,
+                          last_tick_dt: datetime, qsy_fired_today: set,
+                          _dbg) -> None:
+    """Walk the active presence's qsy_schedule:
+
+    1. Catch-up (only if NOTHING from this presence has fired today yet):
+       find the MOST RECENT entry whose at_dt is <= now and fire just that
+       one. Lands the rig where it should be NOW after a daemon-start
+       mid-day. We don't replay earlier entries.
+
+    2. Normal crossing: for any entry whose at_dt is in (last_tick_dt, now],
+       fire it. Same window-crossing logic as missions.
+
+    Each fired event is recorded as "<presence_window>|<at>" so the marker
+    is stable across schedule reloads.
+    """
+    schedule = presence.get("qsy_schedule") or []
+    if not schedule:
+        return
+    window_key = presence.get("window", "?")
+
+    # Resolve each entry's at_dt for today.
+    resolved: list[tuple[datetime, str, dict]] = []
+    for ev in schedule:
+        if not isinstance(ev, dict):
+            continue
+        atstr = ev.get("at")
+        if not isinstance(atstr, str) or not RE_TIME.match(atstr):
+            continue
+        h, m = atstr.split(":")
+        at_dt = now.replace(hour=int(h), minute=int(m), second=0, microsecond=0)
+        resolved.append((at_dt, atstr, ev))
+
+    # Catch-up pass: did nothing fire today yet for this presence?
+    presence_marked_today = any(k.startswith(f"{window_key}|")
+                                for k in qsy_fired_today)
+    if not presence_marked_today:
+        past = [t for t in resolved if t[0] <= now]
+        if past:
+            past.sort(key=lambda t: t[0], reverse=True)
+            at_dt, atstr, ev = past[0]
+            key = f"{window_key}|{atstr}"
+            _apply_qsy_event(presence, ev, why=f"catch-up to {atstr}")
+            qsy_fired_today.add(key)
+
+    # Normal crossing pass.
+    for at_dt, atstr, ev in resolved:
+        key = f"{window_key}|{atstr}"
+        if key in qsy_fired_today:
+            continue
+        if last_tick_dt < at_dt <= now:
+            _apply_qsy_event(presence, ev, why=f"scheduled {atstr}")
+            qsy_fired_today.add(key)
+
+
 def start_presence(presence: dict) -> dict:
     """Start a presence (long-running) mode. Sets rig mode (PKTUSB/PKTFM/...)
     if specified, then passes qsy_khz_override as a param so the supervisor's
@@ -491,6 +640,13 @@ def start_presence(presence: dict) -> dict:
         qsy_khz = presence.get("qsy_khz")
         if qsy_khz:
             params["qsy_khz_override"] = qsy_khz
+    # Forward the modem choice to the supervisor so param-mode presences
+    # (e.g. bbs-server with vara-hf / vara-fm / mercury / packet) resolve
+    # to the right modem config template. Plain modes that don't take a
+    # modem param ignore it harmlessly.
+    modem = presence.get("modem")
+    if modem:
+        params["modem"] = modem
     cmd = {"cmd": "start-mode", "mode": presence["mode"]}
     if params:
         cmd["params"] = params
@@ -506,6 +662,20 @@ def supervisor_current_mode() -> str:
     """Returns the mode-id currently running per the supervisor, or '' if none."""
     resp = send_supervisor({"cmd": "status"}, timeout=10.0)
     return resp.get("mode") or ""
+
+
+def supervisor_status_busy() -> tuple[str, bool]:
+    """Returns (current_mode, busy). `busy` is True when supervisor is mid-
+    teardown (stopping=True) OR mid-start (start_in_progress=True). Daemon
+    must NOT auto-pause while busy, because current_mode=='' is transient
+    during those windows and would otherwise look like "operator stopped
+    our presence" — triggering a spurious auto-pause toast right after the
+    daemon's own engagement-toast on rapid AUTOMATION-toggle clicks."""
+    resp = send_supervisor({"cmd": "status"}, timeout=10.0)
+    mode    = resp.get("mode") or ""
+    stopping = bool(resp.get("stopping"))
+    starting = bool(resp.get("start_in_progress"))
+    return mode, (stopping or starting)
 
 
 def _rigctld_cmd(sock, cmd: str) -> str:
@@ -937,13 +1107,16 @@ def _clear_mission_state(mission_id: str) -> None:
 def _notify(level: str, title: str, message: str) -> None:
     """Surface a daemon error/warning to the desktop via notify-send.
 
-    Without this, automation failures (rigctld unreachable, mission failed,
-    supervisor error) are silent unless the operator opens journalctl —
-    which is the wrong UX. Normal mode starts surface errors via QtDashboard
-    toast; automation should do the same via desktop notifications.
+    Critical detail: when this daemon runs under `systemctl --user`, the
+    process environment is MINIMAL. DBUS_SESSION_BUS_ADDRESS and DISPLAY
+    are NOT inherited from the user's graphical session — so notify-send
+    has no idea where to send the notification and silently no-ops. We
+    set them explicitly here. Standard locations:
+      DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/<uid>/bus
+      DISPLAY                  = :0
+    These work for every systemd-managed user session on LiaisonOS.
 
     level: "low" | "normal" | "critical" — maps to notify-send urgency.
-           Critical persists until dismissed; normal auto-fades.
     """
     icon_map = {
         "low":      "dialog-information",
@@ -951,15 +1124,29 @@ def _notify(level: str, title: str, message: str) -> None:
         "critical": "dialog-error",
     }
     urgency_map = {"low": "low", "normal": "normal", "critical": "critical"}
+    env = os.environ.copy()
+    if "DBUS_SESSION_BUS_ADDRESS" not in env:
+        env["DBUS_SESSION_BUS_ADDRESS"] = f"unix:path=/run/user/{os.getuid()}/bus"
+    env.setdefault("DISPLAY", ":0")
+    _dbg(f"notify({level}) DBUS={env['DBUS_SESSION_BUS_ADDRESS']} "
+         f"DISPLAY={env['DISPLAY']} title={title!r}")
     try:
-        subprocess.Popen(
+        r = subprocess.Popen(
             ["notify-send",
              "-u", urgency_map.get(level, "normal"),
              "-i", icon_map.get(level, "dialog-warning"),
              title, message],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            env=env,
+            stdout=subprocess.PIPE if DEBUG else subprocess.DEVNULL,
+            stderr=subprocess.PIPE if DEBUG else subprocess.DEVNULL)
+        if DEBUG:
+            try:
+                out, errout = r.communicate(timeout=2)
+                _dbg(f"notify-send rc={r.returncode} stdout={out!r} stderr={errout!r}")
+            except subprocess.TimeoutExpired:
+                _dbg("notify-send still running (probably persistent urgency)")
     except FileNotFoundError:
-        pass    # no notify-send installed — non-fatal
+        _dbg("notify-send NOT installed — skipping")
 
 
 def _auto_pause(flag_path: str, reason: str, now: datetime) -> bool:
@@ -1065,11 +1252,32 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     # Mutable state tracking:
     fired_today: set[str] = set()
+    # qsy_schedule events that have already fired today. Key is
+    # "<presence_window>|<at>" so the marker is stable across schedule
+    # reloads. Reset on day rollover (same as fired_today) and on daemon
+    # restart (in-memory). On startup we run a "catch-up" pass that picks
+    # the most-recent past entry and fires it, putting the rig where it
+    # should be NOW without replaying the day.
+    qsy_fired_today: set[str] = set()
     today = date_today()
     our_presence_mode: str = ""    # mode_id we last started as presence ("" = none / operator)
     pending_mission: dict | None = None  # mission dict currently running
     last_announced: tuple | None = None  # last "next up" tuple we printed
     last_tick_dt: datetime = time_now()  # for catching missions across slow ticks
+    # Track the previous tick's paused state so we can detect the moment the
+    # operator engages automation (paused→unpaused). On that transition we
+    # surface a desktop toast naming what's about to happen — otherwise the
+    # operator stares at a silent dashboard for up to 60s before anything
+    # visible kicks off, and assumes the daemon is broken.
+    prev_paused: bool | None = None
+    # Timestamp of last engagement (paused→unpaused). All auto-pause checks
+    # are suppressed for ENGAGEMENT_GRACE_SECONDS after this — gives the
+    # supervisor a window to spawn the presence chain without the daemon
+    # misreading the transient empty-mode state as "operator intervention"
+    # and bouncing the flag back to paused. 30s covers slow-spawning chains
+    # (Wine VARA) without making real operator-stop detection sluggish.
+    last_engagement_dt: datetime | None = None
+    ENGAGEMENT_GRACE_SECONDS = 30
 
     print(f"li-automation run: {path}")
     print(f"Daemon clock: {'UTC' if USE_UTC else 'LOCAL'}  "
@@ -1091,6 +1299,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             if now.date() != today:
                 fired_today.clear()
                 alt_cursor.clear()
+                qsy_fired_today.clear()
                 today = now.date()
                 print(f"[{now:%Y-%m-%d %H:%M:%S}] New day — fired-today cleared")
 
@@ -1113,7 +1322,44 @@ def cmd_run(args: argparse.Namespace) -> int:
 
             expected_presence = _find_presence_for_time(presences, now)
             expected_mode = expected_presence["mode"] if expected_presence else ""
-            current_mode  = supervisor_current_mode()
+            current_mode, sv_busy = supervisor_status_busy()
+
+            _dbg(f"tick {now:%H:%M:%S} paused={paused} prev_paused={prev_paused} "
+                 f"expected_mode={expected_mode!r} current_mode={current_mode!r} "
+                 f"sv_busy={sv_busy} our_presence={our_presence_mode!r} "
+                 f"pending_mission={bool(pending_mission)} "
+                 f"fired_today={sorted(fired_today)}")
+
+            # Engagement toast: fires when automation becomes effective. Two
+            # paths: (a) operator toggles ON via QtDashboard / rm flag —
+            # paused goes True→False; (b) daemon STARTS with no flag —
+            # prev_paused is None on first tick. Both deserve a toast so
+            # the operator knows what's coming and doesn't think the
+            # silent 60s wait means the daemon is broken.
+            if not paused and prev_paused is not False:
+                trigger = "daemon start" if prev_paused is None else "operator engaged"
+                nxt_evt = next_scheduled_event(missions, presences, now, fired_today)
+                bits = []
+                if expected_mode:
+                    bits.append(f"Presence '{expected_mode}' starting within 1 min")
+                if nxt_evt:
+                    when, kind, name = nxt_evt
+                    mins = int((when - now).total_seconds() / 60)
+                    bits.append(f"Next {kind}: '{name}' at {when:%H:%M} (in {mins} min)")
+                if not bits:
+                    bits.append("Daemon armed — no scheduled events today")
+                _notify("low", "LiaisonOS Automation engaged",
+                        "\n".join(bits))
+                print(f"[{now:%H:%M:%S}] Automation engaged ({trigger}) — {bits[0]}")
+                last_engagement_dt = now      # start grace window
+            prev_paused = paused
+
+            in_grace = (last_engagement_dt is not None and
+                        (now - last_engagement_dt).total_seconds()
+                        < ENGAGEMENT_GRACE_SECONDS)
+            _dbg(f"in_grace={in_grace}"
+                 + (f" ({(now - last_engagement_dt).total_seconds():.0f}s "
+                    f"of {ENGAGEMENT_GRACE_SECONDS}s)" if in_grace else ""))
 
             # ── 1. Reap finished mission ─────────────────────────────────────
             if pending_mission:
@@ -1286,13 +1532,22 @@ def cmd_run(args: argparse.Namespace) -> int:
                 # Operator-stopped-our-presence: we had a presence running,
                 # nothing is running now, and we aren't between mission slots.
                 # → operator hit Stop. Auto-pause until they re-enable.
-                if our_presence_mode and not current_mode:
+                # SUPPRESSED when supervisor is mid-transition (stopping or
+                # start_in_progress): current_mode='' is transient during
+                # supervisor's own chain spawn / cascade-stop and would
+                # otherwise look like operator intervention. We just toggled
+                # AUTOMATION on and the supervisor is launching our presence
+                # right now — don't auto-pause the same instant we engaged.
+                if our_presence_mode and not current_mode and not sv_busy and not in_grace:
                     print(f"[{now:%H:%M:%S}] Our presence '{our_presence_mode}' "
                           f"is no longer running — operator stopped it")
                     _auto_pause(override_flag,
                                 f"operator stopped '{our_presence_mode}'", now)
                     our_presence_mode = ""
                     paused = True
+                elif our_presence_mode and not current_mode and (sv_busy or in_grace):
+                    _dbg(f"presence empty — deferring auto-pause "
+                         f"(sv_busy={sv_busy} in_grace={in_grace})")
                 elif not current_mode and expected_mode:
                     # Nothing running, expected presence has a slot — start it
                     print(f"[{now:%H:%M:%S}] Starting presence '{expected_mode}' "
@@ -1312,11 +1567,44 @@ def cmd_run(args: argparse.Namespace) -> int:
                     resp = start_presence(expected_presence)
                     if resp.get("status") == "ok":
                         our_presence_mode = expected_mode
-                elif current_mode and current_mode != our_presence_mode:
+                elif current_mode and current_mode == our_presence_mode \
+                        and expected_presence:
+                    # We own the current presence and it matches the window —
+                    # check the qsy_schedule for events to fire.
+                    _process_qsy_schedule(
+                        expected_presence, now, last_tick_dt,
+                        qsy_fired_today, _dbg)
+                elif current_mode and current_mode == expected_mode \
+                        and current_mode != our_presence_mode:
+                    # Supervisor is already running the mode we'd want to
+                    # start — ADOPT it instead of treating it as an operator
+                    # override. Reached when our in-memory state lost track
+                    # of ownership: editor "Save & restart" reload, daemon
+                    # crash-recovery, or manual `systemctl --user restart`.
+                    # Without this branch, the next tick after our 30s
+                    # engagement grace expires would auto-pause with the
+                    # bogus message "operator launched 'X'" — even though
+                    # WE started X before the restart.
+                    print(f"[{now:%H:%M:%S}] Adopting in-flight presence "
+                          f"'{current_mode}' — matches expected window "
+                          f"(daemon (re)started while presence was active)")
+                    our_presence_mode = current_mode
+                    # Also fire the QSY schedule for catch-up on the
+                    # adopted presence (otherwise scheduled QSY events
+                    # between restart and the first natural tick are lost).
+                    _process_qsy_schedule(
+                        expected_presence, now, last_tick_dt,
+                        qsy_fired_today, _dbg)
+                elif current_mode and current_mode != our_presence_mode \
+                        and not sv_busy and not in_grace:
                     # Operator launched a mode we don't own → AUTO-PAUSE.
                     # Once a human starts driving the rig, we stand down
                     # until they explicitly hand control back via the
                     # QtDashboard AUTOMATION toggle.
+                    # sv_busy gate: avoid catching the brief window where
+                    # the supervisor reports our newly-started mode-id but
+                    # our_presence_mode hasn't been set yet by start_presence
+                    # (between IPC send and IPC ok-return).
                     if our_presence_mode:
                         print(f"[{now:%H:%M:%S}] Operator took over with "
                               f"'{current_mode}' (was running '{our_presence_mode}')")
@@ -1346,14 +1634,26 @@ def cmd_run(args: argparse.Namespace) -> int:
             last_tick_dt = now
             # Sleep strategy:
             #   • If a mission is running → poll every 5s so the moment the
-            #     supervisor cascade-stops the chain we see it and restart
-            #     presence immediately (no waiting for the next minute boundary).
-            #   • Otherwise → sleep until the top of the next minute (cheap
-            #     and aligns nicely with mission "at" timestamps).
+            #     supervisor cascade-stops the chain we see it.
+            #   • Otherwise → sleep up to the top of the next minute, BUT
+            #     in 2s chunks while polling the pause flag. The moment the
+            #     operator toggles automation ON/OFF, we wake up and tick
+            #     immediately instead of making them wait up to 59s for the
+            #     engagement toast.
             if pending_mission:
                 time.sleep(5)
             else:
-                time.sleep(max(1, 60 - time_now().second))
+                target_seconds = max(1, 60 - time_now().second)
+                slept = 0
+                CHUNK = 2.0
+                while slept < target_seconds:
+                    time.sleep(min(CHUNK, target_seconds - slept))
+                    slept += CHUNK
+                    if os.path.exists(override_flag) != paused:
+                        _dbg(f"pause flag changed during sleep "
+                             f"(was paused={paused}, now {not paused}) — "
+                             f"breaking out after {slept:.0f}s of {target_seconds:.0f}s")
+                        break
         except KeyboardInterrupt:
             print("\nStopped.")
             return 0
@@ -1374,9 +1674,14 @@ def main() -> int:
     p_run = sub.add_parser("run", help="Run the scheduler daemon (polls every minute).")
     p_run.add_argument("file", nargs="?", default=None,
                         help=f"schedule file (default: {DEFAULT_SCHEDULE})")
+    p_run.add_argument("--debug", action="store_true",
+                        help="Verbose tick/decision/notify output (also: LI_DEBUG=1)")
     p_run.set_defaults(func=cmd_run)
 
     args = parser.parse_args()
+    global DEBUG
+    if getattr(args, "debug", False):
+        DEBUG = True
     return args.func(args)
 
 

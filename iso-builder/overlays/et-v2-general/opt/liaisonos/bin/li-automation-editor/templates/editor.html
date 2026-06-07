@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+<head>
+  <meta charset="UTF-8">
+  <title>{% if language == 'fr' %}Éditeur d'Automation{% else %}Automation Editor{% endif %} — LiaisonOS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container container-wide">
+    <header>
+      <a href="{{ url_for('index') }}" class="back-link">← {% if language == 'fr' %}Retour{% else %}Back{% endif %}</a>
+      <h1>{% if language == 'fr' %}Éditeur d'horaire{% else %}Schedule editor{% endif %}</h1>
+      <p class="subtitle">{{ schedule_path }}</p>
+    </header>
+
+    <!-- ── Toast (validation errors / save status) ────────────────────────── -->
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <!-- ── Schedule basics ────────────────────────────────────────────────── -->
+    <section class="card">
+      <h2>{% if language == 'fr' %}Réglages généraux{% else %}Schedule basics{% endif %}</h2>
+      <div class="form-grid">
+        <label>
+          <span>{% if language == 'fr' %}Fuseau horaire{% else %}Timezone{% endif %}</span>
+          <select id="f-timezone">
+            <option value="UTC">UTC ({% if language == 'fr' %}recommandé{% else %}recommended{% endif %})</option>
+            <option value="local">local ({% if language == 'fr' %}heure système{% else %}system local{% endif %})</option>
+          </select>
+        </label>
+        <label>
+          <span>{% if language == 'fr' %}Rôle de la station{% else %}Station role{% endif %}</span>
+          <input id="f-role" type="text" placeholder="Autonomous emcomm station">
+        </label>
+        <label>
+          <span>{% if language == 'fr' %}Modèle radio{% else %}Radio model{% endif %}</span>
+          <input id="f-radio" type="text" placeholder="yaesu-ft897d">
+        </label>
+        <label class="cb">
+          <input id="f-callsign-must" type="checkbox">
+          <span>{% if language == 'fr' %}Exiger un indicatif valide{% else %}Callsign must be set{% endif %}</span>
+        </label>
+        <label class="cb">
+          <input id="f-boot-start" type="checkbox">
+          <span>{% if language == 'fr' %}Démarrer la présence courante au boot{% else %}Start current presence at boot{% endif %}</span>
+        </label>
+        <label>
+          <span>{% if language == 'fr' %}Délai post-boot (s){% else %}Post-boot delay (s){% endif %}</span>
+          <input id="f-boot-delay" type="number" min="0" max="600" value="30">
+        </label>
+      </div>
+    </section>
+
+    <!-- ── Presence list ──────────────────────────────────────────────────── -->
+    <section class="card">
+      <h2>
+        {% if language == 'fr' %}Modes de présence{% else %}Presence windows{% endif %}
+        <span class="card-actions">
+          <button class="btn btn-small" onclick="addPresence()">+ {% if language == 'fr' %}Ajouter{% else %}Add{% endif %}</button>
+        </span>
+      </h2>
+      <p class="helptext">
+        {% if language == 'fr' %}
+        Mode actif quand aucune mission n'est en cours. Couvrez les 24h pour
+        rester en ondes en permanence. Une seule fenêtre peut être active à
+        la fois — pas de chevauchement.
+        {% else %}
+        The mode that runs when no mission is firing. Cover the full 24 h to
+        stay on the air continuously. Only one window can be active at a
+        time — no overlaps.
+        {% endif %}
+      </p>
+      <div id="presence-list"></div>
+    </section>
+
+    <!-- ── Mission list ───────────────────────────────────────────────────── -->
+    <section class="card">
+      <h2>
+        {% if language == 'fr' %}Missions Winlink{% else %}Winlink missions{% endif %}
+        <span class="card-actions">
+          <button class="btn btn-small" onclick="addMission()">+ {% if language == 'fr' %}Ajouter{% else %}Add{% endif %}</button>
+        </span>
+      </h2>
+      <p class="helptext">
+        {% if language == 'fr' %}
+        Vérifications planifiées vers Winlink. Sélectionnez un RMS pour
+        construire automatiquement l'URL de connexion. on_fail = retry_alt
+        permet d'essayer plusieurs RMS de secours dans l'ordre.
+        {% else %}
+        Scheduled Winlink check-ins. Pick an RMS to auto-build the connect URL.
+        on_fail = retry_alt walks through a backup RMS list in order.
+        {% endif %}
+      </p>
+      <div id="mission-list"></div>
+    </section>
+
+    <!-- ── Save controls ──────────────────────────────────────────────────── -->
+    <section class="card card-actions-row">
+      <button class="btn btn-secondary" onclick="validateOnly()">
+        ✓ {% if language == 'fr' %}Valider{% else %}Validate{% endif %}
+      </button>
+      <button class="btn btn-primary" onclick="saveSchedule(false)">
+        💾 {% if language == 'fr' %}Sauvegarder{% else %}Save{% endif %}
+      </button>
+      <button class="btn btn-primary" onclick="saveSchedule(true)">
+        💾⟳ {% if language == 'fr' %}Sauvegarder + redémarrer démon{% else %}Save + restart daemon{% endif %}
+      </button>
+    </section>
+
+    <details class="card">
+      <summary>{% if language == 'fr' %}Sortie du validateur{% else %}Validator output{% endif %}</summary>
+      <pre id="validator-output">—</pre>
+    </details>
+  </div>
+
+  <!-- ── RMS Picker Modal ────────────────────────────────────────────────── -->
+  <div id="rms-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>{% if language == 'fr' %}Sélecteur RMS{% else %}RMS Picker{% endif %}</h3>
+        <button class="modal-close" onclick="closeRmsPicker()">×</button>
+      </div>
+      <div class="modal-filters">
+        <label>
+          <span>Modem</span>
+          <select id="rms-modem-filter">
+            <option value="">{% if language == 'fr' %}Tous{% else %}All{% endif %}</option>
+            {% for mm in mission_modes %}
+            <option value="{{ mm.scheme }}">{{ mm.label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          <span>{% if language == 'fr' %}Bande{% else %}Band{% endif %}</span>
+          <select id="rms-band-filter">
+            <option value="">{% if language == 'fr' %}Toutes{% else %}All{% endif %}</option>
+            <option value="80m">80m</option>
+            <option value="40m">40m</option>
+            <option value="30m">30m</option>
+            <option value="20m">20m</option>
+            <option value="17m">17m</option>
+            <option value="15m">15m</option>
+            <option value="2m">2m</option>
+            <option value="70cm">70cm</option>
+          </select>
+        </label>
+        <label>
+          <span>{% if language == 'fr' %}Indicatif{% else %}Callsign{% endif %}</span>
+          <input type="text" id="rms-call-filter"
+                 placeholder="{% if language == 'fr' %}ex. VE2{% else %}e.g. VE2{% endif %}"
+                 oninput="filterRmsTable()"
+                 style="text-transform:uppercase">
+        </label>
+        <button class="btn btn-small" onclick="refreshRms()">↻ {% if language == 'fr' %}Rafraîchir{% else %}Refresh{% endif %}</button>
+      </div>
+      <div class="rms-table-wrap">
+        <table class="rms-table">
+          <thead>
+            <tr>
+              <th>RMS</th>
+              <th>{% if language == 'fr' %}Bande{% else %}Band{% endif %}</th>
+              <th>Freq (kHz)</th>
+              <th>Mode</th>
+              <th>BW</th>
+              <th>{% if language == 'fr' %}Distance{% else %}Distance{% endif %}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rms-tbody">
+            <tr><td colspan="7" class="rms-empty">{% if language == 'fr' %}Cliquez « Rafraîchir » pour interroger Pat.{% else %}Click "Refresh" to query Pat.{% endif %}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Data injection (from Flask) ─────────────────────────────────────── -->
+  <script>
+    const SCHEDULE      = {{ schedule | tojson }};
+    const PRESENCE_MODES = {{ presence_modes | tojson }};
+    const MISSION_MODES  = {{ mission_modes | tojson }};
+    const WEEKDAYS       = {{ weekdays | tojson }};
+    const LANG           = "{{ language }}";
+  </script>
+  <script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+</body>
+</html>

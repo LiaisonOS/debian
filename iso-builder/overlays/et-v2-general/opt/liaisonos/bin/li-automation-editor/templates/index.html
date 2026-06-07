@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+<head>
+  <meta charset="UTF-8">
+  <title>{% if language == 'fr' %}Éditeur d'Automation — LiaisonOS{% else %}Automation Editor — LiaisonOS{% endif %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>
+        {% if language == 'fr' %}Éditeur d'Automation{% else %}Automation Editor{% endif %}
+      </h1>
+      <p class="subtitle">{{ schedule_path }}</p>
+    </header>
+
+    <section class="status-card">
+      <h2>{% if language == 'fr' %}État du démon{% else %}Daemon status{% endif %}</h2>
+      <div class="status-row">
+        <span class="status-label">{% if language == 'fr' %}Service actif{% else %}Service active{% endif %}</span>
+        <span class="badge {% if status.active %}badge-on{% else %}badge-off{% endif %}">
+          {{ 'ON' if status.active else 'OFF' }}
+        </span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">{% if language == 'fr' %}Démarrage auto{% else %}Auto-start{% endif %}</span>
+        <span class="badge {% if status.enabled %}badge-on{% else %}badge-off{% endif %}">
+          {{ 'ENABLED' if status.enabled else 'DISABLED' }}
+        </span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">{% if language == 'fr' %}Automation{% else %}Automation{% endif %}</span>
+        <span class="badge {% if status.paused %}badge-off{% else %}badge-on{% endif %}">
+          {{ 'PAUSED' if status.paused else 'ACTIVE' }}
+        </span>
+      </div>
+    </section>
+
+    <section class="overview-card">
+      <h2>{% if language == 'fr' %}Aperçu de l'horaire{% else %}Schedule overview{% endif %}</h2>
+      <div class="overview-row">
+        <span class="overview-label">{% if language == 'fr' %}Fuseau horaire{% else %}Timezone{% endif %}</span>
+        <span class="overview-val">{{ schedule.timezone or 'UTC' }}</span>
+      </div>
+      <div class="overview-row">
+        <span class="overview-label">{% if language == 'fr' %}Modes de présence{% else %}Presence modes{% endif %}</span>
+        <span class="overview-val">{{ schedule.presence|length }}</span>
+      </div>
+      <div class="overview-row">
+        <span class="overview-label">{% if language == 'fr' %}Missions Winlink{% else %}Winlink missions{% endif %}</span>
+        <span class="overview-val">{{ schedule.missions|length }}</span>
+      </div>
+    </section>
+
+    <a href="{{ url_for('editor') }}" class="btn btn-primary">
+      {% if language == 'fr' %}Ouvrir l'éditeur →{% else %}Open editor →{% endif %}
+    </a>
+  </div>
+</body>
+</html>

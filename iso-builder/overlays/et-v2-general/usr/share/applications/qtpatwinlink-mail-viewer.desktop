@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Winlink Mail Viewer
+Name[fr]=Lecteur de courriel Winlink
+GenericName=Winlink Mail
+GenericName[fr]=Courriel Winlink
+Comment=Read, compose and queue Winlink messages — uses its own pat http, no VARA / no Connect view (use alongside an active presence mode)
+Comment[fr]=Lire, composer et mettre en file les messages Winlink — utilise son propre pat http, sans VARA ni vue Connect (à utiliser avec un mode présence actif)
+Exec=/usr/local/bin/QtPatWinlink --mail-viewer
+Icon=/usr/share/pixmaps/emcomm-icon.png
+Terminal=false
+Categories=HamRadio;Network;Email;
+Keywords=winlink;pat;mail;email;courriel;message;b2f;
+StartupNotify=true
