@@ -403,37 +403,6 @@
         <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.3.9</span> &nbsp; <strong>QSY Schedule + Winlink Mail Viewer + smarter RMS picker.</strong> Each presence (JS8Call, VarAC, BBS Server, …) now carries a time-based <strong>QSY schedule</strong> — the daemon re-tunes the radio to scheduled frequencies (with optional <code>rig_mode</code>, bandwidth and band override) while the presence is active, catches up to the most-recent past entry on mid-day activation so an overnight presence still adopts the right freq at sunrise, and keeps JS8Call's <code>DialFreq</code> in sync. New <em>Applications → Ham Radio → Winlink Mail Viewer</em> launcher runs QtPatWinlink in mail-only mode (<code>--mail-viewer</code>) with its own <code>pat http</code>, so you can read and compose mail while a presence keeps the rig on VARA — no conflict, no Connect view, no second modem. The Automation Editor's RMS picker now parses <code>pat rmslist</code>'s standard text output (compatible with every Pat version), auto-derives the band from frequency, sorts gateways by distance (closest first), adds a live callsign filter, and surfaces real Pat errors inline instead of returning a silent empty list. And the daemon no longer false-pauses with a bogus "operator launched 'varac'" toast after the editor's <em>Save &amp; restart</em>: it now adopts the in-flight presence whenever it matches the expected window. <strong>Advanced-cert ops only</strong> per ISED rules — the daemon ships paused by default.</p>
       </div>
 
-      <div class="card" style="margin-top: 8px;">
-        <h3>Menu Editor — Hide & Rename What You Don't Use</h3>
-        <p>A new web-based editor (Apps menu → <em>Menu Editor</em>) lets you hide entire groups or individual modes from the dashboard, and rename anything — both Desktop and Touch labels — to whatever you want. No more clutter from modes you never run. Settings live in <code>~/.config/liaisonos/dashboard-menu.overrides.json</code> and QtDashboard picks them up on next launch. One-click Reset to defaults.</p>
-      </div>
-
-      <div class="card" style="margin-top: 8px;">
-        <h3>Previous — v2.3.6</h3>
-        <p>No-CAT radio support: Digirig Lite, Digirig Mobile (No CAT) and Yaesu FTX-1 properly recognized as no-CAT setups, CAT status tile shows "N/A" in gray. Auto rigctld restart on dashboard radio switch (Dummy vs full CAT). QtDashboard polish: Recent buttons with verbatim menu labels, inline toast instead of modal dialog, proactive client-side launch guard, and friendly supervisor precheck messages.</p>
-      </div>
-
-      <div class="card" style="margin-top: 8px;">
-        <h3>Previous — v2.3.4</h3>
-        <p>Dashboard Menu fully customizable via JSON. Strip Mode — collapse the desktop dashboard to an 80&nbsp;px sidebar. GPS live 3-state indicator. Internal configuration paths renamed to the LiaisonOS brand, with transparent legacy compatibility.</p>
-      </div>
-
-      <div class="card" style="margin-top: 8px;">
-        <h3>Previous — v2.3.3</h3>
-        <p>QtPatWinlink — Pat Winlink reimagined as a fully native Qt application with embedded Pat Forms rendering, Touch Mode support, smart Abort/Disconnect handling and VARA/Mercury retry behaviour. Mode supervisor hardening: SIGCHLD-driven process death, snappier UI, fixed zombie handling.</p>
-      </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Previous — v2.3.2</h3>
-        <p>QtTerminal — LiaisonOS introduced its own terminal app to host Paracon, Chattervox and LinBPQ, giving us better control over modes that still need a terminal interface.</p>
-      </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Previous — v2.3.1</h3>
-        <p>QtDashboard — fully native C++ Qt5 dashboard replacing the Python/GTK et-dashboard. Embedded UTC clock with seconds, inline modem selector, radio/CAT and user profile editing, 6 recent modes one tap away. Desktop &amp; Touch Mode dual UI, with et-repeater the first companion app to adapt.</p>
-      </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Previous — v2.3.0</h3>
-        <p>GPS Sync button in the dashboard. QtGpsSync rebuilt from the ground up in C++ — connects over Bluetooth to Android devices running the LiaisonGPS app, or to serial GPS receivers (Kenwood TH-D74, TH-D75). Two modes: <em>Sync</em> sets system time and Maidenhead grid square in one tap, <em>GPS</em> provides a continuous live feed. Mercury HF modem v2 (HERMES/Rhizomatica, sponsored by ARDC) included as beta — client apps connect via VARA protocol name, Mercury running underneath.</p>
-      </div>
     </div>
     <div class="lang-fr">
       <h2 class="section-title">Nouveautés <span class="new-badge">v2.3.9</span></h2>
@@ -442,37 +411,6 @@
         <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.3.9</span> &nbsp; <strong>Programme QSY + Lecteur de courriel Winlink + sélecteur RMS amélioré.</strong> Chaque présence (JS8Call, VarAC, Serveur BBS, …) dispose maintenant d'une <strong>table QSY</strong> chronologique — le démon retune la radio aux fréquences planifiées (avec <code>rig_mode</code>, largeur de bande et bande optionnels) pendant que la présence est active, rattrape la dernière entrée QSY passée lors d'une activation en cours de journée donc une présence démarrée la veille adopte la bonne fréquence au lever du soleil, et garde le <code>DialFreq</code> de JS8Call synchronisé. Nouveau lanceur <em>Applications → Radio amateur → Lecteur de courriel Winlink</em> qui démarre QtPatWinlink en mode courriel seul (<code>--mail-viewer</code>) avec son propre <code>pat http</code>, vous permettant de lire et composer du courrier pendant qu'une présence garde la radio sur VARA — sans conflit, sans vue Connect, sans second modem. Le sélecteur RMS de l'éditeur d'automation analyse maintenant la sortie texte standard de <code>pat rmslist</code> (compatible avec toutes les versions de Pat), dérive la bande depuis la fréquence, trie les passerelles par distance (plus proche d'abord), ajoute un filtre indicatif en direct, et affiche les vraies erreurs de Pat en ligne au lieu d'une liste vide silencieuse. Et le démon ne met plus à tort l'automatisation en pause avec un toast trompeur « opérateur a lancé 'varac' » après <em>Enregistrer et redémarrer</em> de l'éditeur : il adopte maintenant la présence en cours lorsqu'elle correspond à la fenêtre attendue. <strong>Réservé aux titulaires Supérieure</strong> selon les règles d'ISDE — le démon est livré en pause par défaut.</p>
       </div>
 
-      <div class="card" style="margin-top: 8px;">
-        <h3>Éditeur de menu — Masquer et renommer</h3>
-        <p>Un nouvel éditeur web (menu Applications → <em>Éditeur de menu</em>) permet de masquer des groupes entiers ou des modes individuels du tableau de bord, et de renommer n'importe quoi — étiquettes Bureau et Tactile — à votre goût. Finie l'encombrement des modes que vous n'utilisez jamais. Les réglages sont dans <code>~/.config/liaisonos/dashboard-menu.overrides.json</code> et QtDashboard les charge au prochain lancement. Restauration des défauts en un clic.</p>
-      </div>
-
-      <div class="card" style="margin-top: 8px;">
-        <h3>Précédente — v2.3.6</h3>
-        <p>Prise en charge des radios sans CAT : Digirig Lite, Digirig Mobile (Sans CAT) et Yaesu FTX-1 reconnues comme configurations sans CAT, tuile d'état CAT « N/A » en gris. Redémarrage automatique de rigctld au changement de radio dans le tableau de bord (Dummy ou CAT complet). Finition QtDashboard : boutons Récents avec étiquettes verbatim, toast intégré au lieu de boîte modale, garde proactive côté client, et messages courts des vérifications du superviseur.</p>
-      </div>
-
-      <div class="card" style="margin-top: 8px;">
-        <h3>Précédente — v2.3.4</h3>
-        <p>Menu du tableau de bord entièrement personnalisable via JSON. Mode Strip — barre latérale 80&nbsp;px qui libère le bureau. Indicateur GPS 3-états en direct. Modernisation des chemins internes vers la marque LiaisonOS, avec compatibilité legacy transparente.</p>
-      </div>
-
-      <div class="card" style="margin-top: 8px;">
-        <h3>Précédente — v2.3.3</h3>
-        <p>QtPatWinlink — Pat Winlink réinventé en application Qt entièrement native avec rendu des formulaires Pat intégré, support du mode Tactile, gestion intelligente Abort/Disconnect et reprise automatique VARA/Mercury. Solidification du superviseur : détection de fin de processus pilotée par SIGCHLD, interface plus réactive, gestion zombie corrigée.</p>
-      </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Précédente — v2.3.2</h3>
-        <p>QtTerminal — LiaisonOS a introduit son propre terminal pour accueillir Paracon, Chattervox et LinBPQ, avec un meilleur contrôle des modes qui demandent encore une interface terminal.</p>
-      </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Précédente — v2.3.1</h3>
-        <p>QtDashboard — tableau de bord natif Qt5 en C++ remplaçant l'ancien et-dashboard Python/GTK. Horloge UTC avec secondes, sélection de modem en ligne, configuration radio/CAT et édition du profil utilisateur, 6 modes récents prêts en un tap. Double interface Bureau et Tactile, avec et-repeater comme première application compagnon à s'y adapter.</p>
-      </div>
-      <div class="card" style="margin-top: 8px;">
-        <h3>Précédente — v2.3.0</h3>
-        <p>Bouton Sync GPS dans le tableau de bord. QtGpsSync entièrement reconstruit en C++ — connexion Bluetooth aux appareils Android via l'app LiaisonGPS, ou aux récepteurs GPS série (Kenwood TH-D74, TH-D75). Deux modes : <em>Sync</em> règle l'heure système et le locator Maidenhead en un tap, <em>GPS</em> fournit un flux continu en temps réel. Modem Mercury HF v2 (HERMES/Rhizomatica, sponsorisé par ARDC) inclus en bêta — les applications clientes se connectent via le nom de protocole VARA, Mercury tourne en dessous.</p>
-      </div>
     </div>
   </div>
 
@@ -516,9 +454,10 @@
       <div class="mode-group">
         <p class="mode-group-title">Chat</p>
         <ul>
-          <li>JS8Call</li><li>VarAC</li><li>Fldigi</li><li>Chattervox</li><li>Chattervox BT</li>
+          <li>JS8Call</li><li>VarAC</li><li>Fldigi</li><li>Chattervox</li>
         </ul>
       </div>
+
       <div class="mode-group">
         <p class="mode-group-title">BBS</p>
         <ul>
@@ -535,6 +474,14 @@
         <p class="mode-group-title"><span class="il il-en">Other</span><span class="il il-fr">Autre</span></p>
         <ul>
           <li>FT8/FT4 (WSJT-X)</li><li>Direwolf KISS TNC</li>
+        </ul>
+      </div>
+      <div class="mode-group">
+        <p class="mode-group-title">Automation</p>
+        <ul>
+          <li><span class="il il-en">Presence (JS8 / VarAC / BBS)</span><span class="il il-fr">Présence (JS8 / VarAC / BBS)</span></li>
+          <li><span class="il il-en">Scheduled Winlink missions</span><span class="il il-fr">Missions Winlink planifiées</span></li>
+          <li><span class="il il-en">QSY schedule</span><span class="il il-fr">Programme QSY</span></li>
         </ul>
       </div>
     </div>

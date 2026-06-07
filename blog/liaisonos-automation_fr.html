@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automation — Présence et Mission en pilote automatique — Blogue LiaisonOS</title>
+  <meta name="description" content="LiaisonOS Automation fait tourner JS8Call / VarAC / Serveur BBS comme modes de présence dans des fenêtres horaires, exécute des check-ins Winlink planifiés avec repli RMS, et retune la radio sur un programme QSY — le tout depuis un éditeur web. Une mise en pause de sécurité opérateur écarte le démon dès que vous touchez la radio.">
+  <link rel="canonical" href="https://liaisonos.com/blog/liaisonos-automation_fr.html">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://liaisonos.com/blog/liaisonos-automation_fr.html">
+  <meta property="og:title" content="Automation — Présence et Mission en pilote automatique">
+  <meta property="og:description" content="Présence JS8 / VarAC / BBS planifiée, check-ins Winlink autonomes avec repli RMS, sauts QSY pendant que l'opérateur dort. Pause automatique dès qu'un humain touche la radio.">
+  <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    h3 { font-size: 14px; color: #e8f5ee; font-weight: 500; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    em { color: #c8e5d3; font-style: italic; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    code { font-family: 'IBM Plex Mono', monospace; background: #16231a;
+           padding: 1px 5px; border-radius: 3px; color: #7de8b0; font-size: 13px; }
+    pre { font-family: 'IBM Plex Mono', monospace; background: #16231a;
+          border: 1px solid rgba(125,232,176,0.1); border-radius: 6px;
+          padding: 0.9rem 1rem; color: #c8e5d3; font-size: 12.5px; line-height: 1.55;
+          overflow-x: auto; margin: 0.75rem 0 1rem; }
+    pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+    .note-warn { border-left-color: #ffa500; }
+    .note-warn strong { color: #ffa500; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 1rem 0; }
+    .feature-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .feature-card-icon { font-size: 20px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 4px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index_fr.html">Accueil</a>
+    <a href="../download_fr.html">Téléchargement</a>
+    <a href="index_fr.html" class="active">Blogue</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="liaisonos-automation.html" class="lang-link">🇬🇧 EN</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index_fr.html">← Retour au blogue</a>
+  <div class="article-meta">
+    <span class="article-date">2026-06-07</span>
+    <span class="article-tag">Automation</span>
+    <span class="article-tag">Winlink</span>
+    <span class="article-tag">Présence</span>
+    <span class="article-tag">JS8Call</span>
+    <span class="article-tag">VarAC</span>
+    <span class="article-tag">QSY</span>
+    <span class="article-tag">2.3.9</span>
+  </div>
+  <h1 class="article-title">Automation — <span>Présence et Mission en pilote automatique</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">LiaisonOS fait tourner JS8 / VarAC / Serveur BBS comme modes de présence dans des fenêtres horaires, exécute des check-ins Winlink planifiés avec repli RMS, et retune la radio sur un programme QSY — le tout depuis un éditeur web. Une mise en pause de sécurité opérateur écarte le démon dès que vous touchez la radio.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.3.7 → 2.3.9</p>
+</div>
+
+<div class="article-body">
+
+  <h2>Le problème de <span>la rotation toute la nuit</span></h2>
+  <p>Les communications d'urgence ne respectent pas les heures de bureau. Une fréquence qui transporte du trafic JS8 à 03:00 UTC est complètement silencieuse à 11:00. Un net régional s'installe sur VarAC pour quatre heures de contrôle de net, puis retombe sur BBS pour le reste de la journée. Les relèves de courrier se font selon un horaire pour lequel l'opérateur ne peut pas toujours être éveillé — et n'a pas à l'être.</p>
+  <p>La façon honnête de gérer ça consistait à : écrire un cron, écrire un script bash, écrire trois autres scripts bash pour contourner les conditions de course du premier, espérer que rien ne plante, espérer qu'on a pensé à nettoyer rigctld. Après six mois d'opérateurs qui demandaient <em>« est-ce que ça pourrait juste faire ça ? »</em>, la réponse en 2.3.7 est devenue oui. LiaisonOS 2.3.9 est l'étape où c'est devenu mature.</p>
+  <p>Ce billet parle de <strong>li-automation</strong> — un petit démon, un horaire JSON, un éditeur web et un bouton de tableau de bord qui ensemble vous permettent de confier la radio à l'horaire et de partir. Ou de vous installer dans la pièce d'à côté. Ou de dormir.</p>
+
+  <div class="note note-warn">
+    <strong>Note légale d'entrée de jeu :</strong> Au Canada, faire fonctionner un émetteur sans humain aux commandes — ce qu'ISDE appelle l'exploitation « sans surveillance » ou « autonome » — est réglementé. La plupart des modes TX autonomes (présence numérique, sondages courrier planifiés) exigent une <strong>qualification Supérieure</strong> (ex-<em>Advanced</em>). Le démon est <strong>livré en pause par défaut</strong> ; vous optez pour son activation délibérément. Les règles ailleurs diffèrent — consultez votre régulateur avant d'engager.
+  </div>
+
+  <h2>Deux primitives : <span>Présence et Mission</span></h2>
+  <p>Presque tous les flux « comms autonomes » que nous avons vus se ramènent à deux formes. Nous les avons modélisées comme des concepts séparés parce qu'essayer de les fusionner finit toujours par fuir.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-card-icon">📻</div>
+      <div class="feature-card-title">Présence</div>
+      <div class="feature-card-desc">Un mode qui <strong>tourne en continu</strong> pendant une fenêtre horaire — JS8 de 22:00 à 06:00, VarAC de 06:00 à 10:00, Serveur BBS de 10:00 à 22:00. Le démon démarre et arrête les chaînes de mode à mesure que les fenêtres défilent.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">📬</div>
+      <div class="feature-card-title">Mission</div>
+      <div class="feature-card-desc">Une <strong>action ponctuelle horodatée</strong> — typiquement un check-in Winlink. Démarrage à 07:30, connexion, échange de courrier, déconnexion, et retour à la présence active.</div>
+    </div>
+  </div>
+
+  <p>Présence et Mission se composent proprement. Une journée de 24 heures ressemble à une pile de fenêtres de présence avec un peu de missions par-dessus. Le démon les tisse ensemble : il arrête la présence courante pour exécuter une mission, puis restaure la présence à la fin de la mission, puis surveille l'horloge pour la prochaine transition de présence. Les opérateurs le décrivent comme ils décriraient leur horaire à un remplaçant — « JS8 toute la nuit, BBS le jour, trois relèves de courrier entre les deux ».</p>
+
+  <h2>L'Éditeur d'Automation — <span>fini l'édition JSON à la main</span></h2>
+  <p>Sous le capot, l'horaire est <code>~/.config/liaisonos/automation.json</code>. Ça fonctionne très bien pour les inconditionnels du JSON (et c'est exactement là où le démon lit), mais la vraie réponse est <strong>Applications → Radio amateur → Éditeur d'Automation</strong> : une UI Flask qui s'ouvre dans une fenêtre sans bordure.</p>
+
+  <h3>Cartes de présence</h3>
+  <p>Une carte par présence. Chaque carte a un nom (votre étiquette), un mode (JS8Call, VarAC, Serveur BBS, …), une fenêtre horaire (début / fin en HH:MM, avec fuseau horaire), et — nouveauté 2.3.9 — un sous-bloc <strong>programme QSY</strong> (j'y reviens plus bas). Pour la présence Serveur BBS, un menu modem propose les mêmes six options que le lanceur LinBPQ du tableau de bord : VARA HF, VARA FM, Mercury, HF 300, Pkt 1200, Pkt 9600.</p>
+
+  <h3>Cartes de mission</h3>
+  <p>Une carte par check-in Winlink. Chaque carte a un nom, une heure de déclenchement, un mode (n'importe quel modem compatible Pat), une URL de connexion (ou un RMS choisi — voir ci-dessous), un sélecteur de jours de la semaine, et une politique <code>on_fail</code>. La politique la plus utile est <strong>retry_alt</strong> : parcourir une liste d'indicatifs RMS alternatifs jusqu'à ce qu'un fonctionne. L'éditeur permet de construire cette liste en ligne — choisir le RMS principal, puis ajouter des replis sur d'autres bandes ou modes.</p>
+
+  <h3>Sélecteur RMS</h3>
+  <p>C'est la fonctionnalité dont les opérateurs parlent le plus : <em>où est-ce que je trouve un RMS à mettre dans l'URL de connexion ?</em> Cliquez le bouton Choisir un RMS dans n'importe quelle carte de mission. L'éditeur interroge le rmslist de Pat, analyse les passerelles, dérive la bande à partir de la fréquence, trie par distance (plus proche d'abord), et permet de filtrer par indicatif pendant que vous tapez. Choisissez-en un, l'éditeur construit l'URL de connexion (<code>varahf:///CALL?freq=…&amp;bw=…</code>) et la dépose dans le formulaire. Plus besoin de taper à la main — et plus de défaillances silencieuses quand Pat est mal configuré : le sélecteur affiche la vraie erreur de Pat en rouge quand quelque chose cloche.</p>
+
+  <h2>Programme QSY — <span>la pièce manquante</span></h2>
+  <p>Une fenêtre de présence est large. JS8 à 03:00 UTC n'est pas sur la même fréquence que JS8 à 06:00, parce que la propagation change. Les opérateurs qui faisaient la rotation à la main posaient la question évidente : <em>« est-ce que le démon peut retuner la radio pour moi ? »</em></p>
+  <p>En 2.3.9, chaque carte de présence porte un <strong>programme QSY</strong> — un petit tableau d'événements QSY horodatés :</p>
+  <pre><code>"qsy_schedule": [
+  { "at": "00:00", "qsy_khz": 7065,  "band": "40m" },
+  { "at": "06:00", "qsy_khz": 7110,  "band": "40m" },
+  { "at": "10:00", "qsy_khz": 14078, "band": "20m" }
+]</code></pre>
+  <p>Pendant que la présence est active, le démon dépasse chaque <code>at</code> et déclenche le QSY — même chemin superviseur que le tableau de bord utilise, avec <code>rig_mode</code>, largeur de bande et override de niveaux optionnels par événement. Si la présence devient active en cours de journée (engagement opérateur, (re)démarrage du démon), le démon <strong>rattrape la dernière entrée passée</strong> — donc une présence démarrée durant la nuit adopte la bonne fréquence du lever du soleil sans intervention.</p>
+  <p>JS8Call obtient un petit extra : le superviseur écrit la <code>DialFreq</code> cible dans <code>JS8Call.ini</code> avant le lancement, donc le « force sync » de démarrage de JS8Call confirme la bonne fréquence au lieu de l'écraser. Ce simple changement a clos toute une classe de bugs qui hantait la rotation de nuit depuis deux ans.</p>
+
+  <h2>Le démon — <span>petit, piloté par fichiers, observable</span></h2>
+  <p><code>li-automation</code> est un seul fichier Python qui tourne comme service systemd <code>--user</code>. L'unité vit à l'échelle système (<code>/etc/systemd/user/</code>), donc chaque compte qui se connecte — démarrage Live, installation disque, compte créé récemment — obtient le démon auto-activé au démarrage de session. Pas de timing skel, pas de configuration opérateur.</p>
+  <p>À chaque tick (toutes les secondes), le démon :</p>
+  <ul>
+    <li>Relit <code>~/.cache/liaisonos/automation-paused</code> (le drapeau de pause — fichier présent = pause)</li>
+    <li>Demande au superviseur de modes : quel mode tourne, et est-il occupé (arrêt / démarrage en cours) ?</li>
+    <li>Calcule la présence attendue pour <em>maintenant</em> à partir de l'horaire</li>
+    <li>Compare l'attendu à l'actuel, et déclenche la plus petite action qui ferme l'écart</li>
+    <li>Parcourt les missions du jour en attente et déclenche celles dont l'heure est arrivée</li>
+    <li>Parcourt le programme QSY de la présence active et déclenche les événements maintenant passés</li>
+  </ul>
+  <p>C'est petit volontairement. Environ 1 800 lignes, pas de threading, déterministe par tick. Quand quelque chose va mal, le journal dit exactement pourquoi — chaque décision du démon est une ligne d'impression, y compris <em>pourquoi il a choisi de ne pas agir</em> quand il est inactif. Le mode debug (<code>LI_DEBUG=1</code>) ajoute des décharges d'état par tick pour qu'un opérateur en investigation voie le monde tel que le démon le voit.</p>
+
+  <h2>Échecs visibles — <span>toasts de bureau, pas de sauts silencieux</span></h2>
+  <p>Les opérateurs ne lisent pas les journaux en temps réel. Une mission échouée doit <em>vous le dire</em>. Chaque action du démon qui peut échouer déclenche maintenant un toast <code>notify-send</code> : rigctld inaccessible, mission échouée, toutes les tentatives retry_alt épuisées, mauvaise relecture d'horaire, superviseur a refusé un démarrage de mode.</p>
+  <p>Les toasts ont dû livrer une bataille pour y arriver : <code>notify-send</code> depuis un service systemd <code>--user</code> ne voit pas DBUS automatiquement. Le démon définit maintenant <code>DBUS_SESSION_BUS_ADDRESS</code> et <code>DISPLAY</code> explicitement avant chaque appel notify, donc le toast atterrit sur la barre XFCE au lieu de disparaître dans le vide. Pareil pour stdout — <code>PYTHONUNBUFFERED=1</code> est cuit dans l'unité, donc la sortie journal apparaît en direct au lieu d'arriver en blocs de 8 ko après le plantage du démon.</p>
+
+  <h2>Pause de sécurité opérateur — <span>la radio est à vous</span></h2>
+  <p>La règle dure de l'automation : <strong>dès qu'un humain touche la radio, le démon se range.</strong></p>
+  <p>Si l'opérateur lance manuellement un mode qui n'est pas à l'horaire, le démon le détecte, écrit le drapeau de pause, déclenche un toast de bureau (<em>« opérateur a lancé 'fldigi' — automation en pause »</em>), et arrête d'essayer de piloter la radio. La pause reste jusqu'à ce que l'opérateur la lève en basculant la tuile AUTOMATION de nouveau.</p>
+  <p>Pareil si l'opérateur arrête la présence en cours du démon. Même pause auto, même toast. L'opérateur n'a pas à se souvenir de cliquer quelque chose avant d'attraper le micro — le démon le remarque et s'écarte.</p>
+  <p>Le revers : quand le démon (re)démarre en cours de présence — Enregistrer et redémarrer dans l'éditeur, redémarrage manuel systemctl, récupération après plantage — il ne se met pas en pause automatiquement si le superviseur fait déjà tourner le mode attendu. Il <strong>adopte</strong> la présence en cours comme la sienne. Éditer l'horaire pendant une session n'a aucun effet sur la radio. Ce bug, où enregistrer une nouvelle mission mettait à tort le démon en pause 30 secondes plus tard avec un toast trompeur « opérateur a lancé 'varac' », est corrigé en 2.3.9.</p>
+
+  <h2>La tuile AUTOMATION — <span>par fichier, visible au tableau de bord</span></h2>
+  <p>L'état pause/engagement est un fichier : <code>~/.cache/liaisonos/automation-paused</code>. Touchez le fichier pour mettre en pause, supprimez-le pour engager. C'est tout. QtDashboard expose ça comme la <strong>tuile AUTOMATION</strong> dans le groupe OUTILS — orange engagée, grise en pause. Le tableau de bord surveille le fichier avec QFileSystemWatcher, donc quand le démon se met en pause automatiquement, la tuile bascule dans la même image.</p>
+  <p>Engager le démon (tuile off→on, ou drapeau supprimé) déclenche un <strong>toast d'engagement</strong> immédiat en ~2 secondes, nommant le prochain événement planifié (« Présence 'js8call' démarrant dans 1 min &middot; Prochaine mission : 'Morning Winlink' à 14:30, dans 47 min »). Le feedback rapide existe parce que les opérateurs se demandaient si le clic avait été enregistré pendant l'ancien wait inactif de 60 secondes du démon. Le wait est maintenant un sondage 2-secondes du drapeau de pause, donc la boucle engagement → toast → action se ferme en secondes, pas en minutes.</p>
+
+  <h2>Hamlib 5.0.0 — <span>a rendu le démon possible</span></h2>
+  <p>Un détail qui mérite d'être souligné parce qu'il répond à « pourquoi maintenant ? » — LiaisonOS 2.3.7 a livré une installation parallèle de <strong>Hamlib 5.0.0</strong> à <code>/usr/local/bin/rigctld</code>, à côté du 4.6.2 de Debian. Le backend 5.0.0 a corrigé une liste de petits problèmes de contrôle CAT qui rendaient l'automation multi-bande véritablement fiable pour la première fois. Sur une Yaesu FT-991A, tous les niveaux de la façade avant (SQL, RF gain, RFPOWER, MICGAIN, …) sont maintenant réglables via CAT, donc une transition de présence peut aussi restaurer la bonne puissance TX et les niveaux audio pour la bande cible. Sans ça, le démon pouvait changer la fréquence mais pas l'état rig environnant, ce qui rendait les transitions partielles. Avec, elles sont propres.</p>
+  <p>Le 4.6.2 de Debian reste à <code>/usr/bin/rigctld</code> comme repli révoquable en une ligne. On peut basculer en arrière par mode en éditant le JSON radio si votre radio se comporte mal avec le nouveau backend.</p>
+
+  <h2>Un exemple concret — <span>un vrai horaire de nuit</span></h2>
+  <p>Voici l'horaire sur le rig de dev au Québec, simplifié pour tenir dans un bloc de code :</p>
+  <pre><code>22:00–06:00  présence : JS8Call    (40m → 80m à 02:00 via programme QSY)
+06:00–08:30  présence : VarAC       (standby net régional)
+07:30        mission  : check-in Winlink via VE2-RMS, retry_alt → KA9-RMS, VA3-RMS
+08:30–22:00  présence : Serveur BBS (LinBPQ, VARA HF)
+14:00        mission  : check-in Winlink via VE2-RMS, retry_alt → KA9-RMS</code></pre>
+  <p>L'opérateur a écrit ça dans l'éditeur en peut-être quatre minutes — trois cartes de présence avec blocs QSY, deux cartes de mission chacune avec une liste alt_rms, valider, enregistrer. Le démon l'a repris au redémarrage, adopté la présence Serveur BBS en cours (pas de pause auto), et a continué. Le lendemain matin, le journal montrait tous les sauts QSY, les deux succès de mission, et les transitions de présence en séquence.</p>
+
+  <h2>Comment l'utiliser</h2>
+  <ol>
+    <li>Ouvrir Applications → Radio amateur → <em>Éditeur d'Automation</em></li>
+    <li>Ajouter une ou plusieurs cartes de présence — mode, fenêtre horaire, programme QSY optionnel, modem optionnel (Serveur BBS)</li>
+    <li>Ajouter des cartes de mission si vous voulez des check-ins Winlink planifiés — choisir le mode et le RMS, définir la politique on_fail</li>
+    <li>Valider et enregistrer (l'éditeur exécute <code>li-automation validate</code> avant d'écrire)</li>
+    <li>L'éditeur offre un redémarrage du démon en un clic ; cliquez</li>
+    <li>Engager le démon : cliquer la tuile orange AUTOMATION dans QtDashboard (groupe OUTILS)</li>
+    <li>Regarder le toast d'engagement confirmer le prochain événement planifié</li>
+    <li>S'en aller. Vérifier le journal le matin pour voir ce qui s'est passé : <code>journalctl --user -u liaisonos-automation</code></li>
+  </ol>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">Introduit dans LiaisonOS 2.3.7 &middot; Éditeur, programme QSY et correctif d'adoption en cours en 2.3.9 &middot; Qualification Supérieure / Advanced requise selon les règles d'ISDE &middot; Fonctionnalité développée par VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Québec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>

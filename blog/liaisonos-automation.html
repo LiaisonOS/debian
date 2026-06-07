@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automation — Presence and Mission on autopilot — LiaisonOS Blog</title>
+  <meta name="description" content="LiaisonOS Automation runs JS8Call / VarAC / BBS Server as time-windowed presence modes, executes scheduled Winlink check-ins with RMS fallback, and re-tunes the radio on a QSY schedule — all from a single web editor. Operator-safety auto-pause keeps the daemon out of your way the moment you touch the rig.">
+  <link rel="canonical" href="https://liaisonos.com/blog/liaisonos-automation.html">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://liaisonos.com/blog/liaisonos-automation.html">
+  <meta property="og:title" content="Automation — Presence and Mission on autopilot">
+  <meta property="og:description" content="JS8 / VarAC / BBS presence on a schedule, autonomous Winlink check-ins with RMS fallback, QSY hops while the operator sleeps. Auto-pause the moment a human touches the rig.">
+  <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    h3 { font-size: 14px; color: #e8f5ee; font-weight: 500; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    em { color: #c8e5d3; font-style: italic; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    code { font-family: 'IBM Plex Mono', monospace; background: #16231a;
+           padding: 1px 5px; border-radius: 3px; color: #7de8b0; font-size: 13px; }
+    pre { font-family: 'IBM Plex Mono', monospace; background: #16231a;
+          border: 1px solid rgba(125,232,176,0.1); border-radius: 6px;
+          padding: 0.9rem 1rem; color: #c8e5d3; font-size: 12.5px; line-height: 1.55;
+          overflow-x: auto; margin: 0.75rem 0 1rem; }
+    pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+    .note-warn { border-left-color: #ffa500; }
+    .note-warn strong { color: #ffa500; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 1rem 0; }
+    .feature-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .feature-card-icon { font-size: 20px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 4px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Home</a>
+    <a href="../download.html">Download</a>
+    <a href="index.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="liaisonos-automation_fr.html" class="lang-link">🇫🇷 FR</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index.html">← Back to Blog</a>
+  <div class="article-meta">
+    <span class="article-date">2026-06-07</span>
+    <span class="article-tag">Automation</span>
+    <span class="article-tag">Winlink</span>
+    <span class="article-tag">Presence</span>
+    <span class="article-tag">JS8Call</span>
+    <span class="article-tag">VarAC</span>
+    <span class="article-tag">QSY</span>
+    <span class="article-tag">2.3.9</span>
+  </div>
+  <h1 class="article-title">Automation — <span>Presence and Mission on autopilot</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">LiaisonOS runs JS8 / VarAC / BBS Server as time-windowed presence modes, executes scheduled Winlink check-ins with RMS fallback, and re-tunes the radio on a QSY schedule — all from a single web editor. Operator-safety auto-pause keeps the daemon out of your way the moment you touch the rig.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.3.7 → 2.3.9</p>
+</div>
+
+<div class="article-body">
+
+  <h2>The <span>all-night-rotation</span> problem</h2>
+  <p>Emergency comms doesn't keep office hours. A frequency that runs JS8 traffic at 03:00 UTC is dead silent at 11:00. A regional net sits on VarAC for four hours of net control, then collapses back to BBS for the rest of the day. Mail polls happen on a schedule the operator can't always be awake for — and shouldn't have to be.</p>
+  <p>The honest way to handle this used to be: write a cron job, write a bash script, write three more bash scripts that work around the first one's race conditions, hope nothing crashes, hope you remembered to clean up rigctld. After six months of operators asking <em>"can it just do this?"</em>, the answer in 2.3.7 became yes. LiaisonOS 2.3.9 is where it grew up.</p>
+  <p>This post is about <strong>li-automation</strong> — a small daemon, a JSON schedule, a web editor, and a dashboard toggle that together let you hand the radio to the schedule and walk away. Or sit in the next room. Or sleep.</p>
+
+  <div class="note note-warn">
+    <strong>Legal note up front:</strong> In Canada, operating a transmitter without a human at the controls — what ISED calls "unattended" or "autonomous" operation — is regulated. Most autonomous TX modes (digital presence, scheduled mail polling) require an <strong>Advanced qualification</strong> (the old <em>Supérieure</em>). The daemon ships <strong>paused by default</strong>; you opt in deliberately. Rules elsewhere differ — check your regulator before engaging.
+  </div>
+
+  <h2>Two primitives: <span>Presence and Mission</span></h2>
+  <p>Almost every "autonomous comms" workflow we've seen breaks down into two shapes. We modeled them as separate concepts because trying to glue them into one always leaks.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-card-icon">📻</div>
+      <div class="feature-card-title">Presence</div>
+      <div class="feature-card-desc">A mode that <strong>runs continuously</strong> during a time window — JS8 from 22:00–06:00, VarAC from 06:00–10:00, BBS Server 10:00–22:00. The daemon starts and stops mode chains as the windows roll past.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">📬</div>
+      <div class="feature-card-title">Mission</div>
+      <div class="feature-card-desc">A <strong>one-shot, time-stamped action</strong> — typically a Winlink check-in. Fire at 07:30, connect, exchange mail, disconnect, return control to whatever presence was running.</div>
+    </div>
+  </div>
+
+  <p>Presence and Mission compose cleanly. A 24-hour day looks like a stack of presence windows with a sprinkle of missions on top. The daemon weaves them together: it stops the current presence to run a mission, then restores the presence when the mission ends, then watches the clock for the next presence transition. Operators describe it the way they'd describe their schedule to a sub — "JS8 overnight, BBS during the day, three mail polls in between."</p>
+
+  <h2>The Automation Editor — <span>no more hand-editing JSON</span></h2>
+  <p>Under the hood the schedule is <code>~/.config/liaisonos/automation.json</code>. That works fine for hardcore JSON fans (and is exactly where the daemon reads from), but the realistic answer is <strong>Applications → Ham Radio → Automation Editor</strong>: a Flask web UI that opens in a frameless window.</p>
+
+  <h3>Presence cards</h3>
+  <p>One card per presence. Each card has a name (your label), a mode (JS8Call, VarAC, BBS Server, …), a time window (start / stop in HH:MM, with timezone), and — new in 2.3.9 — a <strong>QSY schedule</strong> sub-block (more on that below). For BBS Server presence, a modem dropdown gives you the same six modem options as the dashboard's LinBPQ launcher: VARA HF, VARA FM, Mercury, HF 300, Pkt 1200, Pkt 9600.</p>
+
+  <h3>Mission cards</h3>
+  <p>One card per Winlink check-in. Each card has a name, a fire time, a mode (any Pat-capable modem), a connect URL (or a chosen RMS — see below), a day-of-week picker, and an <code>on_fail</code> policy. The most useful policy is <strong>retry_alt</strong>: walk a list of alternate RMS callsigns until one succeeds. The editor lets you build that list inline — pick the primary RMS, then add fallbacks across band or mode.</p>
+
+  <h3>RMS picker</h3>
+  <p>This is the one feature operators ask about more than any other: <em>where do I find an RMS to put in the connect URL?</em> Click the Pick RMS button in any mission card. The editor queries Pat's rmslist, parses the gateways, derives the band from the frequency, sorts by distance (closest first), and lets you filter by callsign as you type. Pick one, the editor builds the connect URL for you (<code>varahf:///CALL?freq=…&amp;bw=…</code>) and drops it into the form. No more hand-typing — and no more silent failures when Pat is mis-configured: the picker shows Pat's actual error in red when something is wrong.</p>
+
+  <h2>QSY Schedule — <span>the missing piece</span></h2>
+  <p>A presence window is broad. JS8 at 03:00 UTC isn't on the same frequency as JS8 at 06:00, because conditions shift. Operators who used to rotate by hand asked the obvious question: <em>"can the daemon retune the radio for me?"</em></p>
+  <p>In 2.3.9, each presence card carries a <strong>QSY schedule</strong> — a small table of time-stamped QSY events:</p>
+  <pre><code>"qsy_schedule": [
+  { "at": "00:00", "qsy_khz": 7065,  "band": "40m" },
+  { "at": "06:00", "qsy_khz": 7110,  "band": "40m" },
+  { "at": "10:00", "qsy_khz": 14078, "band": "20m" }
+]</code></pre>
+  <p>While the presence is active, the daemon ticks past each <code>at</code> and fires the QSY — same supervisor path the dashboard uses, with optional <code>rig_mode</code>, bandwidth and per-event level overrides. If the presence becomes active mid-day (operator engagement, daemon (re)start), the daemon <strong>catches up to the most-recent past entry</strong> — so a presence started overnight still adopts the correct sunrise frequency without intervention.</p>
+  <p>JS8Call gets a small extra: the supervisor writes the target <code>DialFreq</code> into <code>JS8Call.ini</code> before launch, so JS8Call's startup "force sync" confirms the right frequency instead of overriding it. That single change closed a bug class that haunted overnight rotation for two years.</p>
+
+  <h2>The daemon — <span>small, file-driven, observable</span></h2>
+  <p><code>li-automation</code> is a single Python file that runs as a systemd <code>--user</code> service. The unit lives system-wide (<code>/etc/systemd/user/</code>), so every account that logs in — Live boot, HDD install, freshly created — gets the daemon auto-enabled at session start. No skel timing, no operator setup.</p>
+  <p>Per tick (every second) the daemon:</p>
+  <ul>
+    <li>Re-reads <code>~/.cache/liaisonos/automation-paused</code> (the pause flag — file exists = paused)</li>
+    <li>Asks the mode supervisor: what mode is running, and is it busy (stopping / start-in-progress)?</li>
+    <li>Computes the expected presence for <em>now</em> from the schedule</li>
+    <li>Compares expected to actual, and fires the smallest action that closes the gap</li>
+    <li>Walks the day's pending missions and fires anything whose fire-time has arrived</li>
+    <li>Walks the active presence's QSY schedule and fires anything that's now in the past</li>
+  </ul>
+  <p>It's small on purpose. Around 1,800 lines, no threading, deterministic per-tick. When something goes wrong the journal tells you exactly why — every decision the daemon makes is one print line, including <em>why it chose not to act</em> when it's idle. Debug mode (<code>LI_DEBUG=1</code>) adds per-tick state dumps so a chasing operator can see the world the daemon sees.</p>
+
+  <h2>Visible failures — <span>desktop toasts, not silent skips</span></h2>
+  <p>Operators don't read journals in real time. A failed mission needs to <em>tell you</em>. Every daemon action that can fail now fires a <code>notify-send</code> toast: rigctld unreachable, mission failed, all retry_alt attempts exhausted, bad schedule reload, supervisor refused a mode start.</p>
+  <p>The toasts had to fight one battle to get there: <code>notify-send</code> from inside a systemd <code>--user</code> service doesn't see DBUS automatically. The daemon now sets <code>DBUS_SESSION_BUS_ADDRESS</code> and <code>DISPLAY</code> explicitly before every notify call, so the toast lands on the XFCE tray instead of disappearing into the void. Same for stdout — <code>PYTHONUNBUFFERED=1</code> is baked into the unit, so journal output appears live instead of in 8KB chunks after the daemon crashes.</p>
+
+  <h2>Operator-safety auto-pause — <span>the rig is yours</span></h2>
+  <p>The hard rule of automation: <strong>the moment a human touches the radio, the daemon stands down.</strong></p>
+  <p>If the operator manually launches a mode that's not on the schedule, the daemon detects it, writes the pause flag, fires a desktop toast (<em>"operator launched 'fldigi' — automation paused"</em>), and stops trying to drive the rig. The pause stays until the operator clears it by toggling the AUTOMATION tile back on.</p>
+  <p>Same applies if the operator stops the daemon's running presence. Same auto-pause, same toast. The operator doesn't have to remember to click anything before grabbing the mic — the daemon notices and gets out of the way.</p>
+  <p>The flip side: when the daemon (re)starts mid-presence — editor "Save &amp; restart", manual systemctl restart, crash recovery — it doesn't auto-pause if the supervisor is already running the expected mode. It <strong>adopts</strong> the in-flight presence as its own. Editing the schedule during a run is a no-op for the radio. That bug, where saving a new mission would falsely pause the daemon 30 seconds later with a misleading "operator launched 'varac'" toast, is fixed in 2.3.9.</p>
+
+  <h2>The AUTOMATION tile — <span>file-backed, dashboard-visible</span></h2>
+  <p>The pause/engage state is a file: <code>~/.cache/liaisonos/automation-paused</code>. Touch the file to pause, remove it to engage. That's it. The QtDashboard exposes this as the <strong>AUTOMATION tile</strong> in the TOOLS group — orange when engaged, gray when paused. The dashboard watches the file with QFileSystemWatcher, so when the daemon auto-pauses, the tile flips in the same frame.</p>
+  <p>Engaging the daemon (tile off→on, or flag removed) fires an immediate <strong>engagement toast</strong> within ~2 seconds, naming the next scheduled event ("Presence 'js8call' starting within 1 min &middot; Next mission: 'Morning Winlink' at 14:30, in 47 min"). The fast feedback exists because operators were second-guessing whether the click registered during the daemon's old 60-second idle wait. The wait is now a 2-second poll on the pause flag, so the engagement → toast → action loop closes in seconds, not minutes.</p>
+
+  <h2>Hamlib 5.0.0 — <span>made the daemon possible</span></h2>
+  <p>One detail worth flagging because it answers "why now?" — LiaisonOS 2.3.7 shipped a parallel install of <strong>Hamlib 5.0.0</strong> at <code>/usr/local/bin/rigctld</code>, alongside Debian's older 4.6.2. The 5.0.0 backend fixed a list of small CAT-control issues that made true multi-band automation reliable for the first time. On a Yaesu FT-991A, every front-panel level (SQL, RF gain, RFPOWER, MICGAIN, …) is now settable via CAT, so a presence transition can also restore the right TX power and audio levels for the target band. Without that, the daemon could change frequency but not the surrounding rig state, which made transitions partial. With it, transitions are clean.</p>
+  <p>Debian's 4.6.2 stays at <code>/usr/bin/rigctld</code> as a one-line-revert fallback. You can switch back per-mode by editing the radio JSON if your rig misbehaves with the new backend.</p>
+
+  <h2>A worked example — <span>a real overnight schedule</span></h2>
+  <p>This is the schedule on the dev rig in Quebec, simplified to fit a code block:</p>
+  <pre><code>22:00–06:00  presence: JS8Call    (40m → 80m at 02:00 via QSY schedule)
+06:00–08:30  presence: VarAC       (regional net standby)
+07:30        mission:  Winlink check-in via VE2-RMS, retry_alt → KA9-RMS, VA3-RMS
+08:30–22:00  presence: BBS Server  (LinBPQ, VARA HF)
+14:00        mission:  Winlink check-in via VE2-RMS, retry_alt → KA9-RMS</code></pre>
+  <p>The operator wrote that in the editor in maybe four minutes — three presence cards with QSY blocks, two mission cards each with an alt_rms list, validate, save. The daemon picked it up on restart, adopted the in-flight BBS Server presence (no auto-pause), and proceeded. The next morning, the journal showed all the QSY hops, both mission successes, and the presence transitions in sequence.</p>
+
+  <h2>How to use it</h2>
+  <ol>
+    <li>Open Applications → Ham Radio → <em>Automation Editor</em></li>
+    <li>Add one or more presence cards — mode, time window, optional QSY schedule, optional modem (BBS Server)</li>
+    <li>Add mission cards if you want scheduled Winlink check-ins — pick the mode and RMS, set on_fail policy</li>
+    <li>Validate and save (the editor runs <code>li-automation validate</code> before writing)</li>
+    <li>The editor offers a one-click daemon restart; click it</li>
+    <li>Engage the daemon: click the orange AUTOMATION tile in QtDashboard (TOOLS group)</li>
+    <li>Watch the engagement toast confirm the next scheduled event</li>
+    <li>Walk away. Check the journal in the morning to see what happened: <code>journalctl --user -u liaisonos-automation</code></li>
+  </ol>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">Introduced in LiaisonOS 2.3.7 &middot; Editor, QSY schedule and adopt-in-flight fix in 2.3.9 &middot; Advanced/Supérieure qualification required per ISED rules &middot; Feature developed by VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>
