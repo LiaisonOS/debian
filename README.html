@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Emergency Communications for Ham Radio</h1>
-<p><em>Version 2.3.9 — June 2026</em>
+<p><em>Version 2.4.0 — July 2026</em>
 <em>Debian 13 (Trixie) Live/Installable ISO</em></p>
 <blockquote>
 <p>⚠️ <strong>Continuous Development Notice</strong></p>
@@ -82,6 +82,23 @@ footer a:hover { color: #7de8b0; }
 <p><strong>Français?</strong> Voir <a href="https://liaisonos.com/LISEZMOI">LISEZMOI</a> pour la version française.</p>
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS is a <strong>Debian 13 (Trixie) live and installable Linux ISO</strong> designed for ham radio emergency digital communications. It includes a complete suite of pre-configured digital mode software, offline maps, and a web dashboard for one-click operation. Two deployment modes: <strong>USB Live Run</strong> (boot any PC from a USB drive) or <strong>hard drive installation</strong> (permanent install via Calamares). Bilingual English/French interface. Created by Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>What's New in Version 2.4.0</h2>
+<h3>BBS Publish missions</h3>
+<ul>
+<li><strong>New push-side bulletin workflow</strong> — LiaisonOS 2.4.0 adds a "publish when propagation is better" workflow for non-BBS-server operators</li>
+<li><strong>Compose in QtTermTCP</strong> — new <code>[Bulletins]</code> tab with a plain-text Composer (matches the terminal palette; no rich editor, no ruler) and a read-only Outbox view against <code>~/.config/liaisonos/bulletins/</code></li>
+<li><strong>Schedule in the Automation Editor</strong> — each Mission card now carries a <em>Type</em> dropdown (<em>Winlink</em> / <em>BBS Publish</em>). BBS Publish cards show a Transport selector (Telnet / VARA HF), a bulletin picker that scans <code>pending/</code>, and per-transport credential fields (User + Password for Telnet, Callsign for VARA HF)</li>
+<li><strong>Daemon dispatch</strong> — at slot time <code>li-automation</code> invokes headless <code>QtTermTCP --send-bulletin</code> against the target BBS, watches the session for a <strong>BID</strong> confirmation from LinBPQ, and moves the file from <code>pending/</code> → <code>sent/</code> on success with the captured BID and message number</li>
+<li><strong>Filesystem is the message bus</strong> — bulletin store at <code>~/.config/liaisonos/bulletins/{pending,sent,failed}/</code>. Daemon writes status; QtTermTCP reads and watches via inotify. No IPC, no D-Bus</li>
+<li><strong>Same UDP progress feed</strong> (<code>127.0.0.1:7456</code>) and <code>on_fail</code> retry policies (<code>retry_alt</code> / <code>retry_same</code>) as Winlink missions</li>
+</ul>
+<h3>AUTOMATION toggle works on the first click</h3>
+<ul>
+<li><strong>Bug fixed</strong> — after manually stopping a presence via the Dashboard STOP button, re-engaging AUTOMATION used to require two or three OFF/ON toggle cycles before the presence would come back up</li>
+<li><strong>Root cause</strong> — the daemon's DEFER branch (stale <code>our_presence_mode</code> + no <code>current_mode</code> + engagement grace) swallowed the <code>start_presence</code> call on the engagement tick, then grace expired and auto-paused with a misleading "operator stopped X" message</li>
+<li><strong>Fix</strong> — the daemon now clears stale presence ownership at the engagement edge, retries <code>start_presence</code> on a 5-second cadence while it owes one, and surfaces the actual failure reason (<code>rigctld unresponsive</code>, <code>supervisor: already in mode X</code>, <code>QSY failed</code>) as a desktop toast instead of silently retrying</li>
+</ul>
 <hr />
 <h2>What's New in Version 2.3.9</h2>
 <h3>QSY Schedule per presence</h3>
@@ -1240,7 +1257,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Ventoy Documentation:</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Document version: 2.3.9</em>
+<p><em>Document version: 2.4.0</em>
 <em>Last updated: May 2026</em>
 <em>Created for LiaisonOS Debian Edition</em></p>
 </div>

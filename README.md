@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.3.9-f59e0b?style=for-the-badge" alt="Version 2.3.9"></a>
+  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.4.0-f59e0b?style=for-the-badge" alt="Version 2.4.0"></a>
   <a href="https://liaisonos.com/download"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
@@ -56,6 +56,23 @@
 </table>
 
 ---
+
+## ✨ What's New in 2.4.0
+
+### 📮 BBS Publish missions
+
+- **New push-side bulletin workflow** — LiaisonOS 2.4.0 adds a "publish when propagation is better" workflow for non-BBS-server operators
+- **Compose in QtTermTCP** — new `[Bulletins]` tab with a plain-text Composer (matches the terminal palette; no rich editor, no ruler) and a read-only Outbox view against `~/.config/liaisonos/bulletins/`
+- **Schedule in the Automation Editor** — each Mission card now carries a *Type* dropdown (*Winlink* / *BBS Publish*). BBS Publish cards show a Transport selector (Telnet / VARA HF), a bulletin picker that scans `pending/`, and per-transport credential fields (User + Password for Telnet, Callsign for VARA HF)
+- **Daemon dispatch** — at slot time `li-automation` invokes headless `QtTermTCP --send-bulletin` against the target BBS, watches the session for a **BID** confirmation from LinBPQ, and moves the file from `pending/` → `sent/` on success with the captured BID and message number
+- **Filesystem is the message bus** — bulletin store at `~/.config/liaisonos/bulletins/{pending,sent,failed}/`. Daemon writes status; QtTermTCP reads and watches via inotify. No IPC, no D-Bus
+- **Same UDP progress feed** (`127.0.0.1:7456`) and `on_fail` retry policies (`retry_alt` / `retry_same`) as Winlink missions
+
+### 🔧 AUTOMATION toggle works on the first click
+
+- **Bug fixed** — after manually stopping a presence via the Dashboard STOP button, re-engaging AUTOMATION used to require two or three OFF/ON toggle cycles before the presence would come back up
+- **Root cause** — the daemon's DEFER branch (stale `our_presence_mode` + no `current_mode` + engagement grace) swallowed the `start_presence` call on the engagement tick, then grace expired and auto-paused with a misleading "operator stopped X" message
+- **Fix** — the daemon now clears stale presence ownership at the engagement edge, retries `start_presence` on a 5-second cadence while it owes one, and surfaces the actual failure reason (`rigctld unresponsive`, `supervisor: already in mode X`, `QSY failed`) as a desktop toast instead of silently retrying
 
 ## ✨ What's New in 2.3.9
 

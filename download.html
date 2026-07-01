@@ -10,10 +10,10 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://liaisonos.com/download.html">
   <meta property="og:title" content="Download LiaisonOS — Ham Radio Linux ISO">
-  <meta property="og:description" content="Download LiaisonOS v2.3.9 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
+  <meta property="og:description" content="Download LiaisonOS v2.4.0 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
   <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Download LiaisonOS v2.3.9">
+  <meta name="twitter:title" content="Download LiaisonOS v2.4.0">
   <meta name="twitter:description" content="Debian 13 live ISO for ham radio EMCOMM. QtDashboard, Touch Mode, JS8Call, Pat-Winlink, VARA, VarAC, fldigi — ready to go.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -214,29 +214,29 @@
         <strong>Continuous development notice —</strong> LiaisonOS uses an agile, continuous-release model. Each version is fully functional. <strong>Always boot and test from USB first</strong> before committing to a permanent install.
       </div>
       <div class="whats-new">
-        <p class="whats-new-title">What's new in v2.3.9</p>
+        <p class="whats-new-title">What's new in v2.4.0</p>
         <ul>
-          <li><strong>QSY Schedule per presence</strong> — Each presence (JS8Call, VarAC, BBS Server, …) now carries a time-based QSY table. The daemon re-tunes the radio to scheduled frequencies while the presence is active, with optional per-event <code>rig_mode</code>, bandwidth and band override. On activation mid-day the daemon catches up to the most-recent past QSY entry, so a presence that started overnight still adopts the right frequency at sunrise. JS8Call's <code>DialFreq</code> stays in sync automatically.</li>
-          <li><strong>Winlink Mail Viewer launcher</strong> — New <em>Applications → Ham Radio → Winlink Mail Viewer</em> entry. Launches QtPatWinlink in mail-only mode (<code>--mail-viewer</code>) which spawns its own <code>pat http</code>, so you can read, compose and queue Winlink messages while a presence mode keeps running with VARA — no conflict on the radio, no Connect view, no second modem.</li>
-          <li><strong>Smarter RMS picker</strong> — The gateway query now parses <code>pat rmslist</code>'s standard text output (works across every Pat version, not just builds that ship <code>--json</code>). Band is auto-derived from frequency when Pat doesn't print it. Gateways sort by distance (closest first), and a live callsign filter narrows the list as you type. Real Pat errors (no internet, callsign not configured, wrong mode) are surfaced inline instead of a silent empty list.</li>
-          <li><strong>No more bogus "operator override"</strong> — Saving the schedule (<em>Save &amp; restart</em> in the editor) used to false-auto-pause automation ~30 s after the restart, with a misleading "operator launched 'varac'" toast. The daemon now adopts the in-flight presence on restart whenever it matches the expected window, so editing the schedule mid-presence is a no-op for the rig and the operator can keep toggling AUTOMATION freely.</li>
+          <li><strong>BBS Publish missions</strong> — new push-side bulletin workflow. Compose bulletins in QtTermTCP's new <em>Bulletins</em> tab, then schedule them in the Automation Editor via the new <em>BBS Publish</em> mission type. At slot time the daemon dispatches a headless <code>QtTermTCP --send-bulletin</code> against the target BBS over Telnet or VARA HF, watches the session for a <strong>BID</strong> confirmation, and moves the file from <code>pending/</code> → <code>sent/</code> on success with the captured BID and message number. Failed sends land in <code>failed/</code> with the exit-code reason. Same UDP progress feed (<code>127.0.0.1:7456</code>) and <code>on_fail</code> retry policies as Winlink missions.</li>
+          <li><strong>QtTermTCP Bulletins tab</strong> — new <em>[Bulletins]</em> tab with a plain-text Composer (matches the terminal palette — no rich editor, no ruler) and a read-only Outbox against <code>~/.config/liaisonos/bulletins/</code>. The filesystem is the message bus — the daemon writes status, QtTermTCP only reads and watches via inotify. No IPC, no D-Bus.</li>
+          <li><strong>Automation Editor: BBS Publish mission type</strong> — each Mission card gains a <em>Type</em> dropdown (<em>Winlink</em> / <em>BBS Publish</em>). BBS Publish cards show a bulletin picker that scans <code>pending/</code>, a Transport selector (Telnet / VARA HF), and per-transport credential fields (User + Password for Telnet, Callsign for VARA HF). Everything else — time, days, timeout, <code>on_fail</code> policy — matches the existing Winlink mission form.</li>
+          <li><strong>AUTOMATION toggle works on the first click</strong> — after manually stopping a presence, re-engaging AUTOMATION used to require two or three OFF/ON cycles before the presence would come back up. Fixed: the daemon now clears stale presence ownership at the engagement edge, retries <code>start_presence</code> on a 5-second cadence while it owes one, and surfaces the actual reason (<code>rigctld unresponsive</code>, <code>supervisor: already in mode X</code>, <code>QSY failed</code>) as a desktop toast instead of silently retrying.</li>
         </ul>
       </div>
 
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.9.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.0.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label"><span class="il il-en">Latest release</span><span class="il il-fr">Dernière version</span></p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.3.9.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.4.0.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; <span class="il il-en">Released</span> <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.3.9</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.0</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">License</p><p class="stat-val">Ms-PL</p></div>
@@ -247,8 +247,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.3.9</span>
-      <span class="checksum-val" id="hashval">6e962d7a365c0c0a435901f7d3aaea0095581b5a84530812d1acc1d5df09611d</span>
+      <span class="checksum-label">SHA256 - v2.4.0</span>
+      <span class="checksum-val" id="hashval">7fb870e5bb494ec39f55ebbfe4270610e8637254c0bbf077cd8a393f57239548</span>
       <button class="copy-btn" onclick="copyHash('hashval')"><span class="il il-en">Copy</span><span class="il il-fr">Copier</span></button>
     </div>
 
@@ -264,10 +264,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.3.9.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.4.0.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.3.9.iso">⬇ Download</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.0.iso">⬇ Download</a></td>
         </tr>
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span></td>
