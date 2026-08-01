@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Emergency Communications for Ham Radio</h1>
-<p><em>Version 2.4.0 — July 2026</em>
+<p><em>Version 2.4.1 — July 2026</em>
 <em>Debian 13 (Trixie) Live/Installable ISO</em></p>
 <blockquote>
 <p>⚠️ <strong>Continuous Development Notice</strong></p>
@@ -82,6 +82,36 @@ footer a:hover { color: #7de8b0; }
 <p><strong>Français?</strong> Voir <a href="https://liaisonos.com/LISEZMOI">LISEZMOI</a> pour la version française.</p>
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS is a <strong>Debian 13 (Trixie) live and installable Linux ISO</strong> designed for ham radio emergency digital communications. It includes a complete suite of pre-configured digital mode software, offline maps, and a web dashboard for one-click operation. Two deployment modes: <strong>USB Live Run</strong> (boot any PC from a USB drive) or <strong>hard drive installation</strong> (permanent install via Calamares). Bilingual English/French interface. Created by Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>What's New in Version 2.4.1</h2>
+<h3>Best antenna for target — the Field Logger now knows what your antennas do</h3>
+<ul>
+<li><strong>New Antennas tab</strong> in the Field Logger configures your whole station — Sloper EFHW, verticals, inverted-V NVIS, <strong>Delta loop</strong>, <strong>Horizontal loop / skywarmer</strong>, <strong>Horizontal EFHW / NVIS</strong></li>
+<li><strong>Real NEC-2 modeling via PyNEC</strong> — the actual radiation pattern is computed for each antenna on each band, no lookup tables</li>
+<li><strong>Polar pattern overlay on the map</strong> near your QTH — popup shows peak/min gain and spread class (near-omni / directional / figure-8)</li>
+<li><strong>Click any QSO or park pin</strong> → app tells you which antenna gives the best gain toward that station, with a color-coded line (green / amber / red) and predicted gain in dBi</li>
+<li><strong>Takeoff-angle picker</strong> on the map — switch between DX 12°, regional 22° and NVIS 50° views of the same antenna; the pattern reshapes per elevation</li>
+<li><strong>Peak-radiation estimator</strong> derived from geometry tells you what elevation your antenna is actually best at, per band</li>
+<li><strong>Bands accept just names now</strong> (<code>40m, 20m, 10m</code>) — auto-picks midpoint frequency; explicit <code>band:freq</code> still works</li>
+<li><strong>Site lat/lon prefilled</strong> from operator profile</li>
+</ul>
+<h3>QtPatWinlink: manual RMS entry (offline gateway support)</h3>
+<ul>
+<li><strong>New <em>+ Manual</em> button</strong> for when Winlink's online RMS list can't refresh, or you need to reach an unlisted BBS</li>
+<li>Callsign, freq at <strong>10 Hz resolution</strong> (e.g. 7.10325 MHz), bandwidth, and modem (VARA HF/FM, Winmor, Pactor, Packet)</li>
+<li>Entries persist across launches, editable via right-click, auto-selected after add so a single Connect click sends it</li>
+<li>Manual entries merge into the RMS table with an <em>M</em> badge; band/modem filters and favorites work identically</li>
+</ul>
+<h3>QtGpsSync: grid save on partial success</h3>
+<ul>
+<li>When the wall clock is more than a few seconds off from GPS, the clock-sync path could time out and silently drop the position too</li>
+<li>Fixed: if GpsSync got a valid GPS fix, the grid pushes to the Dashboard even when clock-sync fails — amber "clock sync failed — grid updated" state instead of red total failure</li>
+<li>Field Logger's top-right grid badge honors manual <code>user.json</code> grid edits within 30 seconds (was stuck on stale coords from a previous GPS session)</li>
+</ul>
+<h3>VarAC updated to 15.0.18</h3>
+<ul>
+<li>The bundled Wine-based VarAC install refreshed with the latest upstream release</li>
+</ul>
 <hr />
 <h2>What's New in Version 2.4.0</h2>
 <h3>BBS Publish missions</h3>
@@ -1257,7 +1287,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Ventoy Documentation:</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Document version: 2.4.0</em>
+<p><em>Document version: 2.4.1</em>
 <em>Last updated: May 2026</em>
 <em>Created for LiaisonOS Debian Edition</em></p>
 </div>

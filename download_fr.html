@@ -134,27 +134,28 @@
     </div>
 
     <div class="whats-new">
-      <p class="whats-new-title">Nouveautés de la v2.4.0</p>
+      <p class="whats-new-title">Nouveautés de la v2.4.1</p>
       <ul>
-        <li><strong>Missions Publication BBS</strong> — nouveau flux de publication de bulletins côté push. Composez dans le nouvel onglet <em>Bulletins</em> de QtTermTCP, puis planifiez dans l'éditeur d'automation via le nouveau type de mission <em>Publication BBS</em>. À l'heure du créneau, le démon lance un <code>QtTermTCP --send-bulletin</code> sans-interface vers le BBS cible en Telnet ou VARA HF, surveille la session pour la confirmation <strong>BID</strong>, et déplace le fichier de <code>pending/</code> → <code>sent/</code> en cas de succès avec le BID et le numéro de message capturés. Les envois échoués vont dans <code>failed/</code> avec le code de sortie. Même flux UDP de progression (<code>127.0.0.1:7456</code>) et mêmes politiques <code>on_fail</code> que les missions Winlink.</li>
-        <li><strong>Onglet Bulletins de QtTermTCP</strong> — nouvel onglet <em>[Bulletins]</em> avec un Compositeur texte simple (assorti à la palette du terminal — sans éditeur riche, sans règle) et une Boîte d'envoi en lecture seule sur <code>~/.config/liaisonos/bulletins/</code>. Le système de fichiers est le bus de messages — le démon écrit le statut, QtTermTCP ne fait que lire et surveiller via inotify. Sans IPC, sans D-Bus.</li>
-        <li><strong>Éditeur d'automation : type de mission Publication BBS</strong> — chaque carte de mission gagne un menu déroulant <em>Type</em> (<em>Winlink</em> / <em>Publication BBS</em>). Les cartes Publication BBS affichent un sélecteur de bulletin qui balaie <code>pending/</code>, un sélecteur de transport (Telnet / VARA HF), et des champs d'identifiants par transport (Utilisateur + Mot de passe pour Telnet, Indicatif pour VARA HF). Le reste — heure, jours, délai, politique <code>on_fail</code> — correspond au formulaire de mission Winlink existant.</li>
-        <li><strong>Bascule AUTOMATION fonctionne au premier clic</strong> — après l'arrêt manuel d'une présence, ré-engager AUTOMATION demandait deux ou trois cycles OFF/ON avant que la présence ne revienne. Corrigé : le démon efface maintenant la propriété de présence obsolète à la ré-engagement, retente <code>start_presence</code> toutes les 5 secondes tant qu'il en doit une, et affiche la vraie raison (<code>rigctld unresponsive</code>, <code>supervisor: already in mode X</code>, <code>QSY failed</code>) en notification bureau au lieu de retenter silencieusement.</li>
+        <li><strong>Meilleure antenne pour la cible — fini de deviner quelle antenne utiliser.</strong> Nouvel onglet <em>Antennes</em> dans le Journal de Terrain pour configurer votre station complète (Sloper EFHW, verticales, inverted-V NVIS, <strong>Boucle delta</strong>, <strong>Boucle horizontale / skywarmer</strong>, <strong>EFHW horizontal / NVIS</strong>). Modélisation NEC-2 réelle via PyNEC calcule le patron de rayonnement pour chaque antenne sur chaque bande, dessiné en superposition polaire sur la carte près de votre QTH. Cliquez sur n'importe quel indicatif ou parc et l'app vous dit quelle antenne donne le meilleur gain vers cette station — avec une ligne colorée (vert bon / orange marginal / rouge nul) et le gain prédit en dBi.</li>
+        <li><strong>Sélecteur d'angle de radiation + estimateur du pic géométrique</strong> — la même antenne rayonne un patron très différent aux angles NVIS (50°), régional (22°) et DX (12°). Basculez le sélecteur sur la carte pour comparer ; une étiquette <em>pic de radiation</em> dérivée de la géométrie vous indique à quel angle votre antenne est réellement la meilleure. Les bandes acceptent maintenant simplement les noms (<code>40m, 20m</code>) — la fréquence centrale est choisie automatiquement. Lat/lon du site pré-remplis depuis votre profil.</li>
+        <li><strong>QtPatWinlink : saisie manuelle RMS</strong> — nouveau bouton <em>+ Manuel</em> pour travailler avec des passerelles hors-ligne quand la liste RMS en ligne de Winlink ne peut pas se rafraîchir. Entrez l'indicatif, la fréquence (résolution 10 Hz — ex : 7,10325 MHz), la bande passante, et le modem (VARA HF/FM, Winmor, Pactor, Packet). Les entrées persistent d'un lancement à l'autre, modifiables par clic droit, auto-sélectionnées après ajout pour qu'un seul clic Connect les envoie.</li>
+        <li><strong>QtGpsSync : sauvegarde du carré locator en cas de succès partiel</strong> — quand l'horloge système est décalée de plus de quelques secondes du GPS, la synchronisation d'horloge pouvait expirer et perdre silencieusement la position aussi. Maintenant : si GpsSync obtient une position GPS valide, le carré locator est envoyé au Tableau de bord même si la synchronisation d'horloge échoue (état orange « synchronisation d'horloge échouée — carré mis à jour » au lieu d'un échec rouge). Aussi : le badge de carré locator en haut à droite du Journal de Terrain respecte maintenant les modifications manuelles du profil en moins de 30 secondes.</li>
+        <li><strong>VarAC mis à jour à 15.0.18</strong> — l'installation Wine intégrée de VarAC rafraîchie avec la dernière version amont.</li>
       </ul>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.0.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.1.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label">Dernière version</p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.4.0.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.4.1.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; Publiée <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.0</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.1</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">Licence</p><p class="stat-val">Ms-PL</p></div>
@@ -162,8 +163,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.4.0</span>
-      <span class="checksum-val" id="hashval">7fb870e5bb494ec39f55ebbfe4270610e8637254c0bbf077cd8a393f57239548</span>
+      <span class="checksum-label">SHA256 - v2.4.1</span>
+      <span class="checksum-val" id="hashval">9b226f86d2fb3414ef41241924765ce8e3d1efd7e57e558593aae6304f0a3adf</span>
       <button class="copy-btn" onclick="copyHash('hashval')">Copier</button>
     </div>
 
@@ -179,10 +180,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.4.0.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.4.1.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.0.iso">⬇ Télécharger</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.1.iso">⬇ Télécharger</a></td>
         </tr>
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span></td>

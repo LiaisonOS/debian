@@ -73,7 +73,7 @@ footer a:hover { color: #7de8b0; }
 </nav>
 <div class="content">
 <h1>LiaisonOS — Communications d'urgence pour radioamateurs</h1>
-<p><em>Version 2.4.0 — Juillet 2026</em>
+<p><em>Version 2.4.1 — Juillet 2026</em>
 <em>ISO Debian 13 (Trixie) Live/Installable</em></p>
 <blockquote>
 <p>⚠️ <strong>Avis de développement continu</strong></p>
@@ -82,6 +82,36 @@ footer a:hover { color: #7de8b0; }
 <p><strong>English?</strong> See <a href="https://liaisonos.com/README">README</a> for the English version.</p>
 </blockquote>
 <p style="margin-top:40px;">LiaisonOS est une <strong>ISO Linux Debian 13 (Trixie) live et installable</strong> conçue pour les communications numériques d'urgence en radioamateur. Elle comprend une suite complète de logiciels de modes numériques préconfigurés, des cartes hors ligne et un tableau de bord web pour une utilisation en un clic. Deux modes de déploiement : <strong>USB Live Run</strong> (démarrer n'importe quel PC depuis une clé USB) ou <strong>installation sur disque dur</strong> (installation permanente avec Calamares). Interface bilingue français/anglais. Créé par Sylvain Deguire (VA2OPS).</p>
+<hr />
+<h2>Nouveautés de la version 2.4.1</h2>
+<h3>Meilleure antenne pour la cible — le Journal de Terrain sait ce que vos antennes font</h3>
+<ul>
+<li><strong>Nouvel onglet Antennes</strong> dans le Journal de Terrain pour configurer votre station complète — Sloper EFHW, verticales, inverted-V NVIS, <strong>Boucle delta</strong>, <strong>Boucle horizontale / skywarmer</strong>, <strong>EFHW horizontal / NVIS</strong></li>
+<li><strong>Modélisation NEC-2 réelle via PyNEC</strong> — le patron de rayonnement est calculé pour chaque antenne sur chaque bande, sans tables de correspondance</li>
+<li><strong>Superposition polaire du patron sur la carte</strong> près de votre QTH — infobulle avec gain max/min et classe d'étalement (quasi-omni / directionnel / figure-8)</li>
+<li><strong>Cliquez sur n'importe quel indicatif ou parc</strong> → l'app vous dit quelle antenne donne le meilleur gain vers cette station, avec une ligne colorée (vert / orange / rouge) et le gain prédit en dBi</li>
+<li><strong>Sélecteur d'angle de radiation</strong> sur la carte — basculez entre DX 12°, régional 22° et NVIS 50° pour la même antenne ; le patron change par élévation</li>
+<li><strong>Estimateur du pic de radiation</strong> dérivé de la géométrie vous indique à quel angle votre antenne est réellement la meilleure, par bande</li>
+<li><strong>Les bandes acceptent simplement les noms</strong> (<code>40m, 20m, 10m</code>) — la fréquence centrale est choisie automatiquement ; <code>band:freq</code> explicite fonctionne toujours</li>
+<li><strong>Lat/lon du site pré-remplis</strong> depuis le profil de l'opérateur</li>
+</ul>
+<h3>QtPatWinlink : saisie manuelle RMS (support passerelles hors-ligne)</h3>
+<ul>
+<li><strong>Nouveau bouton <em>+ Manuel</em></strong> pour quand la liste RMS en ligne de Winlink ne peut pas se rafraîchir, ou pour joindre un BBS non listé</li>
+<li>Indicatif, fréquence à <strong>résolution 10 Hz</strong> (ex : 7,10325 MHz), bande passante, et modem (VARA HF/FM, Winmor, Pactor, Packet)</li>
+<li>Les entrées persistent d'un lancement à l'autre, modifiables par clic droit, auto-sélectionnées après ajout pour qu'un seul clic Connect les envoie</li>
+<li>Les entrées manuelles se fondent dans la table RMS avec un badge <em>M</em> ; les filtres bande/modem et favoris fonctionnent identiquement</li>
+</ul>
+<h3>QtGpsSync : sauvegarde du carré locator en cas de succès partiel</h3>
+<ul>
+<li>Quand l'horloge système est décalée de plus de quelques secondes du GPS, la synchronisation d'horloge pouvait expirer et perdre silencieusement la position aussi</li>
+<li>Corrigé : si GpsSync obtient une position GPS valide, le carré locator est envoyé au Tableau de bord même si la synchronisation d'horloge échoue — état orange « synchronisation d'horloge échouée — carré mis à jour » au lieu d'un échec rouge total</li>
+<li>Le badge de carré locator en haut à droite du Journal de Terrain respecte les modifications manuelles de <code>user.json</code> en moins de 30 secondes (était bloqué sur des coordonnées obsolètes d'une session GPS précédente)</li>
+</ul>
+<h3>VarAC mis à jour à 15.0.18</h3>
+<ul>
+<li>L'installation Wine intégrée de VarAC rafraîchie avec la dernière version amont</li>
+</ul>
 <hr />
 <h2>Nouveautés de la version 2.4.0</h2>
 <h3>Missions Publication BBS</h3>
@@ -1250,7 +1280,7 @@ sudo ./Ventoy2Disk.sh -u /dev/sdb
 <li><strong>Documentation Ventoy :</strong> <a href="https://ventoy.net/en/doc_news.html">https://ventoy.net/en/doc_news.html</a></li>
 </ul>
 <hr />
-<p><em>Version du document : 2.4.0</em>
+<p><em>Version du document : 2.4.1</em>
 <em>Dernière mise à jour : Mai 2026</em>
 <em>Créé pour LiaisonOS Édition Debian</em></p>
 </div>

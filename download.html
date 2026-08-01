@@ -10,10 +10,10 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://liaisonos.com/download.html">
   <meta property="og:title" content="Download LiaisonOS — Ham Radio Linux ISO">
-  <meta property="og:description" content="Download LiaisonOS v2.4.0 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
+  <meta property="og:description" content="Download LiaisonOS v2.4.1 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
   <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Download LiaisonOS v2.4.0">
+  <meta name="twitter:title" content="Download LiaisonOS v2.4.1">
   <meta name="twitter:description" content="Debian 13 live ISO for ham radio EMCOMM. QtDashboard, Touch Mode, JS8Call, Pat-Winlink, VARA, VarAC, fldigi — ready to go.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -214,29 +214,30 @@
         <strong>Continuous development notice —</strong> LiaisonOS uses an agile, continuous-release model. Each version is fully functional. <strong>Always boot and test from USB first</strong> before committing to a permanent install.
       </div>
       <div class="whats-new">
-        <p class="whats-new-title">What's new in v2.4.0</p>
+        <p class="whats-new-title">What's new in v2.4.1</p>
         <ul>
-          <li><strong>BBS Publish missions</strong> — new push-side bulletin workflow. Compose bulletins in QtTermTCP's new <em>Bulletins</em> tab, then schedule them in the Automation Editor via the new <em>BBS Publish</em> mission type. At slot time the daemon dispatches a headless <code>QtTermTCP --send-bulletin</code> against the target BBS over Telnet or VARA HF, watches the session for a <strong>BID</strong> confirmation, and moves the file from <code>pending/</code> → <code>sent/</code> on success with the captured BID and message number. Failed sends land in <code>failed/</code> with the exit-code reason. Same UDP progress feed (<code>127.0.0.1:7456</code>) and <code>on_fail</code> retry policies as Winlink missions.</li>
-          <li><strong>QtTermTCP Bulletins tab</strong> — new <em>[Bulletins]</em> tab with a plain-text Composer (matches the terminal palette — no rich editor, no ruler) and a read-only Outbox against <code>~/.config/liaisonos/bulletins/</code>. The filesystem is the message bus — the daemon writes status, QtTermTCP only reads and watches via inotify. No IPC, no D-Bus.</li>
-          <li><strong>Automation Editor: BBS Publish mission type</strong> — each Mission card gains a <em>Type</em> dropdown (<em>Winlink</em> / <em>BBS Publish</em>). BBS Publish cards show a bulletin picker that scans <code>pending/</code>, a Transport selector (Telnet / VARA HF), and per-transport credential fields (User + Password for Telnet, Callsign for VARA HF). Everything else — time, days, timeout, <code>on_fail</code> policy — matches the existing Winlink mission form.</li>
-          <li><strong>AUTOMATION toggle works on the first click</strong> — after manually stopping a presence, re-engaging AUTOMATION used to require two or three OFF/ON cycles before the presence would come back up. Fixed: the daemon now clears stale presence ownership at the engagement edge, retries <code>start_presence</code> on a 5-second cadence while it owes one, and surfaces the actual reason (<code>rigctld unresponsive</code>, <code>supervisor: already in mode X</code>, <code>QSY failed</code>) as a desktop toast instead of silently retrying.</li>
+          <li><strong>Best antenna for target — end guessing which antenna to use.</strong> New <em>Antennas</em> tab in the Field Logger configures your whole station (Sloper EFHW, verticals, inverted-V NVIS, <strong>Delta loop</strong>, <strong>Horizontal loop / skywarmer</strong>, <strong>Horizontal EFHW / NVIS</strong>). Real NEC-2 modeling via PyNEC computes the actual radiation pattern for each antenna on each band and draws it as a polar overlay on the map near your QTH. Click any QSO or park pin and the app tells you which antenna gives the best gain toward that station — with a color-coded line (green good / amber marginal / red null) and the predicted gain in dBi.</li>
+          <li><strong>Takeoff-angle picker + peak-radiation estimator</strong> — the same antenna radiates a very different pattern at NVIS (50°), regional (22°) and DX (12°) elevation angles. Toggle the picker on the map to switch between them; a geometry-derived <em>peak radiation</em> label tells you what elevation your antenna is actually best at. Bands accept just names now (<code>40m, 20m</code>) — auto-picks midpoint frequency. Site lat/lon prefilled from your profile.</li>
+          <li><strong>QtPatWinlink: manual RMS entry</strong> — new <em>+ Manual</em> button for offline-gateway work when Winlink's online RMS list can't refresh. Enter callsign, freq (10 Hz resolution — e.g. 7.10325 MHz), bandwidth, and modem (VARA HF/FM, Winmor, Pactor, Packet). Entries persist across launches, editable via right-click, auto-selected after add so a single Connect click sends it.</li>
+          <li><strong>QtGpsSync: grid save on partial success</strong> — when the wall clock is more than a few seconds off from GPS, the clock-sync path could time out and silently drop the position too. Now: if GpsSync got a valid GPS fix, the grid is pushed to the Dashboard even when clock-sync fails (amber "clock sync failed — grid updated" state instead of red failure). Also: the Field Logger's top-right grid badge now honors manual profile edits within 30 seconds.</li>
+          <li><strong>VarAC updated to 15.0.18</strong> — the bundled Wine-based VarAC install refreshed with the latest upstream release.</li>
         </ul>
       </div>
 
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.0.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.1.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label"><span class="il il-en">Latest release</span><span class="il il-fr">Dernière version</span></p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.4.0.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.4.1.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; <span class="il il-en">Released</span> <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.0</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.1</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">License</p><p class="stat-val">Ms-PL</p></div>
@@ -247,8 +248,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.4.0</span>
-      <span class="checksum-val" id="hashval">7fb870e5bb494ec39f55ebbfe4270610e8637254c0bbf077cd8a393f57239548</span>
+      <span class="checksum-label">SHA256 - v2.4.1</span>
+      <span class="checksum-val" id="hashval">9b226f86d2fb3414ef41241924765ce8e3d1efd7e57e558593aae6304f0a3adf</span>
       <button class="copy-btn" onclick="copyHash('hashval')"><span class="il il-en">Copy</span><span class="il il-fr">Copier</span></button>
     </div>
 
@@ -264,10 +265,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.4.0.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.4.1.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.0.iso">⬇ Download</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.1.iso">⬇ Download</a></td>
         </tr>
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span></td>

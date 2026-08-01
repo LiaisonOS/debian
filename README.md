@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.4.0-f59e0b?style=for-the-badge" alt="Version 2.4.0"></a>
+  <a href="https://liaisonos.com"><img src="https://img.shields.io/badge/Version-2.4.1-f59e0b?style=for-the-badge" alt="Version 2.4.1"></a>
   <a href="https://liaisonos.com/download"><img src="https://img.shields.io/badge/Download-ISO-22c55e?style=for-the-badge" alt="Download ISO"></a>
   <a href="https://opensource.org/licenses/MS-PL"><img src="https://img.shields.io/badge/License-Ms--PL-3b82f6?style=for-the-badge" alt="License Ms-PL"></a>
   <a href="https://va2ops.ca"><img src="https://img.shields.io/badge/Author-va2ops.ca-8b5cf6?style=for-the-badge" alt="Author"></a>
@@ -56,6 +56,36 @@
 </table>
 
 ---
+
+## ✨ What's New in 2.4.1
+
+### 📡 Best antenna for target — the Field Logger now knows what your antennas do
+
+- **New Antennas tab** in the Field Logger configures your whole station — Sloper EFHW, verticals, inverted-V NVIS, **Delta loop**, **Horizontal loop / skywarmer**, **Horizontal EFHW / NVIS**
+- **Real NEC-2 modeling via PyNEC** — the actual radiation pattern is computed for each antenna on each band, no lookup tables, no approximations
+- **Polar pattern overlay on the map** near your QTH — see the shape at a glance, popup shows peak/min gain and spread class (near-omni / directional / figure-8)
+- **Click any QSO or park pin** → app tells you which antenna gives the best gain toward that station, with a color-coded line (green / amber / red) and the predicted gain in dBi
+- **Takeoff-angle picker** on the map — switch between DX 12°, regional 22° and NVIS 50° views of the same antenna; the pattern reshapes dramatically per elevation
+- **Peak-radiation estimator** derived from geometry tells you what elevation your antenna is actually best at, per band
+- **Bands accept just names now** (`40m, 20m, 10m`) — auto-picks midpoint frequency; explicit `band:freq` still works for advanced users
+- **Site lat/lon prefilled** from operator profile so the fixed-QTH case is a one-click default
+
+### 📻 QtPatWinlink: manual RMS entry (offline gateway support)
+
+- **New `+ Manual` button** for when Winlink's online RMS list can't refresh (no internet) or you need to reach an unlisted BBS
+- Callsign, freq at **10 Hz resolution** (e.g. `7.10325 MHz`), bandwidth, and modem (VARA HF/FM, Winmor, Pactor, Packet)
+- Entries persist across launches, editable via right-click, auto-selected after add so a single Connect click sends it
+- Manual entries merge into the RMS table with an `M` badge; band/modem filters and favorites toggle work identically
+
+### 🛰 QtGpsSync: grid save on partial success
+
+- When the wall clock is more than a few seconds off from GPS, the clock-sync path could time out and silently drop the position too
+- Fixed: if GpsSync got a valid GPS fix, the grid pushes to the Dashboard even when clock-sync fails — amber "clock sync failed — grid updated" state instead of red total failure
+- Field Logger's top-right grid badge now honors manual `user.json` grid edits within 30 seconds (was stuck on stale coords from a previous GPS session)
+
+### 📦 VarAC updated to 15.0.18
+
+- The bundled Wine-based VarAC install refreshed with the latest upstream release
 
 ## ✨ What's New in 2.4.0
 
