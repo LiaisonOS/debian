@@ -75,19 +75,22 @@
     <!-- ── Mission list ───────────────────────────────────────────────────── -->
     <section class="card">
       <h2>
-        {% if language == 'fr' %}Missions Winlink{% else %}Winlink missions{% endif %}
+        {% if language == 'fr' %}Missions{% else %}Missions{% endif %}
         <span class="card-actions">
-          <button class="btn btn-small" onclick="addMission()">+ {% if language == 'fr' %}Ajouter{% else %}Add{% endif %}</button>
+          <button class="btn btn-small" onclick="addMission('winlink')">+ {% if language == 'fr' %}Winlink{% else %}Winlink{% endif %}</button>
+          <button class="btn btn-small" onclick="addMission('bbs_publish')">+ {% if language == 'fr' %}Publier bulletin{% else %}BBS Publish{% endif %}</button>
         </span>
       </h2>
       <p class="helptext">
         {% if language == 'fr' %}
-        Vérifications planifiées vers Winlink. Sélectionnez un RMS pour
-        construire automatiquement l'URL de connexion. on_fail = retry_alt
-        permet d'essayer plusieurs RMS de secours dans l'ordre.
+        Évènements planifiés : check-ins Winlink (sélection RMS, retry_alt)
+        et publications de bulletins vers une BBS LinBPQ (telnet ou VARA HF).
+        Les bulletins sont composés dans QtTermTCP et apparaissent ci-dessous
+        dans le sélecteur de bulletins.
         {% else %}
-        Scheduled Winlink check-ins. Pick an RMS to auto-build the connect URL.
-        on_fail = retry_alt walks through a backup RMS list in order.
+        Scheduled events: Winlink check-ins (RMS picker, retry_alt) and BBS
+        bulletin posts to a LinBPQ node (telnet or VARA HF). Bulletins are
+        composed in QtTermTCP and surface in the picker below.
         {% endif %}
       </p>
       <div id="mission-list"></div>
@@ -178,6 +181,8 @@
     const SCHEDULE      = {{ schedule | tojson }};
     const PRESENCE_MODES = {{ presence_modes | tojson }};
     const MISSION_MODES  = {{ mission_modes | tojson }};
+    const MISSION_TYPES  = {{ mission_types | tojson }};
+    const BBS_PUBLISH_MODES = {{ bbs_publish_modes | tojson }};
     const WEEKDAYS       = {{ weekdays | tojson }};
     const LANG           = "{{ language }}";
   </script>

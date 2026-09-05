@@ -32,9 +32,10 @@
       "title_fr": "APRS",
       "icon": "📡",
       "items": [
-        { "type": "mode", "id": "aprs-client",     "label": "Client (YAAC)",    "label_abbr": "YAAC",  "strip_icon": "📍" },
-        { "type": "mode", "id": "aprs-client-bt",  "label": "Client (YAAC BT)", "label_abbr": "YACBT", "strip_icon": "📍" },
-        { "type": "mode", "id": "aprs-digipeater", "label": "Digipeater",       "label_abbr": "DIGI",  "strip_icon": "📡" }
+        { "type": "mode", "id": "aprs-client",     "label": "Client (YAAC)",       "label_abbr": "YAAC",  "strip_icon": "📍" },
+        { "type": "mode", "id": "aprs-client-bt",  "label": "Client (YAAC BT)",    "label_abbr": "YACBT", "strip_icon": "📍" },
+        { "type": "mode", "id": "aprs-beacon",     "label": "Beacon (distance)",   "label_abbr": "BCON",  "strip_icon": "📶" },
+        { "type": "mode", "id": "aprs-digipeater", "label": "Digipeater",          "label_abbr": "DIGI",  "strip_icon": "📡" }
       ]
     },
 
@@ -104,6 +105,7 @@
         { "type": "mode", "id": "vara-hf",           "label": "VARA HF (Standalone)",   "label_touch": "VARA HF",      "label_abbr": "V-HF",  "strip_icon": "⚡" },
         { "type": "mode", "id": "vara-fm",           "label": "VARA FM (Standalone)",   "label_touch": "VARA FM",      "label_abbr": "V-FM",  "strip_icon": "⚡" },
         { "type": "mode", "id": "mercury",           "label": "Mercury HF (Standalone)","label_touch": "Mercury HF",   "label_abbr": "MERC",  "strip_icon": "⚡" },
+        { "type": "mode", "id": "qtscanner",         "label": "QtScanner (auto QSY)",   "label_touch": "Scanner",      "label_abbr": "SCAN",  "strip_icon": "🔍" },
         { "type": "toggle", "id": "automation",      "label": "Automation",             "label_touch": "AUTOMATION",   "label_abbr": "AUTO",  "strip_icon": "🤖",
           "state_file": "~/.cache/liaisonos/automation-paused",
           "off_when_file_exists": true }

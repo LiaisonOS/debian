@@ -137,6 +137,7 @@ if [[ $MODE_COUNT -gt 0 ]]; then
 else
     check_fail "No mode configs in /opt/emcomm-tools/conf/modes.d/"
 fi
+
 echo ""
 
 # -----------------------------------------------------------------------------

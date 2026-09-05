@@ -1,0 +1,18 @@
+{
+  "id": "digirig-lite-for-ht",
+  "vendor": "DigiRig",
+  "model": "Lite for HT",
+  "bands": [
+    "HF",
+    "VHF",
+    "UHF"
+  ],
+  "rigctrl": {
+    "id": "1",
+    "ptt": "NONE"
+  },
+  "audio": {
+    "script": "/opt/emcomm-tools/conf/radios.d/audio/digirig-lite-ht.sh"
+  },
+  "notes": []
+}

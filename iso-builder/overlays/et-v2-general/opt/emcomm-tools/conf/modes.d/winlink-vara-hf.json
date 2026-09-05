@@ -50,6 +50,11 @@
         {
             "action": "pat-config",
             "template": "config.vara-hf.json"
+        },
+        {
+            "action": "vara-kiss-port",
+            "modem": "hf",
+            "port": 8101
         }
     ],
     "chain": [

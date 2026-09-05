@@ -40,6 +40,11 @@
         },
         {
             "action": "vara-fm-ptt-config"
+        },
+        {
+            "action": "vara-kiss-port",
+            "modem": "fm",
+            "port": 8100
         }
     ],
     "chain": [

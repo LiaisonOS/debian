@@ -1,0 +1,18 @@
+# LiaisonOS — passwordless sudo for service-recovery commands.
+#
+# li-rigctld-recover and mode_engine's teardown/restart paths need to
+# bounce rigctld from the operator's shell. Without this file, sudo
+# prompts for a password, all subprocess.run(...) calls fail silently,
+# and automation can't recover from a stuck rigctld.
+#
+# Scope is intentionally tight: only the exact commands the recovery
+# path needs, only for user va2ops.
+
+va2ops ALL=(root) NOPASSWD: /usr/bin/systemctl start rigctld
+va2ops ALL=(root) NOPASSWD: /usr/bin/systemctl stop rigctld
+va2ops ALL=(root) NOPASSWD: /usr/bin/systemctl restart rigctld
+va2ops ALL=(root) NOPASSWD: /usr/bin/systemctl reset-failed rigctld
+va2ops ALL=(root) NOPASSWD: /usr/bin/systemctl is-active rigctld
+va2ops ALL=(root) NOPASSWD: /usr/bin/systemctl is-enabled rigctld
+va2ops ALL=(root) NOPASSWD: /usr/bin/killall rigctld
+va2ops ALL=(root) NOPASSWD: /usr/bin/true

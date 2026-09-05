@@ -143,13 +143,19 @@
                             </div>
                             <div class="form-group">
                                 <label>{{ t.ptt_via }}</label>
-                                <div class="custom-select" id="cs_varafm_pttVia" data-value="{{ radio.get('varafm', {}).get('pttVia', '1') }}">
+                                {# VARA FM's PTTMode INI values — the OLD UI mislabeled
+                                   these as RTS/DTR, but 1 is actually CAT mode. The
+                                   RTS vs DTR line choice lives in the rts/dtr fields
+                                   below and only matters when pttVia = 2. #}
+                                <div class="custom-select" id="cs_varafm_pttVia" data-value="{{ radio.get('varafm', {}).get('pttVia', '2') }}">
                                     <div class="custom-select-trigger" onclick="toggleDropdown('cs_varafm_pttVia')">
-                                        <span class="cs-label">{{ radio.get('varafm', {}).get('pttVia', '1') }} ({{ 'RTS' if radio.get('varafm', {}).get('pttVia', '1') == '1' else 'DTR' }})</span>
+                                        <span class="cs-label">{% set _v = radio.get('varafm', {}).get('pttVia', '2') %}{{ _v }} ({{ {'0':'VOX','1':'CAT','2':'COM (RTS/DTR)','3':'CM108'}.get(_v, '?') }})</span>
                                     </div>
                                     <div class="custom-select-options">
-                                        <div class="custom-select-option{% if radio.get('varafm', {}).get('pttVia', '1') == '1' %} selected{% endif %}" data-val="1" onclick="selectOption('cs_varafm_pttVia','1','1 (RTS)')">1 (RTS)</div>
-                                        <div class="custom-select-option{% if radio.get('varafm', {}).get('pttVia') == '2' %} selected{% endif %}" data-val="2" onclick="selectOption('cs_varafm_pttVia','2','2 (DTR)')">2 (DTR)</div>
+                                        <div class="custom-select-option{% if radio.get('varafm', {}).get('pttVia') == '0' %} selected{% endif %}" data-val="0" onclick="selectOption('cs_varafm_pttVia','0','0 (VOX)')">0 (VOX)</div>
+                                        <div class="custom-select-option{% if radio.get('varafm', {}).get('pttVia') == '1' %} selected{% endif %}" data-val="1" onclick="selectOption('cs_varafm_pttVia','1','1 (CAT)')">1 (CAT)</div>
+                                        <div class="custom-select-option{% if radio.get('varafm', {}).get('pttVia', '2') == '2' %} selected{% endif %}" data-val="2" onclick="selectOption('cs_varafm_pttVia','2','2 (COM RTS/DTR)')">2 (COM RTS/DTR)</div>
+                                        <div class="custom-select-option{% if radio.get('varafm', {}).get('pttVia') == '3' %} selected{% endif %}" data-val="3" onclick="selectOption('cs_varafm_pttVia','3','3 (CM108)')">3 (CM108)</div>
                                     </div>
                                 </div>
                             </div>

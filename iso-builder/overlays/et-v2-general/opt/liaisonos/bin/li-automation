@@ -20,7 +20,7 @@ import subprocess
 import sys
 import threading
 import time
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timezone, timedelta
 from typing import Any
 
 DEFAULT_SCHEDULE = os.path.expanduser("~/.config/liaisonos/automation.json")
@@ -213,10 +213,45 @@ def validate_mission(mission: dict, ctx: str, rep: Report) -> None:
     if at and not RE_TIME.match(at):
         rep.err(ctx, f"'at' time '{at}' must be HH:MM")
     require(mission, "mode", str, ctx, rep)
-    require(mission, "connect_url", str, ctx, rep)   # operator owns it
     timeout = require(mission, "timeout_min", int, ctx, rep)
     if isinstance(timeout, int) and timeout <= 0:
         rep.err(ctx, f"timeout_min must be > 0 (got {timeout})")
+
+    # Type-specific required fields.
+    mtype = mission.get("type", "winlink")
+    if mtype not in ("winlink", "bbs_publish"):
+        rep.err(ctx, f"unknown mission type '{mtype}' — "
+                     "expected 'winlink' or 'bbs_publish'")
+    elif mtype == "winlink":
+        require(mission, "connect_url", str, ctx, rep)   # operator owns it
+    elif mtype == "bbs_publish":
+        require(mission, "bulletin_id", str, ctx, rep)
+        require(mission, "connect_url", str, ctx, rep)
+        # mode for bbs_publish: telnet (v1) or vara_hf (future). Telnet path
+        # needs --user / --pwd credentials; VARA HF needs --callsign.
+        if mission.get("mode") == "telnet":
+            require(mission, "user", str, ctx, rep)
+            require(mission, "pwd",  str, ctx, rep)
+        elif mission.get("mode") == "vara_hf":
+            require(mission, "callsign", str, ctx, rep)
+        elif isinstance(mission.get("mode"), str):
+            rep.err(ctx, f"bbs_publish mode '{mission['mode']}' not supported "
+                         "in this phase (expected 'telnet' or 'vara_hf')")
+        # bbs_publish-specific on_fail: only "skip" or "retry_same" make
+        # sense. retry_alt walks alternate gateways — that's a Winlink
+        # concept. The BBS itself is the destination here, so retry means
+        # the same target with a delay.
+        bp_on_fail = mission.get("on_fail", "skip")
+        if bp_on_fail not in ("skip", "retry_same"):
+            rep.err(ctx, f"bbs_publish on_fail must be 'skip' or "
+                         f"'retry_same' (got {bp_on_fail!r})")
+        if bp_on_fail == "retry_same":
+            rd = mission.get("retry_delay_min", 5)
+            mr = mission.get("max_retries", 3)
+            if not isinstance(rd, int) or rd <= 0:
+                rep.err(ctx, "retry_delay_min must be a positive int (minutes)")
+            if not isinstance(mr, int) or mr <= 0:
+                rep.err(ctx, "max_retries must be a positive int")
 
     if "days" in mission:
         days = mission["days"]
@@ -243,6 +278,14 @@ def validate_mission(mission: dict, ctx: str, rep: Report) -> None:
     on_fail = mission.get("on_fail", "skip")
     if not isinstance(on_fail, str) or on_fail not in VALID_ON_FAIL:
         rep.err(ctx, f"on_fail must be one of {sorted(VALID_ON_FAIL)} (got {on_fail!r})")
+    # Winlink retry_same needs the same two knobs bbs_publish validates above.
+    if on_fail == "retry_same" and mtype == "winlink":
+        rd = mission.get("retry_delay_min", 5)
+        mr = mission.get("max_retries", 3)
+        if not isinstance(rd, int) or rd <= 0:
+            rep.err(ctx, "retry_delay_min must be a positive int (minutes)")
+        if not isinstance(mr, int) or mr <= 0:
+            rep.err(ctx, "max_retries must be a positive int")
     if on_fail == "retry_alt":
         alt = mission.get("alt_rms")
         if not isinstance(alt, list) or not alt:
@@ -373,6 +416,128 @@ MODE_DEFAULT_MODEM = {
     "winlink-ardop":   "ardop",
 }
 
+# Path to the QtTermTCP binary used for headless bbs_publish missions
+# (--send-bulletin mode). Falls back to PATH lookup if /usr/local/bin/QtTermTCP
+# isn't present, so a USB-staged binary that's added to PATH still works.
+QTTERMTCP_BIN = "/usr/local/bin/QtTermTCP"
+
+# bbs_publish state stores. The daemon owns these; the editor reads them via
+# its API to render mission status pills and the Re-arm button.
+BULLETIN_PENDING_DIR = os.path.expanduser(
+    "~/.config/liaisonos/bulletins/pending")
+DISABLED_STATE_PATH = os.path.expanduser(
+    "~/.cache/liaisonos/automation-disabled.json")
+RETRY_STATE_PATH    = os.path.expanduser(
+    "~/.cache/liaisonos/automation-retry-state.json")
+
+
+def _load_json_state(path: str) -> dict:
+    """Load a small JSON state dict, returning {} on any IO/parse failure.
+    The state files are operator-visible by design — they double as
+    inspection points during incident triage."""
+    try:
+        with open(path) as f:
+            d = json.load(f)
+            return d if isinstance(d, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _save_json_state(path: str, data: dict) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2)
+    os.replace(tmp, path)
+
+
+def _md5_file(path: str) -> str:
+    """Return hex MD5 of a file, or '' if it doesn't exist / can't be read."""
+    import hashlib as _hashlib
+    try:
+        h = _hashlib.md5()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except OSError:
+        return ""
+
+
+def bbs_publish_disabled(mission_name: str) -> dict | None:
+    """Return the disabled-state entry for a mission, or None if active.
+    Editor's Re-arm button removes the entry; the daemon writes one when
+    max_retries is exhausted."""
+    return _load_json_state(DISABLED_STATE_PATH).get(mission_name)
+
+
+def bbs_publish_disable(mission_name: str, reason: str,
+                        last_error: str, attempts: int) -> None:
+    state = _load_json_state(DISABLED_STATE_PATH)
+    state[mission_name] = {
+        "disabled_at":    datetime.now().isoformat(timespec="seconds"),
+        "reason":         reason,
+        "last_error":     last_error,
+        "last_attempt":   datetime.now().isoformat(timespec="seconds"),
+        "attempts_taken": attempts,
+    }
+    _save_json_state(DISABLED_STATE_PATH, state)
+
+
+def bbs_publish_clear_disabled(mission_name: str) -> None:
+    state = _load_json_state(DISABLED_STATE_PATH)
+    if state.pop(mission_name, None) is not None:
+        _save_json_state(DISABLED_STATE_PATH, state)
+
+
+def bbs_publish_retry_state(mission_name: str) -> dict | None:
+    return _load_json_state(RETRY_STATE_PATH).get(mission_name)
+
+
+def bbs_publish_record_retry(mission_name: str, attempts_so_far: int,
+                             next_retry_at: datetime, last_error: str) -> None:
+    state = _load_json_state(RETRY_STATE_PATH)
+    state[mission_name] = {
+        "attempts_so_far": attempts_so_far,
+        "last_attempt_at": datetime.now().isoformat(timespec="seconds"),
+        "next_retry_at":   next_retry_at.isoformat(timespec="seconds"),
+        "last_error":      last_error,
+    }
+    _save_json_state(RETRY_STATE_PATH, state)
+
+
+def bbs_publish_clear_retry(mission_name: str) -> None:
+    state = _load_json_state(RETRY_STATE_PATH)
+    if state.pop(mission_name, None) is not None:
+        _save_json_state(RETRY_STATE_PATH, state)
+
+
+def bbs_publish_md5_already_sent(bulletin_id: str) -> bool:
+    """True if the bulletin's TXT MD5 matches its last_sent_md5 — i.e. the
+    operator hasn't regenerated or edited the body since the last successful
+    send. Used by the run loop to silently skip slots whose content is
+    stale-vs-last-send."""
+    txt = os.path.join(BULLETIN_PENDING_DIR, bulletin_id + ".txt")
+    jsn = os.path.join(BULLETIN_PENDING_DIR, bulletin_id + ".json")
+    if not os.path.isfile(txt) or not os.path.isfile(jsn):
+        return False
+    try:
+        with open(jsn) as f:
+            meta = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return False
+    last_md5 = meta.get("last_sent_md5", "")
+    if not last_md5:
+        return False
+    return _md5_file(txt) == last_md5
+
+
+def bbs_publish_bulletin_exists(bulletin_id: str) -> bool:
+    """Both the .json and the .txt must be present in pending/. Either being
+    missing means the slot is unfireable — daemon skips silently."""
+    base = os.path.join(BULLETIN_PENDING_DIR, bulletin_id)
+    return os.path.isfile(base + ".json") and os.path.isfile(base + ".txt")
+
 
 def send_supervisor(cmd: dict, timeout: float = 30.0) -> dict:
     """Send a single JSON command over et-supervisor's Unix socket. Returns
@@ -417,7 +582,89 @@ def _mission_freq_hz(mission: dict) -> int:
     return 0
 
 
+def fire_bbs_publish_mission(mission: dict) -> dict:
+    """Spawn QtTermTCP --send-bulletin as a headless subprocess for a
+    bbs_publish mission. Returns dict with 'status' and a 'proc' (Popen)
+    handle that the run loop polls until the subprocess exits.
+
+    No supervisor IPC, no rigctld coordination — telnet missions don't
+    touch the radio. (vara_hf bbs_publish, when added, will need both.)
+    """
+    bin_path = QTTERMTCP_BIN
+    if not os.path.exists(bin_path):
+        # PATH fallback so a USB-staged binary works without /usr/local/bin
+        # surgery during testing.
+        import shutil as _shutil
+        path_hit = _shutil.which("QtTermTCP")
+        if path_hit:
+            bin_path = path_hit
+        else:
+            return {"status": "error",
+                    "message": f"QtTermTCP not found at {QTTERMTCP_BIN} or on PATH"}
+
+    bulletin_id = mission.get("bulletin_id", "")
+    if not bulletin_id:
+        return {"status": "error",
+                "message": "bbs_publish mission missing bulletin_id"}
+
+    mode = mission.get("mode", "telnet")
+    args = [
+        bin_path,
+        "--send-bulletin", bulletin_id,
+        "--mode",        mode,
+        "--connect",     mission.get("connect_url", ""),
+        "--timeout",     str(mission.get("timeout_min", 5)),
+        "--mission-id",  mission["name"],
+    ]
+    if mode == "telnet":
+        args += ["--user", mission.get("user", ""),
+                 "--pwd",  mission.get("pwd",  "")]
+    elif mode == "vara_hf":
+        args += ["--callsign", mission.get("callsign", "")]
+
+    # QT_FORCE_STDERR_LOGGING=1 — Qt routes qCritical to journald when stderr
+    # isn't a tty; the daemon's stderr is a pipe, so without this every error
+    # disappears. Keeps BulletinSender's BSLOG lines visible in the journal.
+    env = dict(os.environ)
+    env["QT_FORCE_STDERR_LOGGING"] = "1"
+
+    try:
+        # stderr=PIPE so the run-loop's retry handler can read the BSLOG /
+        # qCritical lines after the subprocess exits and use the most recent
+        # error tail in the disabled-state record. stdout stays muted — the
+        # operational signal is exit code + stderr; stdout would only carry
+        # noise.
+        proc = subprocess.Popen(
+            args,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            env=env)
+    except FileNotFoundError:
+        return {"status": "error",
+                "message": f"QtTermTCP could not be exec'd: {bin_path}"}
+    except OSError as e:
+        return {"status": "error",
+                "message": f"spawn failed: {e}"}
+
+    print(f"  bbs_publish: QtTermTCP pid={proc.pid} "
+          f"mode={mode} bulletin={bulletin_id}")
+    return {"status": "ok", "proc": proc}
+
+
 def fire_mission(mission: dict) -> dict:
+    """Dispatcher — routes the mission to the right runner based on its type.
+    Winlink missions (default, when no type field is set) go through the
+    existing supervisor IPC path. BBS publish missions spawn QtTermTCP
+    directly as a headless subprocess.
+    """
+    mtype = mission.get("type", "winlink")
+    if mtype == "bbs_publish":
+        return fire_bbs_publish_mission(mission)
+    # Falls through to the Winlink path below.
+    return fire_winlink_mission(mission)
+
+
+def fire_winlink_mission(mission: dict) -> dict:
     """QSY to the mission's freq FIRST so supervisor's band check passes
     (a HF presence is on the wrong band for a VHF mission). Then send
     start-mode. Long IPC timeout — chain spawn can take 60-90s.
@@ -432,12 +679,13 @@ def fire_mission(mission: dict) -> dict:
     #     to skip its qsy-band action so it doesn't kick the rig back to VFO.
     #   • Otherwise: force VFOA (clean up from any prior MEM-channel state),
     #     then set mode / levels / QSY individually.
-    if not rigctld_wait_ready():
+    if not rigctld_ensure_ready():
         _notify("critical", "LiaisonOS Automation",
                 f"Mission '{mission.get('name','?')}' SKIPPED — "
-                "rigctld unreachable.\nCheck radio is on and connected.")
+                "rigctld still down after 3 restart attempts.\n"
+                "Likely a stuck serial port from Wine — unplug/replug the radio USB.")
         return {"status": "error",
-                "message": "rigctld unresponsive — skipping mission, will retry next tick"}
+                "message": "rigctld unresponsive after retries — skipping mission, will retry next tick"}
     used_memory = _apply_rig_memory(mission)
     if not used_memory:
         ok, reason = rigctld_set_vfo("VFOA")
@@ -471,6 +719,13 @@ def fire_mission(mission: dict) -> dict:
     }
     if used_memory:
         params["skip_qsy"] = True
+    # VARA missions can override VARA's KISS Port so LinBPQ (configured
+    # for the default 8100 in bpq32.cfg) can't attach during the mission.
+    # Only meaningful for winlink-vara-hf / winlink-vara-fm — other modes
+    # ignore this param harmlessly. Falls through to the mode JSON's
+    # hardcoded default (8101) when not set.
+    if mission.get("kiss_port"):
+        params["kiss_port"] = str(mission["kiss_port"])
     cmd = {
         "cmd":   "start-mode",
         "mode":  mode,
@@ -599,12 +854,13 @@ def start_presence(presence: dict) -> dict:
     # Guard against the rigctld back-pressure window right after a mission
     # cascade-stop (FT-897D's 4800-baud serial CAT can hold rigctld busy
     # for a few seconds while supervisor teardown commands queue).
-    if not rigctld_wait_ready():
+    if not rigctld_ensure_ready():
         _notify("critical", "LiaisonOS Automation",
                 f"Presence '{presence.get('mode','?')}' SKIPPED — "
-                "rigctld unreachable.\nCheck radio is on and connected.")
+                "rigctld still down after 3 restart attempts.\n"
+                "Likely a stuck serial port from Wine — unplug/replug the radio USB.")
         return {"status": "error",
-                "message": "rigctld unresponsive — skipping presence start, will retry next tick"}
+                "message": "rigctld unresponsive after retries — skipping presence start, will retry next tick"}
     used_memory = _apply_rig_memory(presence)
     if not used_memory:
         ok, reason = rigctld_set_vfo("VFOA")
@@ -817,6 +1073,41 @@ def rigctld_wait_ready(host: str = "127.0.0.1", port: int = 4532,
             pass
         time.sleep(probe_interval_s)
     return False
+
+
+def rigctld_ensure_ready(host: str = "127.0.0.1", port: int = 4532) -> bool:
+    """Ensure rigctld is answering probes; if not, invoke the recovery
+    script and re-check. Returns True when rigctld is up AND responds
+    to a probe.
+
+    Behavior:
+      1. Poll rigctld for the full congestion-window (12s). If it
+         answers, done — this is the happy path for the "just slow"
+         case (FT-897D at 4800 baud right after a mission cascade-stop).
+      2. If it doesn't answer, run /opt/liaisonos/bin/li-rigctld-recover.
+         That script is the ONE authoritative recovery path — same one
+         mode_engine._restart_rigctld uses. It handles reset-failed,
+         stop, killall, wait-for-port-free, start, and verifies both
+         port bind AND rig response before returning 0.
+      3. Return True if the script exits 0, False otherwise. The
+         script's stderr contains diagnostic info for the caller to log.
+    """
+    if rigctld_wait_ready(host=host, port=port, total_timeout_s=12.0):
+        return True
+
+    print("  rigctld unresponsive — running li-rigctld-recover...")
+    try:
+        r = subprocess.run(
+            ["/opt/liaisonos/bin/li-rigctld-recover"],
+            timeout=30, capture_output=True, text=True,
+        )
+        if r.stderr:
+            for line in r.stderr.rstrip().splitlines():
+                print(f"  {line}")
+        return r.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        print(f"  li-rigctld-recover invocation failed: {e}")
+        return False
 
 
 def rigctld_set_vfo(vfo: str, host: str = "127.0.0.1", port: int = 4532,
@@ -1104,6 +1395,15 @@ def _clear_mission_state(mission_id: str) -> None:
         _MISSION_STATES.pop(mission_id, None)
 
 
+def _record_mission_state(mission_id: str, state: str) -> None:
+    """Synthesize a mission-state entry. Used for bbs_publish missions
+    where the QtTermTCP exit code is the source of truth — its UDP feed
+    may be raced/dropped on fast-exit failures, so we write the terminal
+    state explicitly from the daemon side."""
+    with _MISSION_STATES_LOCK:
+        _MISSION_STATES[mission_id] = state
+
+
 def _notify(level: str, title: str, message: str) -> None:
     """Surface a daemon error/warning to the desktop via notify-send.
 
@@ -1192,9 +1492,14 @@ def _build_alt_mission(parent: dict, alt: dict, attempt: int, total: int) -> dic
     """
     out = dict(parent)
     for k in ("rms", "connect_url", "mode", "rig_mode", "rig_bw",
-              "rig_levels", "rig_memory", "timeout_min"):
+              "rig_levels", "rig_memory", "timeout_min",
+              # bbs_publish overrides — an alt that points to a different BBS
+              # may need its own credentials.
+              "bulletin_id", "user", "pwd", "callsign"):
         if k in alt:
             out[k] = alt[k]
+    # _proc is a runtime handle, never inherited by an alt mission.
+    out.pop("_proc", None)
     rms_label = alt.get("rms", "?")
     out["name"] = f"{parent['name']} (alt {attempt}/{total} — {rms_label})"
     # Drop on_fail / alt_rms from the child so we don't recursively retry
@@ -1278,6 +1583,11 @@ def cmd_run(args: argparse.Namespace) -> int:
     # (Wine VARA) without making real operator-stop detection sluggish.
     last_engagement_dt: datetime | None = None
     ENGAGEMENT_GRACE_SECONDS = 30
+    # Fast-retry interval while we owe a presence but haven't started it yet
+    # (operator engaged but start_presence failed — rigctld busy, supervisor
+    # rejected, QSY failed). Without this the next attempt waits a full minute
+    # which feels broken from the dashboard.
+    PRESENCE_RETRY_SECONDS = 5
 
     print(f"li-automation run: {path}")
     print(f"Daemon clock: {'UTC' if USE_UTC else 'LOCAL'}  "
@@ -1351,6 +1661,24 @@ def cmd_run(args: argparse.Namespace) -> int:
                 _notify("low", "LiaisonOS Automation engaged",
                         "\n".join(bits))
                 print(f"[{now:%H:%M:%S}] Automation engaged ({trigger}) — {bits[0]}")
+                # Snapshot the full state at engagement so the journal makes
+                # any subsequent "presence didn't start" failure self-evident.
+                print(f"  engage-state: expected_mode={expected_mode!r} "
+                      f"current_mode={current_mode!r} "
+                      f"our_presence={our_presence_mode!r} "
+                      f"sv_busy={sv_busy} "
+                      f"window={(expected_presence or {}).get('window','?')}")
+                # Drop stale presence ownership at the engagement edge.
+                # Without this, the DEFER branch (our_presence set + not
+                # current_mode + in_grace) swallows the start_presence call,
+                # then grace expires and we auto-pause with "operator stopped
+                # X" — making the operator click AUTOMATION twice. The
+                # operator's click IS the "I'm handing control back" signal,
+                # so any in-memory ownership from before the pause is moot.
+                if our_presence_mode and not current_mode:
+                    print(f"  engage: clearing stale our_presence={our_presence_mode!r} "
+                          f"(no mode running) so start_presence can fire this tick")
+                    our_presence_mode = ""
                 last_engagement_dt = now      # start grace window
             prev_paused = paused
 
@@ -1363,19 +1691,49 @@ def cmd_run(args: argparse.Namespace) -> int:
 
             # ── 1. Reap finished mission ─────────────────────────────────────
             if pending_mission:
-                mission_mode = pending_mission["mode"]
-                if current_mode != mission_mode:
+                # Two completion-detection paths: the existing Winlink
+                # missions watch the supervisor's current_mode flip away
+                # from mission_mode; bbs_publish missions don't go through
+                # the supervisor at all, so we poll the Popen handle and
+                # synthesize an "ended" event when the process exits.
+                if pending_mission.get("type") == "bbs_publish":
+                    proc = pending_mission.get("_proc")
+                    mission_ended = (proc is None) or (proc.poll() is not None)
+                else:
+                    mission_mode = pending_mission["mode"]
+                    mission_ended = (current_mode != mission_mode)
+                if mission_ended:
                     # Supervisor sets mode=None at the START of cascade-stop,
                     # not the end. Wait for stopping=False + start_in_progress=False
                     # before we touch rigctld for the presence restart — otherwise
                     # our QSY races the supervisor's teardown commands on the
                     # FT-897D's slow serial CAT and times out.
+                    # (bbs_publish doesn't engage the supervisor, so this
+                    # wait returns immediately for those.)
                     ended_mission = pending_mission
                     print(f"[{now:%H:%M:%S}] Mission '{ended_mission['name']}' "
                           f"ended — waiting for supervisor teardown to finish…")
                     if not wait_until_idle(timeout_sec=30.0):
                         print("  WARN: supervisor still busy after 30s — "
                               "proceeding anyway, may retry next tick")
+
+                    # For bbs_publish, the QtTermTCP exit code is the
+                    # primary truth (0 = sent + BID, 2-5 = failure modes).
+                    # The UDP feed records the same terminal state in
+                    # parallel, so retry_alt/notify keep working.
+                    if ended_mission.get("type") == "bbs_publish":
+                        proc = ended_mission.get("_proc")
+                        rc = proc.returncode if proc else -1
+                        print(f"  bbs_publish exit code: {rc}")
+                        if rc == 0:
+                            _record_mission_state(ended_mission["name"],
+                                                  "complete")
+                            # Wipe any in-flight retry cycle — content was
+                            # successfully delivered, the slot is done.
+                            bbs_publish_clear_retry(ended_mission["name"])
+                        else:
+                            _record_mission_state(ended_mission["name"],
+                                                  "failed")
 
                     # Check the UDP-tracked terminal state to distinguish
                     # Complete from Failed. Without this, on_fail can't fire
@@ -1421,9 +1779,81 @@ def cmd_run(args: argparse.Namespace) -> int:
                                             f"FAILED — all {len(alts)} alt "
                                             "RMS exhausted.")
                             elif on_fail == "retry_same":
-                                # Not yet wired beyond the placeholder — skip.
-                                print("  retry_same: not yet implemented "
-                                      "— falling through to skip")
+                                # Delayed retry of the SAME mission/target,
+                                # honoring max_retries + retry_delay_min.
+                                # Implemented for BOTH bbs_publish and winlink;
+                                # the retry scheduler (section 1b) re-fires from
+                                # the persisted retry state.
+                                is_bbs = (parent.get("type") == "bbs_publish")
+                                max_r = int(parent.get("max_retries", 3))
+                                delay_min = int(
+                                    parent.get("retry_delay_min", 5))
+                                attempts = ended_mission.get(
+                                    "_retry_attempt", 0)
+                                if attempts <= 0:
+                                    # First failure of this slot — count the
+                                    # initial fire as attempt #1, so the next
+                                    # is #2.
+                                    attempts = 1
+                                # Failure detail for the editor's retry banner.
+                                # bbs has a Popen stderr; winlink's truth is the
+                                # UDP-tracked terminal state.
+                                if is_bbs:
+                                    last_err = (proc.stderr.read().decode(
+                                        "utf-8", errors="replace")[-200:]
+                                        if proc and proc.stderr
+                                        else f"exit {rc}")
+                                else:
+                                    last_err = ("winlink session failed "
+                                                f"(state={last_state or 'unknown'})")
+                                if attempts >= max_r:
+                                    # Retries exhausted — end the cycle.
+                                    bbs_publish_clear_retry(parent_name)
+                                    if is_bbs:
+                                        # BBS: disable the slot; operator must
+                                        # re-arm it from the Automation Editor.
+                                        bbs_publish_disable(
+                                            parent_name,
+                                            reason=f"max_retries ({max_r}) "
+                                                   "exhausted",
+                                            last_error=last_err,
+                                            attempts=attempts)
+                                        print(f"  retry_same: max_retries "
+                                              f"({max_r}) exhausted — "
+                                              "mission DISABLED")
+                                        _notify("critical",
+                                                "LiaisonOS Automation",
+                                                f"Mission '{parent_name}' "
+                                                f"disabled after {max_r} "
+                                                "failed retries. Re-arm "
+                                                "from Automation Editor.")
+                                    else:
+                                        # Winlink: give up THIS slot only. The
+                                        # supervisor teardown below returns us
+                                        # to the presence mode and the mission
+                                        # runs again at its next scheduled
+                                        # time/day — no permanent disable.
+                                        print(f"  retry_same: max_retries "
+                                              f"({max_r}) exhausted — giving "
+                                              "up this slot; will run again at "
+                                              "next scheduled time")
+                                        _notify("critical",
+                                                "LiaisonOS Automation",
+                                                f"Mission '{parent_name}' "
+                                                f"FAILED after {max_r} "
+                                                "attempts. Returning to "
+                                                "presence; will retry at its "
+                                                "next scheduled time.")
+                                else:
+                                    next_dt = now + timedelta(
+                                        minutes=delay_min)
+                                    bbs_publish_record_retry(
+                                        parent_name, attempts, next_dt,
+                                        last_err)
+                                    print(f"  retry_same: attempt "
+                                          f"{attempts}/{max_r} failed — "
+                                          f"next retry at "
+                                          f"{next_dt:%H:%M}")
                         # Even when on_fail==skip (or no parent found),
                         # the operator should know the mission failed.
                         if retry_mission is None:
@@ -1453,6 +1883,77 @@ def cmd_run(args: argparse.Namespace) -> int:
 
             today_short = WEEKDAY_SHORT[now.weekday()]
 
+            # ── 1b. Mission retry scheduler (bbs_publish + winlink) ───────────
+            # Pending retries (recorded by the on-fail handler) fire at their
+            # next_retry_at without waiting for the mission's normal 'at'
+            # time. This sits BEFORE the regular mission-firing loop so
+            # retries take priority over fresh slots.
+            if not paused and not pending_mission:
+                retry_state_now = _load_json_state(RETRY_STATE_PATH)
+                for retry_name, rs in list(retry_state_now.items()):
+                    try:
+                        nxt = datetime.fromisoformat(rs.get("next_retry_at",""))
+                    except ValueError:
+                        continue
+                    if now < nxt:
+                        continue
+                    parent = next((m for m in missions
+                                   if isinstance(m, dict)
+                                   and m.get("name") == retry_name), None)
+                    if not parent or parent.get("type", "winlink") \
+                            not in ("bbs_publish", "winlink"):
+                        # Mission was removed or retyped — drop the orphan.
+                        bbs_publish_clear_retry(retry_name)
+                        continue
+                    if bbs_publish_disabled(retry_name):
+                        bbs_publish_clear_retry(retry_name)
+                        continue
+                    is_bbs = (parent.get("type") == "bbs_publish")
+                    print(f"[{now:%H:%M:%S}] retry due: {retry_name} "
+                          f"(attempt {rs.get('attempts_so_far',0)+1})")
+
+                    # Winlink retries need the radio: stop our presence first,
+                    # exactly like a fresh slot (section 2). bbs_publish never
+                    # engages the supervisor, so it fires straight through. If
+                    # the operator owns the radio, defer — the retry stays
+                    # pending and we try again next tick.
+                    if not is_bbs and current_mode:
+                        if current_mode == our_presence_mode:
+                            print(f"  Stopping presence '{our_presence_mode}' "
+                                  "for retry")
+                            r = stop_current()
+                            if r.get("status") != "ok":
+                                print(f"  Stop failed: {r.get('message','?')} "
+                                      "— deferring retry to next tick")
+                                continue
+                            our_presence_mode = ""
+                            current_mode = ""
+                            if not wait_until_idle(timeout_sec=15.0):
+                                print("  Stop didn't reach idle in 15s — "
+                                      "deferring retry to next tick")
+                                continue
+                        else:
+                            print(f"  retry deferred — operator is in "
+                                  f"'{current_mode}'")
+                            continue
+
+                    print(f"  FIRE retry: {retry_name}")
+                    resp = fire_mission(parent)
+                    if resp.get("status") == "ok":
+                        pending_mission = dict(parent)
+                        # _retry_attempt carries the in-progress retry count
+                        # so the completion handler knows where in the cycle
+                        # we are without re-reading the state file.
+                        pending_mission["_retry_attempt"] = \
+                            rs.get("attempts_so_far", 0) + 1
+                        if is_bbs:
+                            pending_mission["_proc"] = resp.get("proc")
+                        else:
+                            current_mode = parent["mode"]
+                        break    # one retry per tick
+                    else:
+                        print(f"  retry spawn failed: {resp.get('message','?')}")
+
             # ── 2. Mission firing ────────────────────────────────────────────
             # Match missions whose 'at' time has been CROSSED since the
             # last tick — not just "current minute equals at". Otherwise
@@ -1474,6 +1975,25 @@ def cmd_run(args: argparse.Namespace) -> int:
                     # Fire if at_dt was crossed between last_tick_dt and now.
                     if not (last_tick_dt < at_dt <= now):
                         continue
+
+                    # bbs_publish gates — all silent skips, no toast spam.
+                    if m.get("type") == "bbs_publish":
+                        bid = m.get("bulletin_id", "")
+                        if bbs_publish_disabled(name):
+                            _dbg(f"slot {name}: mission disabled — skipping")
+                            fired_today.add(name)
+                            continue
+                        if not bbs_publish_bulletin_exists(bid):
+                            print(f"[{now:%H:%M:%S}] {name}: bulletin "
+                                  f"'{bid}' not in pending — slot skipped")
+                            fired_today.add(name)
+                            continue
+                        if bbs_publish_md5_already_sent(bid):
+                            print(f"[{now:%H:%M:%S}] {name}: bulletin "
+                                  f"'{bid}' MD5 matches last send — "
+                                  "content unchanged, skipping silently")
+                            fired_today.add(name)
+                            continue
 
                     print(f"[{now:%H:%M:%S}] Mission slot: {name}")
 
@@ -1517,7 +2037,17 @@ def cmd_run(args: argparse.Namespace) -> int:
                     msg    = resp.get("message", "")
                     if status == "ok":
                         pending_mission = m
-                        current_mode = m["mode"]
+                        # For bbs_publish missions, the Popen handle is the
+                        # only completion-detection channel — stash it on
+                        # the mission dict so the run-loop poller finds it
+                        # next tick.
+                        if m.get("type") == "bbs_publish":
+                            pending_mission["_proc"] = resp.get("proc")
+                            # No supervisor mode is engaged; keep
+                            # current_mode unchanged so presence tracking
+                            # isn't confused.
+                        else:
+                            current_mode = m["mode"]
                         fired_today.add(name)
                     else:
                         # Don't mark fired_today on supervisor error —
@@ -1551,12 +2081,23 @@ def cmd_run(args: argparse.Namespace) -> int:
                 elif not current_mode and expected_mode:
                     # Nothing running, expected presence has a slot — start it
                     print(f"[{now:%H:%M:%S}] Starting presence '{expected_mode}' "
-                          f"(window {expected_presence.get('window','?')})")
+                          f"(window {expected_presence.get('window','?')}) — "
+                          f"current_mode='' our_presence='' sv_busy={sv_busy} "
+                          f"in_grace={in_grace}")
                     resp = start_presence(expected_presence)
                     if resp.get("status") == "ok":
                         our_presence_mode = expected_mode
+                        print(f"  presence '{expected_mode}' start accepted by supervisor")
                     else:
-                        print(f"  supervisor: {resp.get('message','?')}")
+                        # Surface the failure to the operator — silent retries
+                        # left them clicking AUTOMATION on/off wondering why
+                        # nothing happened.
+                        reason = resp.get("message", "?")
+                        print(f"  presence start FAILED — {reason}")
+                        _notify("normal", "LiaisonOS Automation",
+                                f"Presence '{expected_mode}' did not start.\n"
+                                f"Reason: {reason}\n"
+                                f"Retrying every {PRESENCE_RETRY_SECONDS}s.")
                 elif current_mode and current_mode == our_presence_mode \
                         and expected_mode and current_mode != expected_mode:
                     # Window changed AND we own the current mode — swap
@@ -1640,8 +2181,30 @@ def cmd_run(args: argparse.Namespace) -> int:
             #     operator toggles automation ON/OFF, we wake up and tick
             #     immediately instead of making them wait up to 59s for the
             #     engagement toast.
+            # Owe-a-presence detection: automation is engaged, the current
+            # window has an expected presence, and we haven't started it yet.
+            # Either start_presence failed this tick (rigctld busy, supervisor
+            # rejected) or in_grace deferred us. Either way we want to retry
+            # within seconds, not next minute — the operator just clicked
+            # AUTOMATION on the dashboard and expects sub-10s response.
+            owe_presence = (not paused
+                            and bool(expected_mode)
+                            and not our_presence_mode
+                            and not pending_mission)
             if pending_mission:
                 time.sleep(5)
+            elif owe_presence:
+                _dbg(f"owe-presence retry in {PRESENCE_RETRY_SECONDS}s "
+                     f"(expected={expected_mode!r})")
+                slept = 0
+                while slept < PRESENCE_RETRY_SECONDS:
+                    time.sleep(1.0)
+                    slept += 1
+                    if os.path.exists(override_flag) != paused:
+                        _dbg(f"pause flag changed during owe-presence retry "
+                             f"(was paused={paused}, now {not paused}) — "
+                             f"breaking out after {slept}s")
+                        break
             else:
                 target_seconds = max(1, 60 - time_now().second)
                 slept = 0

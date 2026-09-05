@@ -1,0 +1,28 @@
+{
+    "$schema": "et-mode-v2",
+    "id": "qtscanner",
+    "name": {
+        "en": "QtScanner (auto QSY)",
+        "fr": "QtScanner (QSY auto)"
+    },
+    "category": "tools",
+    "requires": {
+        "services": ["rigctld"]
+    },
+    "prechecks": [
+        {"type": "service-active", "name": "rigctld"}
+    ],
+    "config": [],
+    "pre_start": [
+        {"action": "kill-all"}
+    ],
+    "chain": [
+        {
+            "name": "qtscanner",
+            "command": ["/usr/local/bin/QtScanner"],
+            "restart": "never"
+        }
+    ],
+    "post_start": [],
+    "kill_all_first": true
+}

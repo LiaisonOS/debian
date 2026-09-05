@@ -37,6 +37,12 @@
             "command": ["direwolf", "-c", "{direwolf_conf}", "-l", "{log_dir}", "-t", "0", "-p"],
             "health": {"type": "tcp-port", "port": 8001, "timeout": 60},
             "restart": "audio-retry"
+        },
+        {
+            "name": "direwolf-monitor",
+            "command": ["xfce4-terminal", "--disable-server", "--title=Direwolf Monitor", "--geometry=120x32", "-e", "tail -n 40 -F {log_dir}/direwolf.log"],
+            "restart": "never",
+            "depends_on": "direwolf"
         }
     ],
     "post_start": [],

@@ -424,6 +424,13 @@ def api_save():
         if rigctrl.get('primeRig'):
             rigctrl_clean['primeRig'] = True
         radio_data['rigctrl'] = rigctrl_clean
+    else:
+        # No rigctrl block means "this radio has no CAT". QtDashboard reads a
+        # top-level "cat" field: true → expect rigctld, red X if missing; false
+        # → show "CAT: N/A" (gray) and don't block mode starts. Set it so a
+        # no-CAT setup (HT + DigiRig Lite + VOX or serial-PTT) doesn't get
+        # stuck at the CAT precondition check.
+        radio_data['cat'] = False
 
     if data.get('varafm'):
         varafm = data['varafm']

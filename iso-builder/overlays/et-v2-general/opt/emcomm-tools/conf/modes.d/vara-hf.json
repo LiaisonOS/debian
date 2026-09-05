@@ -46,6 +46,11 @@
         {
             "action": "set-radio-width",
             "width": 2750
+        },
+        {
+            "action": "vara-kiss-port",
+            "modem": "hf",
+            "port": 8100
         }
     ],
     "chain": [

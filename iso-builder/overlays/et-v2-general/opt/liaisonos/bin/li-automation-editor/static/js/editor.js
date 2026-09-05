@@ -220,13 +220,274 @@ function updPresence(idx, key, value) {
 
 
 // ── Mission rendering ────────────────────────────────────────────────────────
+// Cache of pending bulletins (with MD5 state inline) for the bbs_publish
+// mission picker. Loaded once on page load and after each composer event.
+let pendingBulletins = [];
+
+// Cache of daemon-side mission state (disabled + retry). Populated by
+// /api/missions/status. Keyed by mission name. Lets every bbs_publish card
+// decorate itself with a status banner without per-card fetches.
+let missionStatus = { disabled: {}, retry: {} };
+
+function refreshBulletinList() {
+    Promise.all([
+        fetch("/api/bulletins/pending").then(r => r.json()).catch(() => null),
+        fetch("/api/missions/status" ).then(r => r.json()).catch(() => null),
+    ]).then(([blist, mstat]) => {
+        pendingBulletins = (blist && blist.ok && blist.bulletins) ? blist.bulletins : [];
+        missionStatus = (mstat && mstat.ok)
+            ? { disabled: mstat.disabled || {}, retry: mstat.retry || {} }
+            : { disabled: {}, retry: {} };
+        renderMissionList();
+    });
+}
+
+function bulletinById(id) {
+    return pendingBulletins.find(b => b.id === id) || null;
+}
+
+async function rearmMission(name) {
+    if (!confirm(`Re-arm "${name}"? The daemon will resume firing this mission on its scheduled slots.`)) return;
+    const r = await fetch("/api/missions/rearm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+    });
+    const d = await r.json();
+    if (d && d.ok) {
+        showToast(`Re-armed: ${name}`, "ok");
+        refreshBulletinList();
+    } else {
+        showToast(`Re-arm failed: ${d && d.error || "(unknown)"}`, "err");
+    }
+}
+
+async function clearLastSent(id) {
+    if (!confirm("Clear the last-sent MD5 for this bulletin? The next mission fire will treat the body as fresh content.")) return;
+    const r = await fetch("/api/bulletins/clear-last-sent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+    });
+    const d = await r.json();
+    if (d && d.ok) {
+        showToast("Cleared — next fire will send fresh", "ok");
+        refreshBulletinList();
+    } else {
+        showToast(`Clear failed: ${d && d.error || "(unknown)"}`, "err");
+    }
+}
+
 function renderMissionList() {
     const root = document.getElementById("mission-list");
     root.innerHTML = "";
     state.missions.forEach((m, i) => root.appendChild(renderMission(i, m)));
 }
 
+function renderBbsPublishMission(idx, m) {
+    const div = document.createElement("div");
+    div.className = "row-card";
+    const modeOpts = BBS_PUBLISH_MODES.map(mm =>
+        `<option value="${mm.id}" ${m.mode === mm.id ? "selected" : ""}>${mm.label}</option>`
+    ).join("");
+    const dayCBs = WEEKDAYS.map(d => {
+        const checked = (m.days || WEEKDAYS).includes(d) ? "checked" : "";
+        return `<label class="cb-inline">
+          <input type="checkbox" value="${d}" ${checked}
+                 onchange="updMissionDays(${idx})"> ${d.toUpperCase()}
+        </label>`;
+    }).join("");
+    // bbs_publish on_fail: skip (default) or retry_same (delayed retries
+    // against the same BBS, disabled when max_retries exhausted). retry_alt
+    // is intentionally absent — it's a Winlink concept.
+    const onFailOpts = ["skip", "retry_same"].map(v =>
+        `<option value="${v}" ${m.on_fail === v ? "selected" : ""}>${v}</option>`
+    ).join("");
+    const retryBlock = (m.on_fail === "retry_same") ? `
+        <label><span>Retry delay (min)</span>
+          <input type="number" min="1" value="${m.retry_delay_min ?? 5}"
+                 onchange="updMission(${idx},'retry_delay_min',parseInt(this.value)||5)">
+        </label>
+        <label><span>Max retries</span>
+          <input type="number" min="1" value="${m.max_retries ?? 3}"
+                 onchange="updMission(${idx},'max_retries',parseInt(this.value)||3)">
+        </label>` : "";
+
+    // Status pill, driven by the cached bulletin info from the API.
+    const b = bulletinById(m.bulletin_id);
+    let pill = "";
+    if (m.bulletin_id) {
+        if (!b) {
+            pill = `<span class="pill pill-red">Bulletin '${m.bulletin_id}' not found</span>`;
+        } else if (b.state === "broken") {
+            pill = `<span class="pill pill-red">Body file missing — slot will be skipped</span>`;
+        } else if (b.state === "already_sent") {
+            const when = (b.last_sent_at || "").replace("T", " ").slice(0, 16);
+            pill = `<span class="pill pill-amber">Already sent ${when} · BID ${b.last_sent_bid || "?"} · waiting for content change</span>
+                    <button class="btn btn-small" onclick="clearLastSent('${m.bulletin_id}')">Clear last-sent</button>`;
+        } else {
+            pill = `<span class="pill pill-green">Ready to send · MD5 ${(b.current_md5 || "").slice(0, 8)}…</span>`;
+        }
+    }
+
+    // Disabled banner — daemon set this when max_retries was exhausted.
+    const disabled = missionStatus.disabled[m.name];
+    const disabledBanner = disabled ? `
+      <div class="disabled-banner">
+        ⚠ DISABLED — ${disabled.reason || "max retries exhausted"}
+        <small>at ${(disabled.disabled_at || "").replace("T"," ").slice(0,16)} · last error: ${(disabled.last_error || "?").slice(0, 200)}</small>
+        <button class="btn btn-small" onclick="rearmMission('${(m.name || "").replace(/'/g, "\\'")}')">Re-arm</button>
+      </div>` : "";
+
+    // Pending retry indicator — daemon set this while we're between attempts.
+    const retry = missionStatus.retry[m.name];
+    const retryBanner = retry ? `
+      <div class="retry-banner">
+        ↻ Retry pending — attempt ${(retry.attempts_so_far || 0) + 1}, next at
+        ${(retry.next_retry_at || "").replace("T"," ").slice(0,16)}
+        <small>last error: ${(retry.last_error || "?").slice(0, 200)}</small>
+      </div>` : "";
+
+    // Bulletin picker: lists every pending bulletin by id. Falls back to a
+    // plain text input when the store is empty (e.g. first run before any
+    // bulletin has been composed in QtTermTCP).
+    let bulletinPicker;
+    if (pendingBulletins.length === 0) {
+        bulletinPicker = `
+          <input type="text" placeholder="bulletin id (compose one in QtTermTCP first)"
+                 value="${m.bulletin_id || ''}"
+                 onchange="updMission(${idx},'bulletin_id',this.value)">
+          <p class="helptext">No pending bulletins found in
+            ~/.config/liaisonos/bulletins/pending/ — open QtTermTCP →
+            BBS → Bulletins to compose one, then click Refresh below.</p>`;
+    } else {
+        const opts = pendingBulletins.map(b => {
+            const sel = (m.bulletin_id === b.id) ? "selected" : "";
+            const lbl = b.title ? `${b.title} — ${b.id}` : b.id;
+            return `<option value="${b.id}" ${sel}>${lbl}</option>`;
+        }).join("");
+        bulletinPicker = `
+          <select onchange="updMission(${idx},'bulletin_id',this.value)">
+            <option value="">— pick a bulletin —</option>
+            ${opts}
+          </select>`;
+    }
+
+    const isTelnet = (m.mode === "telnet" || !m.mode);
+    const credBlock = isTelnet
+      ? `
+        <label><span>User (Telnet)</span>
+          <input type="text" value="${m.user || ''}" placeholder="VA2OPS"
+                 onchange="updMission(${idx},'user',this.value)">
+        </label>
+        <label><span>Password (Telnet)</span>
+          <input type="password" value="${m.pwd || ''}" placeholder="••••••"
+                 onchange="updMission(${idx},'pwd',this.value)">
+        </label>`
+      : `
+        <label><span>Callsign (VARA)</span>
+          <input type="text" value="${m.callsign || ''}" placeholder="VA2OPS"
+                 onchange="updMission(${idx},'callsign',this.value)">
+        </label>`;
+
+    const altsBlock = (m.on_fail === "retry_alt")
+        ? renderBbsAltBlock(idx, m.alt_rms || [])
+        : "";
+
+    div.innerHTML = `
+      ${disabledBanner}
+      ${retryBanner}
+      <div class="pill-row">${pill}</div>
+      <div class="row-grid">
+        <label><span>Type</span>
+          <select onchange="updMissionType(${idx},this.value)">
+            <option value="winlink">Winlink</option>
+            <option value="bbs_publish" selected>BBS Publish</option>
+          </select>
+        </label>
+        <label><span>Name</span>
+          <input type="text" value="${m.name || ''}" placeholder="Morning SITREP"
+                 onchange="updMission(${idx},'name',this.value)">
+        </label>
+        <label><span>At (HH:MM, in schedule TZ)</span>
+          <input type="text" value="${m.at || ''}" placeholder="08:00"
+                 onchange="updMission(${idx},'at',this.value)">
+        </label>
+        <label class="span-2"><span>Days</span>
+          <div class="cb-row" data-mission-days="${idx}">${dayCBs}</div>
+        </label>
+        <label><span>Transport</span>
+          <select onchange="updMission(${idx},'mode',this.value); renderMissionList();">${modeOpts}</select>
+        </label>
+        <label class="span-2"><span>Bulletin</span>
+          ${bulletinPicker}
+        </label>
+        <label class="span-2"><span>Connect URL</span>
+          <input type="text" value="${m.connect_url || ''}"
+                 placeholder="telnet://192.168.1.20:8010/"
+                 onchange="updMission(${idx},'connect_url',this.value)">
+        </label>
+        ${credBlock}
+        <label><span>Timeout (min)</span>
+          <input type="number" min="1" value="${m.timeout_min ?? 5}"
+                 onchange="updMission(${idx},'timeout_min',parseInt(this.value)||5)">
+        </label>
+        <label><span>On fail</span>
+          <select onchange="updMission(${idx},'on_fail',this.value); renderMissionList();">${onFailOpts}</select>
+        </label>
+        ${retryBlock}
+      </div>
+      ${altsBlock}
+      <div class="row-actions">
+        <button class="btn btn-small" onclick="refreshBulletinList()">↻ Refresh status</button>
+        <button class="btn btn-small btn-danger" onclick="delMission(${idx})">× Remove</button>
+      </div>
+    `;
+    return div;
+}
+
+function renderBbsAltBlock(missionIdx, alts) {
+    // Slim alt list for bbs_publish — each alt entry can carry its own
+    // connect_url + user/pwd (for telnet to a different node).
+    const rows = alts.map((a, j) => `
+      <div class="alt-row">
+        <input type="text" placeholder="connect_url" style="flex:2;"
+               value="${a.connect_url || ''}"
+               onchange="updAlt(${missionIdx},${j},'connect_url',this.value)">
+        <input type="text" placeholder="user" value="${a.user || ''}"
+               onchange="updAlt(${missionIdx},${j},'user',this.value)">
+        <input type="password" placeholder="pwd" value="${a.pwd || ''}"
+               onchange="updAlt(${missionIdx},${j},'pwd',this.value)">
+        <button class="btn btn-small btn-danger" onclick="delAlt(${missionIdx},${j})">×</button>
+      </div>
+    `).join("");
+    return `
+      <div class="alt-block">
+        <div class="alt-header">
+          <strong>Fallback BBS</strong>
+          <button class="btn btn-small" onclick="addAlt(${missionIdx})">+ alt</button>
+        </div>
+        ${rows || `<p class="helptext">No fallback yet — add one for retry_alt to use.</p>`}
+      </div>`;
+}
+
+function updMissionType(idx, newType) {
+    // Switching type mid-edit replaces the row with a fresh default of the
+    // new type. Cheaper and clearer than trying to merge incompatible
+    // field sets.
+    if (!confirm("Switching mission type will reset this card's fields. Continue?")) {
+        renderMissionList();
+        return;
+    }
+    state.missions.splice(idx, 1);
+    addMission(newType);
+}
+
 function renderMission(idx, m) {
+    // Backfill the type so legacy missions (no type field) render as
+    // Winlink — matches the daemon's default-to-winlink behavior.
+    if (!m.type) m.type = "winlink";
+    if (m.type === "bbs_publish") return renderBbsPublishMission(idx, m);
     const div = document.createElement("div");
     div.className = "row-card";
     const modeOpts = MISSION_MODES.map(mm =>
@@ -245,9 +506,39 @@ function renderMission(idx, m) {
     const altsBlock = (m.on_fail === "retry_alt")
         ? renderAltRmsBlock(idx, m.alt_rms || [])
         : "";
+    // retry_same: delayed retries of the SAME RMS, honoring these two
+    // numbers. After max_retries the mission returns to its presence mode
+    // and runs again at its next scheduled time (no permanent disable).
+    const retryBlock = (m.on_fail === "retry_same") ? `
+        <label><span>Retry delay (min)</span>
+          <input type="number" min="1" value="${m.retry_delay_min ?? 5}"
+                 onchange="updMission(${idx},'retry_delay_min',parseInt(this.value)||5)">
+        </label>
+        <label><span>Max retries</span>
+          <input type="number" min="1" value="${m.max_retries ?? 3}"
+                 onchange="updMission(${idx},'max_retries',parseInt(this.value)||3)">
+        </label>` : "";
+    // KISS Port field — only meaningful when the mission runs over a
+    // VARA modem. When mission fires, this port is written to VARA.ini
+    // so LinBPQ (configured for the default 8100) can't grab KISS
+    // during the mission. Default 8101 = "one off default", matches the
+    // hardcoded mode-JSON value.
+    const isVaraMission = (m.mode === "winlink-vara-hf" || m.mode === "winlink-vara-fm");
+    const kissPortBlock = isVaraMission ? `
+        <label><span>VARA KISS Port (mission-only)</span>
+          <input type="number" min="1024" max="65535" value="${m.kiss_port ?? 8101}"
+                 onchange="updMission(${idx},'kiss_port',parseInt(this.value)||8101)"
+                 title="Write this port to VARA.ini before firing the mission so LinBPQ (which is hardcoded for the default 8100) can't attach.">
+        </label>` : "";
 
     div.innerHTML = `
       <div class="row-grid">
+        <label><span>Type</span>
+          <select onchange="updMissionType(${idx},this.value)">
+            <option value="winlink" selected>Winlink</option>
+            <option value="bbs_publish">BBS Publish</option>
+          </select>
+        </label>
         <label><span>Name</span>
           <input type="text" value="${m.name || ''}" placeholder="Morning Winlink (40m)"
                  onchange="updMission(${idx},'name',this.value)">
@@ -297,6 +588,8 @@ function renderMission(idx, m) {
         <label><span>On fail</span>
           <select onchange="updMission(${idx},'on_fail',this.value); renderMissionList();">${onFailOpts}</select>
         </label>
+        ${retryBlock}
+        ${kissPortBlock}
       </div>
       ${altsBlock}
       <div class="row-actions">
@@ -335,16 +628,40 @@ function renderAltRmsBlock(missionIdx, alts) {
     `;
 }
 
-function addMission() {
-    state.missions.push({
-        name: "New mission", at: "12:00",
-        days: [...WEEKDAYS],
-        mode: "winlink-vara-hf",
-        rms: "N0CALL",
-        connect_url: "varahf:///N0CALL?freq=7102&bw=2300",
-        rig_mode: "PKTUSB", rig_bw: 0,
-        timeout_min: 10, on_fail: "skip",
-    });
+function addMission(missionType) {
+    // missionType is "winlink" (default) or "bbs_publish". Each gets a
+    // shape tailored to its required fields, so the daemon's validator
+    // is happy from the moment the operator clicks Save.
+    if (missionType === "bbs_publish") {
+        state.missions.push({
+            type: "bbs_publish",
+            name: "New BBS publish", at: "12:00",
+            days: [...WEEKDAYS],
+            mode: "telnet",
+            bulletin_id: "",
+            connect_url: "telnet://192.168.1.20:8010/",
+            user: "",
+            pwd: "",
+            timeout_min: 5,
+            on_fail: "skip",
+            retry_delay_min: 5,
+            max_retries: 3,
+        });
+    } else {
+        state.missions.push({
+            type: "winlink",
+            name: "New mission", at: "12:00",
+            days: [...WEEKDAYS],
+            mode: "winlink-vara-hf",
+            rms: "N0CALL",
+            connect_url: "varahf:///N0CALL?freq=7102&bw=2300",
+            rig_mode: "PKTUSB", rig_bw: 0,
+            timeout_min: 10, on_fail: "skip",
+        });
+    }
+    // Refresh the pending-bulletin cache for the picker so the new card
+    // immediately shows any composed bulletins.
+    refreshBulletinList();
     renderMissionList();
 }
 function delMission(idx) {
@@ -617,3 +934,6 @@ async function saveSchedule(doRestart) {
 loadTopForm();
 renderPresenceList();
 renderMissionList();
+// Pre-warm the bulletin picker — fires once on page load so the picker
+// dropdown isn't empty when the operator opens a bbs_publish mission card.
+refreshBulletinList();

@@ -39,6 +39,9 @@ PAUSE_FLAG    = Path.home() / ".cache" / "liaisonos" / "automation-paused"
 USER_CONFIG   = Path.home() / ".config" / "emcomm-tools" / "user.json"
 BACKUP_DIR    = Path.home() / ".cache" / "liaisonos" / "automation-backups"
 LI_AUTOMATION = "/opt/liaisonos/bin/li-automation"
+# Where QtTermTCP's BulletinStore lives — single source of truth for the
+# bulletin picker UI in the bbs_publish mission card.
+BULLETIN_PENDING = Path.home() / ".config" / "liaisonos" / "bulletins" / "pending"
 import shutil
 PAT_BIN       = shutil.which("pat") or "/usr/bin/pat"
 
@@ -48,6 +51,16 @@ PAT_BIN       = shutil.which("pat") or "/usr/bin/pat"
 PRESENCE_MODES = [
     {"id": "js8call",    "label": "JS8Call",            "modems": []},
     {"id": "varac",      "label": "VarAC",              "modems": []},
+    # Standalone modem-only presences — no BBS behind them. Useful when the
+    # operator wants the modem parked and listening (P2P chat, third-party
+    # AGWPE apps, manual TX from QtTermTCP, etc.) without launching the
+    # full BBS-server stack. Same mode-id names as the modem sub-options
+    # under bbs-server, but exposed here as top-level standalone presences.
+    {"id": "vara-hf",    "label": "VARA HF (standalone)", "modems": []},
+    {"id": "vara-fm",    "label": "VARA FM (standalone)", "modems": []},
+    {"id": "mercury",    "label": "Mercury (standalone)", "modems": []},
+    {"id": "direwolf-tnc",     "label": "Direwolf KISS TNC",  "modems": []},
+    {"id": "packet-digipeater","label": "Packet Digipeater",  "modems": []},
     {"id": "bbs-server", "label": "BBS Server (LinBPQ)",
      "modems": [
         {"value": "vara-hf", "label": "VARA HF"},
@@ -64,6 +77,19 @@ MISSION_MODES = [
     {"id": "winlink-packet",  "label": "Winlink — Packet",  "scheme": "ax25"},
     {"id": "winlink-ardop",   "label": "Winlink — ARDOP",   "scheme": "ardop"},
     {"id": "winlink-mercury", "label": "Winlink — Mercury", "scheme": "mercury"},
+]
+# Mission type catalog. The default for missions without an explicit "type"
+# field is "winlink" — backward-compat with 2.3.x schedules. Phase 4 adds
+# bbs_publish for scheduled BBS bulletin posts.
+MISSION_TYPES = [
+    {"id": "winlink",     "label": "Winlink"},
+    {"id": "bbs_publish", "label": "BBS Publish"},
+]
+# Transport options for bbs_publish missions. telnet is v1; vara_hf is
+# planned but not yet exercised end-to-end through the daemon.
+BBS_PUBLISH_MODES = [
+    {"id": "telnet",  "label": "Telnet (LAN to LinBPQ)"},
+    {"id": "vara_hf", "label": "VARA HF (RF, requires rig)"},
 ]
 WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
@@ -361,10 +387,185 @@ def editor():
         schedule=load_schedule(),
         presence_modes=PRESENCE_MODES,
         mission_modes=MISSION_MODES,
+        mission_types=MISSION_TYPES,
+        bbs_publish_modes=BBS_PUBLISH_MODES,
         weekdays=WEEKDAYS,
         status=daemon_status(),
         schedule_path=str(SCHEDULE_PATH),
     )
+
+
+def list_pending_bulletins() -> list:
+    """Scan ~/.config/liaisonos/bulletins/pending/ and return one summary
+    dict per bulletin for the mission card's picker dropdown. Includes
+    MD5-derived freshness state so the card can render the right pill
+    without a second round-trip.
+
+    Newest first (by file mtime) so the operator's most recently composed
+    bulletin is at the top of the list."""
+    out = []
+    if not BULLETIN_PENDING.exists():
+        return out
+    for jsn in sorted(BULLETIN_PENDING.glob("*.json"),
+                      key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            with jsn.open(encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            continue
+        bid = data.get("id", jsn.stem)
+        txt = BULLETIN_PENDING / f"{bid}.txt"
+        current_md5 = _md5_file(txt) if txt.is_file() else ""
+        last_md5 = data.get("last_sent_md5", "")
+        if not txt.is_file():
+            state = "broken"
+        elif last_md5 and last_md5 == current_md5:
+            state = "already_sent"
+        else:
+            state = "ready"
+        out.append({
+            "id":            bid,
+            "title":         data.get("title", ""),
+            "to":            data.get("to", ""),
+            "at_bbs":        data.get("at_bbs", ""),
+            "type":          data.get("type", "B"),
+            "status":        data.get("status", "pending"),
+            "created":       data.get("created", ""),
+            "current_md5":   current_md5,
+            "last_sent_md5": last_md5,
+            "last_sent_at":  data.get("last_sent_at", ""),
+            "last_sent_bid": data.get("last_sent_bid", ""),
+            "send_count":    data.get("send_count", 0),
+            "state":         state,
+        })
+    return out
+
+
+@app.route("/api/bulletins/pending")
+def api_bulletins_pending():
+    return jsonify({"ok": True, "bulletins": list_pending_bulletins()})
+
+
+# State files written by the daemon (li-automation). Editor only reads them
+# here for rendering; the Re-arm endpoint below is the one place the editor
+# writes back, and it touches a single key in disabled-state.
+DISABLED_STATE_PATH = Path.home() / ".cache" / "liaisonos" / "automation-disabled.json"
+RETRY_STATE_PATH    = Path.home() / ".cache" / "liaisonos" / "automation-retry-state.json"
+
+
+def _md5_file(path: Path) -> str:
+    """Hex MD5 of a file, or '' if it doesn't exist."""
+    import hashlib as _hashlib
+    try:
+        h = _hashlib.md5()
+        with path.open("rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except OSError:
+        return ""
+
+
+def _safe_json_load(path: Path) -> dict:
+    try:
+        with path.open() as f:
+            d = json.load(f)
+            return d if isinstance(d, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+@app.route("/api/bulletins/info")
+def api_bulletins_info():
+    """Per-bulletin freshness + last-send state. Renders the mission card's
+    status pill: green (new content ready), amber (already sent unchanged),
+    red (missing files / broken ref)."""
+    bid = request.args.get("id", "").strip()
+    if not bid:
+        return jsonify({"ok": False, "error": "id required"}), 400
+    txt = BULLETIN_PENDING / f"{bid}.txt"
+    jsn = BULLETIN_PENDING / f"{bid}.json"
+    info = {
+        "id":            bid,
+        "txt_exists":    txt.is_file(),
+        "json_exists":   jsn.is_file(),
+        "current_md5":   _md5_file(txt),
+        "title":         "",
+        "last_sent_md5": "",
+        "last_sent_at":  "",
+        "last_sent_bid": "",
+        "send_count":    0,
+    }
+    if jsn.is_file():
+        meta = _safe_json_load(jsn)
+        info["title"]         = meta.get("title", "")
+        info["last_sent_md5"] = meta.get("last_sent_md5", "")
+        info["last_sent_at"]  = meta.get("last_sent_at", "")
+        info["last_sent_bid"] = meta.get("last_sent_bid", "")
+        info["send_count"]    = meta.get("send_count", 0)
+    # Derived state for the UI — easier than recomputing in JS.
+    if not info["txt_exists"] or not info["json_exists"]:
+        info["state"] = "broken"
+    elif info["last_sent_md5"] and info["last_sent_md5"] == info["current_md5"]:
+        info["state"] = "already_sent"
+    else:
+        info["state"] = "ready"
+    return jsonify({"ok": True, "info": info})
+
+
+@app.route("/api/missions/status")
+def api_mission_status():
+    """Surface daemon-side mission state (disabled + retry) for the editor's
+    mission-card top banner. Returns the lot in one call so the editor can
+    decorate every card from a single fetch."""
+    return jsonify({
+        "ok":       True,
+        "disabled": _safe_json_load(DISABLED_STATE_PATH),
+        "retry":    _safe_json_load(RETRY_STATE_PATH),
+    })
+
+
+@app.route("/api/missions/rearm", methods=["POST"])
+def api_mission_rearm():
+    """Operator hit the Re-arm button on a disabled bbs_publish mission.
+    Clears the entry from automation-disabled.json so the daemon resumes
+    firing it on its scheduled slots."""
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"ok": False, "error": "name required"}), 400
+    state = _safe_json_load(DISABLED_STATE_PATH)
+    if state.pop(name, None) is None:
+        return jsonify({"ok": True, "rearmed": False,
+                        "message": "mission was not disabled"})
+    DISABLED_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp = DISABLED_STATE_PATH.with_suffix(".json.tmp")
+    with tmp.open("w") as f:
+        json.dump(state, f, indent=2)
+    tmp.replace(DISABLED_STATE_PATH)
+    return jsonify({"ok": True, "rearmed": True, "name": name})
+
+
+@app.route("/api/bulletins/clear-last-sent", methods=["POST"])
+def api_bulletin_clear_last_sent():
+    """Wipe the MD5 / last_sent_* fields from a bulletin so the next mission
+    fire treats the content as fresh. Useful when the operator wants to
+    re-send the same body without editing the TXT."""
+    data = request.get_json(silent=True) or {}
+    bid = (data.get("id") or "").strip()
+    if not bid:
+        return jsonify({"ok": False, "error": "id required"}), 400
+    jsn = BULLETIN_PENDING / f"{bid}.json"
+    if not jsn.is_file():
+        return jsonify({"ok": False, "error": "bulletin not in pending/"}), 404
+    meta = _safe_json_load(jsn)
+    for k in ("last_sent_md5", "last_sent_at", "last_sent_bid", "send_count"):
+        meta.pop(k, None)
+    tmp = jsn.with_suffix(".json.tmp")
+    with tmp.open("w") as f:
+        json.dump(meta, f, indent=2)
+    tmp.replace(jsn)
+    return jsonify({"ok": True, "cleared": True, "id": bid})
 
 
 @app.route("/api/save", methods=["POST"])

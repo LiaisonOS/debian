@@ -32,6 +32,18 @@ from pathlib import Path
 from datetime import datetime, timezone
 from flask import Flask, render_template, request, jsonify, Response, send_file
 
+# Antenna profiles + NEC-driven "best antenna for a target" — imports the
+# sibling modules in this directory. PyNEC is loaded lazily inside the NEC
+# module so importing this here doesn't crash if PyNEC isn't installed on
+# the machine (routes catch and 503 when NEC actually gets called).
+try:
+    import antenna_service
+    ANTENNA_SERVICE_OK = True
+except ImportError as _e:
+    antenna_service = None
+    ANTENNA_SERVICE_OK = False
+    _antenna_import_error = str(_e)
+
 # Suppress Flask dev server warning
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
@@ -244,6 +256,11 @@ def init_db():
             FOREIGN KEY (session_id) REFERENCES sessions(id)
         )
     """)
+    # Antenna profiles + pattern cache — module lives alongside et-logger.py.
+    # Import failure is non-fatal so et-logger still starts on machines
+    # without PyNEC (dev boxes); the /api/antennas/* routes gate on the flag.
+    if ANTENNA_SERVICE_OK:
+        antenna_service.init_schema(conn)
     conn.close()
 
 
@@ -615,6 +632,34 @@ TRANSLATIONS = {
         'air_recording': 'Recording air...',
         'no_air_recordings': 'No air recordings yet.',
         'air_rec_name': 'Recording Name',
+        # Antenna profiles
+        'antennas': 'Antennas',
+        'add_antenna': 'Add Antenna',
+        'edit_antenna': 'Edit Antenna',
+        'antenna_type': 'Type',
+        'ant_sloper_efhw': 'Sloper EFHW',
+        'ant_vertical_omni': 'Vertical (omni)',
+        'ant_inverted_v_nvis': 'Inverted-V (NVIS)',
+        'ant_delta_loop': 'Delta loop (vertical, apex up)',
+        'ant_horizontal_loop': 'Horizontal loop (skywarmer)',
+        'ant_horizontal_efhw': 'Horizontal EFHW (NVIS)',
+        'is_omni': 'Omnidirectional',
+        'feed_h_ft': 'Feed height (ft)',
+        'far_h_ft': 'Far-end height (ft)',
+        'wire_len_ft': 'Wire length (ft)',
+        'orientation_deg': 'Orientation (° true, 0=N)',
+        'bands_hint': 'Bands (comma-separated, e.g. 40m, 20m, 10m)',
+        'site_lat': 'Site latitude',
+        'site_lon': 'Site longitude',
+        'notes': 'Notes',
+        'active_deployed': 'Active (deployed)',
+        'show_pattern': 'Show on map',
+        'hide_pattern': 'Hide',
+        'no_antennas': 'No antennas configured. Add one to enable "best antenna" recommendations.',
+        'antenna_gain': 'Gain',
+        'antenna_beam_to': 'Beam heading to',
+        'antenna_best_for': 'Best antenna for',
+        'pattern_at_band': 'Pattern at',
     },
     'fr': {
         'title': 'Journal de Terrain',
@@ -680,6 +725,34 @@ TRANSLATIONS = {
         'air_recording': 'Enregistrement en cours...',
         'no_air_recordings': 'Aucun enregistrement d\'air.',
         'air_rec_name': 'Nom de l\'enregistrement',
+        # Antenna profiles
+        'antennas': 'Antennes',
+        'add_antenna': 'Ajouter une antenne',
+        'edit_antenna': 'Modifier l\'antenne',
+        'antenna_type': 'Type',
+        'ant_sloper_efhw': 'Sloper EFHW',
+        'ant_vertical_omni': 'Verticale (omni)',
+        'ant_inverted_v_nvis': 'Inverted-V (NVIS)',
+        'ant_delta_loop': 'Boucle delta (verticale, sommet en haut)',
+        'ant_horizontal_loop': 'Boucle horizontale (skywarmer)',
+        'ant_horizontal_efhw': 'EFHW horizontal (NVIS)',
+        'is_omni': 'Omnidirectionnelle',
+        'feed_h_ft': 'Hauteur d\'alimentation (pi)',
+        'far_h_ft': 'Hauteur au loin (pi)',
+        'wire_len_ft': 'Longueur du fil (pi)',
+        'orientation_deg': 'Orientation (° true, 0=N)',
+        'bands_hint': 'Bandes (séparées par virgule, ex: 40m, 20m, 10m)',
+        'site_lat': 'Latitude du site',
+        'site_lon': 'Longitude du site',
+        'notes': 'Notes',
+        'active_deployed': 'Active (déployée)',
+        'show_pattern': 'Voir sur carte',
+        'hide_pattern': 'Masquer',
+        'no_antennas': 'Aucune antenne configurée. Ajoutes-en une pour activer les recommandations « meilleure antenne ».',
+        'antenna_gain': 'Gain',
+        'antenna_beam_to': 'Cap antenne vers',
+        'antenna_best_for': 'Meilleure antenne pour',
+        'pattern_at_band': 'Patron à',
     }
 }
 
@@ -716,6 +789,8 @@ def index():
                            t=t, lang=lang,
                            my_callsign=my_callsign,
                            my_grid=my_grid,
+                           my_lat=(lat if lat is not None else ''),
+                           my_lon=(lon if lon is not None else ''),
                            has_position=(lat is not None),
                            sessions=[dict(s) for s in sessions])
 
@@ -778,9 +853,34 @@ def api_radio_stream():
 
 @app.route('/api/position', methods=['GET'])
 def api_position():
-    """Get current GPS/config position."""
-    lat, lon, source = get_position()
-    grid = latlon_to_grid(lat, lon) if lat else ''
+    """Get current GPS/config position.
+
+    Grid-source precedence (matters when user.json has stale lat/lon from
+    a previous GPS session and the operator has since edited only the
+    'grid' field in their profile — deriving grid from those stale coords
+    would silently ignore the manual edit):
+      1. Live GPS fix if gpsd is running (source='gps') — always wins
+         because it's the operator explicitly enabling GPS tracking.
+      2. user.json 'grid' field verbatim (source='config') — the operator's
+         declared grid, authoritative for the top-right display.
+      3. Grid derived from user.json lat/lon (source='config-latlon') —
+         only when no 'grid' is set at all.
+    """
+    lat, lon, coord_source = get_position()
+
+    config = load_user_config()
+    manual_grid = (config.get('grid') or '').strip().upper()
+
+    if coord_source == 'gps':
+        grid = latlon_to_grid(lat, lon) if lat else ''
+        source = 'gps'
+    elif manual_grid:
+        grid = manual_grid
+        source = 'config'
+    else:
+        grid = latlon_to_grid(lat, lon) if lat else ''
+        source = 'config-latlon' if grid else None
+
     return jsonify({'lat': lat, 'lon': lon, 'grid': grid, 'source': source})
 
 
@@ -1549,6 +1649,183 @@ def api_ar_rename(filename):
 
 # ============================================================================
 # Main
+# ============================================================================
+
+# ============================================================================
+# Antennas — profile CRUD, precomputed patterns, best-antenna-for-target
+# ============================================================================
+
+def _antenna_unavailable():
+    return jsonify({
+        "ok": False,
+        "error": "antenna feature unavailable — antenna_service import failed",
+        "detail": _antenna_import_error if not ANTENNA_SERVICE_OK else "",
+    }), 503
+
+
+def _get_session_qth(session_id):
+    """Look up (my_lat, my_lon) for a session so best-for uses the
+    operator's actual QTH instead of the antenna profile's site coords.
+    Returns (lat, lon) or (None, None) if session missing / no coords set."""
+    conn = get_db()
+    row = conn.execute(
+        "SELECT my_lat, my_lon FROM sessions WHERE id = ?", (session_id,)
+    ).fetchone()
+    conn.close()
+    if row and row["my_lat"] is not None and row["my_lon"] is not None:
+        return float(row["my_lat"]), float(row["my_lon"])
+    return None, None
+
+
+@app.route('/api/antennas', methods=['GET'])
+def api_antennas_list():
+    if not ANTENNA_SERVICE_OK:
+        return _antenna_unavailable()
+    conn = get_db()
+    try:
+        return jsonify({"ok": True, "antennas": antenna_service.list_profiles(conn)})
+    finally:
+        conn.close()
+
+
+@app.route('/api/antennas', methods=['POST'])
+def api_antennas_create():
+    if not ANTENNA_SERVICE_OK:
+        return _antenna_unavailable()
+    payload = request.get_json(force=True, silent=True) or {}
+    conn = get_db()
+    try:
+        new_id, warnings = antenna_service.create_profile(conn, payload)
+        return jsonify({"ok": True, "id": new_id, "warnings": warnings})
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except ImportError as e:
+        return jsonify({"ok": False,
+                        "error": f"PyNEC not available: {e}"}), 503
+    except Exception as e:
+        return jsonify({"ok": False,
+                        "error": f"{type(e).__name__}: {e}"}), 500
+    finally:
+        conn.close()
+
+
+@app.route('/api/antennas/<int:profile_id>', methods=['GET'])
+def api_antennas_get(profile_id):
+    if not ANTENNA_SERVICE_OK:
+        return _antenna_unavailable()
+    conn = get_db()
+    try:
+        p = antenna_service.get_profile(conn, profile_id)
+        if p is None:
+            return jsonify({"ok": False, "error": "not found"}), 404
+        return jsonify({"ok": True, "antenna": p})
+    finally:
+        conn.close()
+
+
+@app.route('/api/antennas/<int:profile_id>', methods=['PUT'])
+def api_antennas_update(profile_id):
+    if not ANTENNA_SERVICE_OK:
+        return _antenna_unavailable()
+    payload = request.get_json(force=True, silent=True) or {}
+    conn = get_db()
+    try:
+        if antenna_service.get_profile(conn, profile_id) is None:
+            return jsonify({"ok": False, "error": "not found"}), 404
+        warnings = antenna_service.update_profile(conn, profile_id, payload)
+        return jsonify({"ok": True, "warnings": warnings})
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except ImportError as e:
+        return jsonify({"ok": False,
+                        "error": f"PyNEC not available: {e}"}), 503
+    except Exception as e:
+        return jsonify({"ok": False,
+                        "error": f"{type(e).__name__}: {e}"}), 500
+    finally:
+        conn.close()
+
+
+@app.route('/api/antennas/<int:profile_id>', methods=['DELETE'])
+def api_antennas_delete(profile_id):
+    if not ANTENNA_SERVICE_OK:
+        return _antenna_unavailable()
+    conn = get_db()
+    try:
+        if antenna_service.get_profile(conn, profile_id) is None:
+            return jsonify({"ok": False, "error": "not found"}), 404
+        antenna_service.delete_profile(conn, profile_id)
+        return jsonify({"ok": True})
+    finally:
+        conn.close()
+
+
+@app.route('/api/antennas/best-for', methods=['GET'])
+def api_antennas_best_for():
+    if not ANTENNA_SERVICE_OK:
+        return _antenna_unavailable()
+    try:
+        target_lat = float(request.args["lat"])
+        target_lon = float(request.args["lon"])
+        band_name = request.args["band"]
+    except (KeyError, TypeError, ValueError):
+        return jsonify({
+            "ok": False,
+            "error": "lat, lon, band query params required (band like '20m')"
+        }), 400
+
+    session_id = request.args.get("session_id", type=int)
+    takeoff = request.args.get("takeoff", type=float)
+    qth_lat, qth_lon = (_get_session_qth(session_id)
+                        if session_id else (None, None))
+
+    conn = get_db()
+    try:
+        results = antenna_service.best_for(
+            conn, target_lat, target_lon, band_name,
+            qth_lat=qth_lat, qth_lon=qth_lon,
+            takeoff_deg=takeoff,
+        )
+        return jsonify({
+            "ok": True,
+            "results": results,
+            "qth_source": "session" if qth_lat is not None else "profile",
+        })
+    finally:
+        conn.close()
+
+
+@app.route('/api/antennas/<int:profile_id>/pattern', methods=['GET'])
+def api_antennas_pattern(profile_id):
+    if not ANTENNA_SERVICE_OK:
+        return _antenna_unavailable()
+    band = request.args.get("band")
+    takeoff = request.args.get("takeoff", type=float,
+                                default=antenna_service.DEFAULT_TAKEOFF_DEG)
+    if not band:
+        return jsonify({"ok": False,
+                        "error": "band query param required"}), 400
+    conn = get_db()
+    try:
+        pattern = antenna_service.get_pattern_json(conn, profile_id,
+                                                     band, takeoff)
+        if pattern is None:
+            return jsonify({"ok": False,
+                            "error": "profile or band not found"}), 404
+        return jsonify({"ok": True, "pattern": pattern,
+                        "band": band, "takeoff_deg": takeoff})
+    except ImportError as e:
+        return jsonify({"ok": False,
+                        "error": f"PyNEC not available: {e}"}), 503
+    except Exception as e:
+        return jsonify({"ok": False,
+                        "error": f"{type(e).__name__}: {e}"}), 500
+    finally:
+        conn.close()
+
+
+# ============================================================================
+# Flask startup
 # ============================================================================
 
 def run_flask(port):

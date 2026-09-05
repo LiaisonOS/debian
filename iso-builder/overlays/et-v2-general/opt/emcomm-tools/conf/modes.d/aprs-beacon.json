@@ -1,11 +1,12 @@
 {
     "$schema": "et-mode-v2",
-    "id": "direwolf-tnc",
+    "id": "aprs-beacon",
     "name": {
-        "en": "Direwolf KISS TNC",
-        "fr": "TNC KISS Direwolf"
+        "en": "APRS Beacon (distance)",
+        "fr": "Balise APRS (distance)"
     },
     "category": "packet",
+    "requires_bands": ["VHF", "UHF"],
     "requires": {
         "devices": ["et-audio", "et-cat"],
         "services": ["rigctld"]
@@ -38,8 +39,9 @@
             "restart": "audio-retry"
         },
         {
-            "name": "direwolf-monitor",
-            "command": ["xfce4-terminal", "--disable-server", "--title=Direwolf Monitor", "--geometry=120x32", "-e", "tail -n 40 -F {log_dir}/direwolf.log"],
+            "name": "qtaprsbeacon",
+            "command": ["/usr/local/bin/QtAprsBeacon", "--touch", "{touch-mode}"],
+            "health": {},
             "restart": "never",
             "depends_on": "direwolf"
         }

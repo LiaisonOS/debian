@@ -44,6 +44,11 @@
         {
             "action": "pat-config",
             "template": "config.vara-fm.json"
+        },
+        {
+            "action": "vara-kiss-port",
+            "modem": "fm",
+            "port": 8101
         }
     ],
     "chain": [

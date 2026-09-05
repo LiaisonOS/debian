@@ -13,9 +13,11 @@
             <button class="refresh-btn" onclick="refreshRadio()" title="Refresh radio info">&#x21BB;</button>
             <span class="badge" id="gps-badge">--</span>
         </div>
-        {% if my_grid %}
-        <span class="grid-badge">{{ my_grid }}</span>
-        {% endif %}
+        {# Always render the badge so JS can update it after config edits.
+           The 'display:none' when empty avoids the empty orange chip; the
+           JS refresher toggles visibility as the grid becomes available. #}
+        <span class="grid-badge" id="grid-badge"
+              style="{% if not my_grid %}display:none;{% endif %}">{{ my_grid }}</span>
     </div>
 </div>
 
@@ -24,6 +26,7 @@
     <button class="tab active" onclick="showTab('sessions')">{{ t['sessions'] }}</button>
     <button class="tab" onclick="showTab('logger')">{{ t['log'] }}</button>
     <button class="tab" onclick="showTab('map')">{{ t['map'] }}</button>
+    <button class="tab" onclick="showTab('antennas')">{{ t['antennas'] }}</button>
     <button class="tab" onclick="showTab('parks')">{{ t['nearest_parks'] }}</button>
     <button class="tab" onclick="showTab('voicekeyer')">{{ t['voice_keyer'] }}</button>
     <button class="tab" onclick="showTab('airrecorder')">{{ t['air_recorder'] }}</button>
@@ -185,6 +188,134 @@
             <span class="legend-item"><span class="legend-dot legend-qso"></span> QSO</span>
             <span class="legend-item">&#x1F3D5; Park</span>
             <button class="btn-icon" onclick="clearParkMarkers()" title="Clear parks" style="color:var(--text-muted);font-size:0.8rem;">Clear Parks</button>
+        </div>
+        {# Takeoff-angle picker: appears only while an antenna pattern is
+           drawn. Three presets cover the operator's typical use cases:
+             • DX 12°     — long-haul, multi-hop
+             • Reg 22°    — 300–1500 km, one-hop (this is the default)
+             • NVIS 50°   — <300 km, cloud-warmer / regional HF EMCOMM
+           Clicking re-renders the current antenna+band at that angle so
+           the operator can compare pattern shape across propagation modes. #}
+        {# Bottom-right, aligned vertically with the .map-legend chip on the
+           bottom-left (both at bottom:20px). Leaflet's OSM attribution sits
+           in the same corner — the picker's background covers it while
+           active, which is fine (attribution shows again once dismissed). #}
+        <div id="takeoff-picker" style="display:none; position:absolute;
+             bottom:20px; right:20px; z-index:1000; background:#1a1a1a;
+             border:1px solid #333; border-radius:6px; padding:6px 8px;
+             font-size:11px; color:#e0e0e0;">
+            <span style="color:#888; margin-right:6px;" id="takeoff-picker-title">Takeoff:</span>
+            <button class="takeoff-btn" data-deg="12"
+                    onclick="setActiveTakeoff(12)">DX 12°</button>
+            <button class="takeoff-btn" data-deg="22"
+                    onclick="setActiveTakeoff(22)">Reg 22°</button>
+            <button class="takeoff-btn" data-deg="50"
+                    onclick="setActiveTakeoff(50)">NVIS 50°</button>
+            <button class="btn-icon" onclick="clearActivePattern()"
+                    style="margin-left:6px; color:#888;"
+                    title="Hide pattern">✕</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .takeoff-btn {
+        background: #2a2a2a; color: #ccc; border: 1px solid #444;
+        border-radius: 3px; padding: 3px 8px; margin-right: 4px;
+        font-size: 11px; cursor: pointer;
+    }
+    .takeoff-btn:hover { background: #3a3a3a; color: #fff; }
+    .takeoff-btn.active {
+        background: #ffa500; color: #000; border-color: #ffa500;
+        font-weight: bold;
+    }
+</style>
+
+<!-- Antennas Tab -->
+<div class="tab-content" id="tab-antennas">
+    <div class="action-bar">
+        <button class="btn btn-primary" onclick="showAntennaModal()">+ {{ t['add_antenna'] }}</button>
+        <span id="antenna-status" style="margin-left:1rem; color:var(--text-muted); font-size:0.85rem;"></span>
+    </div>
+    <div id="antenna-list">
+        <div class="empty-state">Loading...</div>
+    </div>
+</div>
+
+<!-- Antenna add/edit modal -->
+<div class="modal-overlay" id="antenna-modal" style="display:none;" onclick="closeAntennaModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 780px;">
+        <h3 id="antenna-modal-title">{{ t['add_antenna'] }}</h3>
+        <input type="hidden" id="antenna-edit-id" value="">
+        <div class="form-row">
+            <div class="form-group" style="flex:2;">
+                <label>{{ t['name'] }}</label>
+                <input type="text" id="ant-name" class="input" placeholder="Ultimax 10-40 (QTH)">
+            </div>
+            <div class="form-group">
+                <label>{{ t['antenna_type'] }}</label>
+                <select id="ant-type" class="input" onchange="onAntTypeChange()">
+                    <option value="sloper_efhw">{{ t['ant_sloper_efhw'] }}</option>
+                    <option value="vertical_omni">{{ t['ant_vertical_omni'] }}</option>
+                    <option value="inverted_v_nvis">{{ t['ant_inverted_v_nvis'] }}</option>
+                    <option value="delta_loop">{{ t['ant_delta_loop'] }}</option>
+                    <option value="horizontal_loop">{{ t['ant_horizontal_loop'] }}</option>
+                    <option value="horizontal_efhw">{{ t['ant_horizontal_efhw'] }}</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row" id="ant-geometry-row">
+            <div class="form-group" id="ant-feed-h-group">
+                <label id="ant-feed-h-label">{{ t['feed_h_ft'] }}</label>
+                <input type="number" step="0.1" id="ant-feed-h" class="input" placeholder="35">
+            </div>
+            <div class="form-group" id="ant-far-h-group">
+                <label id="ant-far-h-label">{{ t['far_h_ft'] }}</label>
+                <input type="number" step="0.1" id="ant-far-h" class="input" placeholder="8">
+            </div>
+            <div class="form-group" id="ant-wire-len-group">
+                <label id="ant-wire-len-label">{{ t['wire_len_ft'] }}</label>
+                <input type="number" step="0.1" id="ant-wire-len" class="input" placeholder="66">
+            </div>
+            <div class="form-group" id="ant-az-group">
+                <label id="ant-az-label">{{ t['orientation_deg'] }}</label>
+                <input type="number" step="0.1" id="ant-az" class="input" placeholder="180">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group" style="flex:2;">
+                <label>{{ t['bands_hint'] }}</label>
+                <input type="text" id="ant-bands" class="input" placeholder="40m, 20m, 10m">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>{{ t['site_lat'] }}</label>
+                <input type="number" step="0.0001" id="ant-lat" class="input" placeholder="45.5017">
+            </div>
+            <div class="form-group">
+                <label>{{ t['site_lon'] }}</label>
+                <input type="number" step="0.0001" id="ant-lon" class="input" placeholder="-73.5673">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group" style="flex:1;">
+                <label>{{ t['notes'] }}</label>
+                <input type="text" id="ant-notes" class="input">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="ant-active" checked
+                           style="width:16px; height:16px; accent-color:#ffa500;">
+                    <span>{{ t['active_deployed'] }}</span>
+                </label>
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeAntennaModal()">{{ t['cancel'] }}</button>
+            <button class="btn btn-primary" onclick="saveAntenna()">{{ t['save'] }}</button>
         </div>
     </div>
 </div>
@@ -449,6 +580,7 @@
                 'sessions': T['sessions'],
                 'logger': T['log'],
                 'map': T['map'],
+                'antennas': T['antennas'],
                 'parks': T['nearest_parks'],
                 'voicekeyer': T['voice_keyer'],
                 'airrecorder': T['air_recorder']
@@ -460,6 +592,7 @@
         if (name === 'sessions') loadSessions();
         if (name === 'parks') loadNearestParks();
         if (name === 'map') initMap();
+        if (name === 'antennas') loadAntennas();
         if (name === 'voicekeyer') vkInit();
         if (name === 'airrecorder') arInit();
     }
@@ -978,6 +1111,12 @@
         }
     });
 
+    // Current radio band/freq — kept in sync by applyRadioData so the
+    // antenna feature (pattern overlay, beam-heading) can default to what
+    // the rig is actually sitting on instead of asking the operator.
+    let currentRadioBand = null;
+    let currentRadioFreqMhz = null;
+
     // === Update radio fields from data object ===
     function applyRadioData(data) {
         const badge = document.getElementById('radio-badge');
@@ -998,11 +1137,18 @@
             if (data.power) {
                 document.getElementById('qso-power').value = data.power;
             }
+            currentRadioBand = data.band || null;
+            currentRadioFreqMhz = data.freq ? (data.freq / 1e6) : null;
+            // If the pattern layer is up and the band changed, refresh it
+            // so the polygon tracks the rig (auto-QSY behavior).
+            maybeAutoRefreshPattern();
         } else {
             badge.textContent = T['radio_disconnected'];
             badge.className = 'badge badge-off';
             freqField.readOnly = false;
             document.getElementById('qso-band-display').dataset.locked = 'false';
+            currentRadioBand = null;
+            currentRadioFreqMhz = null;
         }
     }
 
@@ -1420,6 +1566,13 @@
     }
 
     function initMap() {
+        // Refresh the antenna cache so QSO/park popups can show the
+        // "best antenna for band" button. Silent — no UI blocking.
+        if (antennasCache.length === 0)
+            fetch('/api/antennas').then(r => r.json()).then(d => {
+                if (d.ok) antennasCache = d.antennas || [];
+            }).catch(() => {});
+
         if (qsoMap) {
             qsoMap.invalidateSize();
             if (currentSessionId && !skipMapFit) loadMapQSOs();
@@ -1508,12 +1661,18 @@
                               Math.cos(q.qso_lat*Math.PI/180) * Math.sin(dLon/2)**2;
                     distStr = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))) + ' km';
                 }
+                const beamBtn = (antennasCache.length && q.band)
+                    ? '<br><button class="btn btn-icon" style="margin-top:4px;font-size:0.85rem;" '
+                      + 'onclick="drawBeamHeading(' + q.qso_lat + ',' + q.qso_lon
+                      + ',\'' + q.band + '\')">🎯 ' + T['antenna_best_for'] + ' ' + q.band + '</button>'
+                    : '';
                 marker.bindPopup(
                     '<b>' + q.call + '</b><br>' +
                     (q.name || '') + '<br>' +
                     (q.state || '') + ' ' + (q.country || '') + '<br>' +
                     q.band + ' ' + q.mode + ' ' + q.time_on + ' UTC' +
-                    (distStr ? '<br><b>' + distStr + '</b>' : '')
+                    (distStr ? '<br><b>' + distStr + '</b>' : '') +
+                    beamBtn
                 );
                 mapMarkers.push(marker);
                 bounds.push([q.qso_lat, q.qso_lon]);
@@ -1536,17 +1695,39 @@
     }
 
     // === Init ===
-    // Check GPS on load (radio only on session open or manual refresh)
-    fetch('/api/position').then(r => r.json()).then(data => {
-        const badge = document.getElementById('gps-badge');
-        if (data.lat) {
-            badge.textContent = data.grid + ' (' + data.source + ')';
-            badge.className = 'badge badge-ok';
-        } else {
-            badge.textContent = 'No GPS';
-            badge.className = 'badge badge-off';
-        }
-    }).catch(() => {});
+    // Check GPS on load (radio only on session open or manual refresh).
+    // Refactored 2026-07-26: also refresh the top-right orange grid-badge
+    // whenever /api/position reports a new grid. Previously that badge was
+    // Jinja-rendered on the initial page load and never touched again —
+    // manual edits to user.json (or GpsSync clock-only success) left the
+    // header showing a stale grid until the browser was reloaded.
+    function refreshPositionBadges() {
+        return fetch('/api/position').then(r => r.json()).then(data => {
+            const gpsBadge  = document.getElementById('gps-badge');
+            const gridBadge = document.getElementById('grid-badge');
+            if (data.lat) {
+                gpsBadge.textContent = data.grid + ' (' + data.source + ')';
+                gpsBadge.className = 'badge badge-ok';
+            } else {
+                gpsBadge.textContent = 'No GPS';
+                gpsBadge.className = 'badge badge-off';
+            }
+            if (gridBadge) {
+                if (data.grid) {
+                    gridBadge.textContent = data.grid;
+                    gridBadge.style.display = '';
+                } else {
+                    gridBadge.style.display = 'none';
+                }
+            }
+        }).catch(() => {});
+    }
+    refreshPositionBadges();
+    // Poll every 30 s so edits to ~/.config/liaisonos/user.json (from
+    // profile, from GpsSync, from any other app) surface without a
+    // browser reload. 30 s is well below the operator's tolerance for
+    // stale grid, and doesn't hammer the Flask process.
+    setInterval(refreshPositionBadges, 30000);
 
     // =========================================================================
     // Voice Keyer
@@ -1894,6 +2075,536 @@
                 badge.className = 'badge badge-off';
             }
         }).catch(() => {});
+    }
+
+    // ==============================================================
+    // Antenna profiles: CRUD + map integration
+    // ==============================================================
+
+    let antennaPatternLayer = null;    // L.polygon of the currently-drawn pattern
+    let antennaBeamLine = null;         // L.polyline of beam-heading arrow
+    let antennaMyMarker = null;         // reused QTH marker
+    let antennasCache = [];
+
+    function loadAntennas() {
+        fetch('/api/antennas').then(r => r.json()).then(data => {
+            const list = document.getElementById('antenna-list');
+            const status = document.getElementById('antenna-status');
+            if (!data.ok) {
+                status.textContent = data.error || 'error';
+                list.innerHTML = '<div class="empty-state">' + (data.error || '') + '</div>';
+                return;
+            }
+            antennasCache = data.antennas || [];
+            status.textContent = antennasCache.length + ' profile(s)';
+            if (antennasCache.length === 0) {
+                list.innerHTML = '<div class="empty-state">' + T['no_antennas'] + '</div>';
+                return;
+            }
+            list.innerHTML = antennasCache.map(a => antennaCardHtml(a)).join('');
+        }).catch(e => {
+            document.getElementById('antenna-list').innerHTML =
+                '<div class="empty-state">Fetch error: ' + e + '</div>';
+        });
+    }
+
+    function antennaCardHtml(a) {
+        const bandKeys = Object.keys(a.bands_mhz || {}).join(', ') || '—';
+        const activeBadge = a.active ? '<span class="badge badge-ok">●</span>' : '<span class="badge badge-off">○</span>';
+        const geom = a.is_omni
+            ? T['ant_vertical_omni']
+            : (a.ant_type + ' • ' + (a.feed_h_ft || '?') + '→' + (a.far_h_ft || '?') + 'ft • '
+                + (a.wire_len_ft || '?') + 'ft @ ' + (a.azimuth_deg ?? '?') + '°');
+        const firstBand = Object.keys(a.bands_mhz || {})[0] || '';
+        return '<div class="session-card" style="cursor:default;">'
+            + '<div class="session-info">'
+            +   '<strong>' + activeBadge + ' ' + escapeHtml(a.name) + '</strong>'
+            +   '<span class="session-meta">' + escapeHtml(geom) + '</span>'
+            +   '<span class="session-meta">' + T['bands_hint'].split('(')[0].trim() + ': ' + bandKeys + '</span>'
+            +   (a.notes ? '<span class="session-date">' + escapeHtml(a.notes) + '</span>' : '')
+            + '</div>'
+            + '<div class="session-count" style="gap:6px; align-items:flex-end;">'
+            +   '<button class="btn btn-icon" onclick="showAntennaModal(' + a.id + ')">✎</button>'
+            +   '<button class="btn btn-icon" onclick="deleteAntenna(' + a.id + ')" style="color:#c92a2a;">🗑</button>'
+            + (firstBand
+                ? '<button class="btn btn-icon" title="' + T['show_pattern']
+                  + '" onclick="showAntennaPatternOnMap(' + a.id + ',&quot;' + firstBand + '&quot;)">🗺</button>'
+                : '')
+            + '</div></div>';
+    }
+
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g,
+            c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // Per-type label + visibility for the geometry row. Fields are reused
+    // across antenna types with different meanings — see the Python side
+    // dispatch in antenna_profiles.get_cached_pattern().
+    const ANT_TYPE_UI = {
+        'sloper_efhw': {
+            geomVisible: true,
+            labels: {feed:'feed_h_ft', far:'far_h_ft', wire:'wire_len_ft', az:'orientation_deg'},
+            show:   {feed:true, far:true, wire:true, az:true},
+        },
+        'inverted_v_nvis': {
+            geomVisible: true,
+            labels: {feed:'feed_h_ft', far:'far_h_ft', wire:'wire_len_ft', az:'orientation_deg'},
+            show:   {feed:true, far:true, wire:true, az:true},
+        },
+        'vertical_omni': {
+            geomVisible: false,
+            labels: {}, show: {},
+        },
+        'delta_loop': {
+            geomVisible: true,
+            // Inverted delta (CHA TDL style — apex/feed at bottom):
+            //   feed → apex (bottom) height, far → base half-width,
+            //   wire → perimeter, az → MAIN LOBE direction (post rotation fix)
+            labels: {feed:'Apex/feed height (ft)', far:'Base half-width (ft)',
+                     wire:'Full perimeter (ft)', az:'Main lobe direction (° true, 0=N)'},
+            show:   {feed:true, far:true, wire:true, az:true},
+        },
+        'horizontal_loop': {
+            geomVisible: true,
+            // feed → loop height, wire → perimeter, far + az meaningless
+            labels: {feed:'Loop height (ft)', wire:'Full perimeter (ft)'},
+            show:   {feed:true, far:false, wire:true, az:false},
+        },
+        'horizontal_efhw': {
+            geomVisible: true,
+            // Horizontal EFHW (NVIS use). Both ends at same height, so
+            // far_h is unused. Azimuth kept — near-omni at NVIS takeoff
+            // (>50°), but still meaningful for lower-angle DX use.
+            labels: {feed:'Height (ft, both ends)', wire:'Wire length (ft)',
+                     az:'Wire direction (° true, feed→far)'},
+            show:   {feed:true, far:false, wire:true, az:true},
+        },
+    };
+
+    function onAntTypeChange() {
+        const type = document.getElementById('ant-type').value;
+        const cfg = ANT_TYPE_UI[type] || ANT_TYPE_UI['sloper_efhw'];
+        document.getElementById('ant-geometry-row').style.display =
+            cfg.geomVisible ? '' : 'none';
+        // Relabel + show/hide each of the four fields
+        const fields = [
+            ['feed', 'ant-feed-h-group', 'ant-feed-h-label', 'feed_h_ft'],
+            ['far',  'ant-far-h-group',  'ant-far-h-label',  'far_h_ft'],
+            ['wire', 'ant-wire-len-group','ant-wire-len-label','wire_len_ft'],
+            ['az',   'ant-az-group',     'ant-az-label',     'orientation_deg'],
+        ];
+        fields.forEach(([key, groupId, labelId, defaultKey]) => {
+            const group = document.getElementById(groupId);
+            const label = document.getElementById(labelId);
+            const visible = (cfg.show && cfg.show[key] !== false) && cfg.geomVisible;
+            group.style.display = visible ? '' : 'none';
+            if (visible && cfg.labels && cfg.labels[key])
+                label.textContent = cfg.labels[key];
+            else if (visible)
+                label.textContent = T[defaultKey] || defaultKey;
+        });
+    }
+
+    // Operator profile coords — passed from Jinja at page render. Used to
+    // pre-fill Site Lat/Lon on new antennas so the operator doesn't have
+    // to re-type their QTH for every antenna at the same location. Empty
+    // strings when the profile has no position — the fields just stay blank.
+    const PROFILE_LAT = "{{ my_lat }}";
+    const PROFILE_LON = "{{ my_lon }}";
+
+    function showAntennaModal(id) {
+        // Reset form
+        document.getElementById('antenna-edit-id').value = id || '';
+        document.getElementById('antenna-modal-title').textContent =
+            id ? T['edit_antenna'] : T['add_antenna'];
+        ['ant-name','ant-feed-h','ant-far-h','ant-wire-len','ant-az',
+         'ant-bands','ant-lat','ant-lon','ant-notes'].forEach(k => {
+            document.getElementById(k).value = '';
+        });
+        document.getElementById('ant-type').value = 'sloper_efhw';
+        document.getElementById('ant-active').checked = true;
+        onAntTypeChange();
+
+        if (id) {
+            const a = antennasCache.find(x => x.id === id);
+            if (a) fillAntennaForm(a);
+            else fetch('/api/antennas/' + id).then(r => r.json()).then(d => {
+                if (d.ok) fillAntennaForm(d.antenna);
+            });
+        } else {
+            // NEW entry — prefill site coords from operator profile so the
+            // fixed-QTH case is a one-click default. Portable operators
+            // just overwrite the values (they need per-site coords anyway).
+            if (PROFILE_LAT) document.getElementById('ant-lat').value = PROFILE_LAT;
+            if (PROFILE_LON) document.getElementById('ant-lon').value = PROFILE_LON;
+        }
+        document.getElementById('antenna-modal').style.display = 'flex';
+    }
+
+    function fillAntennaForm(a) {
+        document.getElementById('ant-name').value = a.name || '';
+        document.getElementById('ant-type').value = a.ant_type || 'sloper_efhw';
+        document.getElementById('ant-feed-h').value = a.feed_h_ft ?? '';
+        document.getElementById('ant-far-h').value = a.far_h_ft ?? '';
+        document.getElementById('ant-wire-len').value = a.wire_len_ft ?? '';
+        document.getElementById('ant-az').value = a.azimuth_deg ?? '';
+        document.getElementById('ant-bands').value =
+            Object.entries(a.bands_mhz || {}).map(([b,f]) => b + ':' + f).join(', ');
+        document.getElementById('ant-lat').value = a.site_lat ?? '';
+        document.getElementById('ant-lon').value = a.site_lon ?? '';
+        document.getElementById('ant-notes').value = a.notes || '';
+        document.getElementById('ant-active').checked = a.active !== false;
+        onAntTypeChange();
+    }
+
+    function closeAntennaModal(event) {
+        if (event && event.target !== event.currentTarget) return;
+        document.getElementById('antenna-modal').style.display = 'none';
+    }
+
+    // Default midpoint frequencies per amateur band (MHz). Antenna patterns
+    // don't shift meaningfully across a 100 kHz band, so we don't need the
+    // operator to type an exact freq — just the band name is enough for
+    // NEC modeling. Advanced users can still specify "band:freq" to override.
+    const BAND_MIDPOINT_MHZ = {
+        '160m':  1.900, '80m':   3.750, '60m':   5.400, '40m':   7.150,
+        '30m':  10.125, '20m':  14.175, '17m':  18.118, '15m':  21.225,
+        '12m':  24.940, '10m':  28.850, '6m':   52.000, '2m':  146.000,
+        '1.25m': 223.500, '70cm': 435.000,
+    };
+
+    function parseBandsField(raw) {
+        // Accepts:
+        //   "40m, 20m, 10m"          → auto-picks midpoint freq per band
+        //   "20m:14.150, 40m:7.100"  → explicit freq (advanced, back-compat)
+        // Bands unknown to BAND_MIDPOINT_MHZ that lack an explicit freq
+        // are silently dropped — the caller checks for empty result.
+        const out = {};
+        (raw || '').split(',').forEach(pair => {
+            const s = pair.trim();
+            if (!s) return;
+            const withFreq = s.match(/^([\w.-]+)\s*[:=]\s*([\d.]+)/);
+            if (withFreq) {
+                out[withFreq[1]] = parseFloat(withFreq[2]);
+                return;
+            }
+            const bandOnly = s.match(/^([\w.-]+)$/);
+            if (bandOnly) {
+                const key = bandOnly[1].toLowerCase();
+                if (BAND_MIDPOINT_MHZ[key] !== undefined)
+                    out[key] = BAND_MIDPOINT_MHZ[key];
+            }
+        });
+        return out;
+    }
+
+    function saveAntenna() {
+        const id = document.getElementById('antenna-edit-id').value;
+        const type = document.getElementById('ant-type').value;
+        const payload = {
+            name: document.getElementById('ant-name').value.trim(),
+            ant_type: type,
+            is_omni: (type === 'vertical_omni'),
+            feed_h_ft:  parseFloat(document.getElementById('ant-feed-h').value)  || null,
+            far_h_ft:   parseFloat(document.getElementById('ant-far-h').value)   || null,
+            wire_len_ft: parseFloat(document.getElementById('ant-wire-len').value) || null,
+            azimuth_deg: parseFloat(document.getElementById('ant-az').value)     || null,
+            bands_mhz:  parseBandsField(document.getElementById('ant-bands').value),
+            site_lat:   parseFloat(document.getElementById('ant-lat').value)     || null,
+            site_lon:   parseFloat(document.getElementById('ant-lon').value)     || null,
+            notes:      document.getElementById('ant-notes').value,
+            active:     document.getElementById('ant-active').checked,
+        };
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? '/api/antennas/' + id : '/api/antennas';
+        fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        }).then(r => r.json()).then(d => {
+            if (!d.ok) {
+                alert('Save failed: ' + (d.error || 'unknown'));
+                return;
+            }
+            closeAntennaModal();
+            loadAntennas();
+        }).catch(e => alert('Network error: ' + e));
+    }
+
+    function deleteAntenna(id) {
+        if (!confirm('Delete this antenna?')) return;
+        fetch('/api/antennas/' + id, {method:'DELETE'}).then(r => r.json()).then(d => {
+            if (!d.ok) { alert('Delete failed: ' + (d.error || 'unknown')); return; }
+            loadAntennas();
+        });
+    }
+
+    // ---- Map overlays --------------------------------------------------
+
+    function hideAntennaPattern() {
+        if (antennaPatternLayer) { qsoMap.removeLayer(antennaPatternLayer); antennaPatternLayer = null; }
+        if (antennaBeamLine)     { qsoMap.removeLayer(antennaBeamLine);     antennaBeamLine = null; }
+    }
+
+    function clearActivePattern() {
+        hideAntennaPattern();
+        activePatternProfileId = null;
+        activePatternBand = null;
+        activeTakeoffDeg = null;
+        updateTakeoffPickerUI();
+    }
+
+    // Draw the antenna's polar pattern as a polygon around (lat, lon).
+    // Scale: normalize gain to [0..1] where the pattern max = maxKm radius.
+    // Gains below floor_dBi collapse to a tiny disc (visible null).
+    // Remember which antenna + band + takeoff is currently drawn so radio-QSY
+    // events and takeoff-picker clicks can redraw without operator round-trips.
+    let activePatternProfileId = null;
+    let activePatternBand = null;
+    let activeTakeoffDeg = null;
+
+    // NVIS-first default: horizontal EFHW and horizontal loops are almost
+    // always deployed for high-angle regional work; sloper/vertical/delta
+    // are usually DX-focused. Auto-picking a sensible default per antenna
+    // type saves the operator a click and matches how these antennas are
+    // actually used. Operator can still override via the takeoff picker.
+    function defaultTakeoffFor(antType) {
+        if (!antType) return 22;
+        const t = antType.toLowerCase();
+        if (t === 'horizontal_efhw' || t === 'horizontal_loop') return 50;
+        return 22;   // sloper / inverted_v / delta_loop / vertical_omni
+    }
+
+    // Estimate the peak takeoff angle (degrees above horizon) for a horizontal
+    // dipole above ground. Uses the standard arctan(1/(4h/λ)) formula for the
+    // first lobe. For very low wires (< 0.15λ) NVIS-territory near-vertical
+    // radiation dominates. Sloper/inverted-V use the average of feed and far
+    // heights as effective height. Returns null when geometry doesn't apply
+    // (missing fields, verticals — the formula only works for horizontal
+    // wires; verticals get a nominal 25° figure).
+    function estimatePeakTakeoff(profile, freqMhz) {
+        if (!profile || !freqMhz) return null;
+        const type = (profile.ant_type || '').toLowerCase();
+        if (type === 'vertical_omni' || profile.is_omni) return 25;
+        let h = null;
+        if (type === 'horizontal_efhw' || type === 'horizontal_loop') {
+            h = profile.feed_h_ft;
+        } else if (type === 'sloper_efhw' || type === 'inverted_v_nvis'
+                   || type === 'delta_loop') {
+            if (profile.feed_h_ft != null && profile.far_h_ft != null)
+                h = (profile.feed_h_ft + profile.far_h_ft) / 2;
+        }
+        if (!h || h <= 0) return null;
+        const wavelength_ft = 984.0 / freqMhz;       // c(ft/µs) / f(MHz)
+        const h_lambda = h / wavelength_ft;
+        if (h_lambda < 0.15) return 75;              // NVIS regime
+        if (h_lambda >= 1.0)
+            return Math.round(Math.atan(0.25 / h_lambda) * 180 / Math.PI);
+        return Math.round(Math.atan(1.0 / (4.0 * h_lambda)) * 180 / Math.PI);
+    }
+
+    function updateTakeoffPickerUI() {
+        const picker = document.getElementById('takeoff-picker');
+        if (!picker) return;
+        if (activePatternProfileId == null) {
+            picker.style.display = 'none';
+            return;
+        }
+        picker.style.display = 'block';
+        picker.querySelectorAll('.takeoff-btn').forEach(btn => {
+            const deg = parseFloat(btn.dataset.deg);
+            btn.classList.toggle('active', deg === activeTakeoffDeg);
+        });
+        // Header shows the antenna's PEAK takeoff (geometry-derived) so the
+        // operator can compare it against the current view angle. Peak = what
+        // this antenna is best at; view = what the operator wants to see.
+        const title = document.getElementById('takeoff-picker-title');
+        if (title) {
+            const a = antennasCache.find(x => x.id === activePatternProfileId);
+            const freqMhz = a && a.bands_mhz ? a.bands_mhz[activePatternBand] : null;
+            const peak = estimatePeakTakeoff(a, freqMhz);
+            title.textContent = peak ? 'Takeoff (peak ~' + peak + '°):' : 'Takeoff:';
+        }
+    }
+
+    function setActiveTakeoff(deg) {
+        if (activePatternProfileId == null || !activePatternBand) return;
+        showAntennaPatternOnMap(activePatternProfileId, activePatternBand, deg);
+    }
+
+    function showAntennaPatternOnMap(id, band, takeoff) {
+        const a = antennasCache.find(x => x.id === id);
+        if (!a) return;
+        const centerLat = (a.site_lat != null) ? a.site_lat : null;
+        const centerLon = (a.site_lon != null) ? a.site_lon : null;
+        const keys = Object.keys(a.bands_mhz || {});
+        if (keys.length === 0) { alert('No bands configured on this antenna.'); return; }
+
+        // Band resolution priority:
+        //   1. explicit `band` arg (caller knows what they want)
+        //   2. current radio band from et-logger's top status, if the
+        //      antenna covers it — matches "what the rig is on"
+        //   3. single band → auto-pick
+        //   4. otherwise prompt the operator
+        if (!band) {
+            if (currentRadioBand && keys.includes(currentRadioBand)) {
+                band = currentRadioBand;
+            } else if (keys.length === 1) {
+                band = keys[0];
+            } else {
+                const hint = currentRadioBand
+                    ? '\n(radio is on ' + currentRadioBand
+                      + ' — not configured on this antenna)'
+                    : '';
+                const choice = prompt('Which band? (' + keys.join(' / ') + ')' + hint, keys[0]);
+                if (!choice) return;
+                if (!keys.includes(choice)) {
+                    alert('Band "' + choice + '" not configured on this antenna.');
+                    return;
+                }
+                band = choice;
+            }
+        }
+        activePatternProfileId = id;
+        activePatternBand = band;
+        // Auto-pick sensible takeoff by antenna type when the caller didn't
+        // specify one. Explicit takeoff (from setActiveTakeoff or a caller
+        // that already knows) always wins.
+        const effectiveTakeoff = takeoff || defaultTakeoffFor(a.ant_type);
+        activeTakeoffDeg = effectiveTakeoff;
+        updateTakeoffPickerUI();
+        showTab('map');
+        setTimeout(() => {
+            if (!qsoMap) initMap();
+            const qs = 'band=' + encodeURIComponent(band)
+                     + '&takeoff=' + effectiveTakeoff;
+            fetch('/api/antennas/' + id + '/pattern?' + qs)
+              .then(r => r.json()).then(d => {
+                if (!d.ok) { alert('Pattern fetch failed: ' + (d.error || '?')); return; }
+                drawAntennaPattern(d.pattern, centerLat, centerLon, a.name, d.band, d.takeoff_deg);
+            });
+        }, 100);
+    }
+
+    // Called from applyRadioData whenever the rig reports a new band.
+    // If the operator is looking at a pattern for this antenna, silently
+    // swap in the new-band pattern. If the antenna doesn't cover the new
+    // band, leave the current polygon on screen (better than blanking it
+    // during a brief QSY probe).
+    function maybeAutoRefreshPattern() {
+        if (activePatternProfileId == null || !currentRadioBand) return;
+        if (currentRadioBand === activePatternBand) return;
+        const a = antennasCache.find(x => x.id === activePatternProfileId);
+        if (!a || !(currentRadioBand in (a.bands_mhz || {}))) return;
+        showAntennaPatternOnMap(activePatternProfileId, currentRadioBand);
+    }
+
+    // Polar-plot convention: fixed 20 dB dynamic range from peak.
+    // Radius:  peak = 100 %,  peak−20 dB = 30 %  (linear interpolation).
+    // This makes a near-omni pattern (< 3 dB spread) show as a nearly
+    // circular polygon, and reserves the strong "figure-8" visual for
+    // patterns with genuine ≥ 10 dB azimuthal variation.
+    const PATTERN_DB_RANGE = 20.0;
+
+    function drawAntennaPattern(pattern, centerLat, centerLon, name, band, takeoff) {
+        hideAntennaPattern();
+        if (centerLat == null || centerLon == null) {
+            const c = getSessionQTH();
+            if (!c) { alert('No QTH available for pattern overlay.'); return; }
+            centerLat = c.lat; centerLon = c.lon;
+        }
+        const gains = pattern.map(p => p[1]);
+        const maxG = Math.max(...gains);
+        const actualMin = Math.min(...gains);
+        const spreadDb = maxG - actualMin;
+        const maxKm = 250;                            // outer ring at peak
+
+        const pts = pattern.map(([az, g]) => {
+            const dBBelowPeak = Math.max(-PATTERN_DB_RANGE, g - maxG);
+            const norm = 0.30 + 0.70 * (dBBelowPeak + PATTERN_DB_RANGE) / PATTERN_DB_RANGE;
+            return offsetLatLon(centerLat, centerLon, az, norm * maxKm);
+        });
+
+        antennaPatternLayer = L.polygon(pts, {
+            color: '#FFA500', weight: 2, fillColor: '#FFA500', fillOpacity: 0.15
+        }).addTo(qsoMap);
+        // Popup surfaces the actual spread so the operator can tell "this
+        // looks round because the pattern IS round" from "this looks round
+        // because it's clipped." Also names the shape category.
+        const shape = spreadDb < 3   ? 'near-omni (<3 dB)'
+                    : spreadDb < 6   ? 'weakly directional (3–6 dB)'
+                    : spreadDb < 10  ? 'directional (6–10 dB)'
+                    :                  'strongly directional (≥10 dB, figure-8)';
+        // Peak takeoff (geometry-derived) — helps operator judge whether the
+        // current view angle matches what the antenna is actually best at.
+        const _profile = antennasCache.find(x => x.id === activePatternProfileId);
+        const _freq = _profile && _profile.bands_mhz ? _profile.bands_mhz[band] : null;
+        const _peak = estimatePeakTakeoff(_profile, _freq);
+        const _peakLine = _peak
+            ? '<br><span style="color:#888;">peak radiation ~' + _peak
+              + '° (current view ' + takeoff + '°)</span>'
+            : '';
+        antennaPatternLayer.bindPopup(
+            '<b>' + escapeHtml(name) + '</b><br>'
+            + T['pattern_at_band'] + ' ' + band + ' • takeoff ' + takeoff + '°<br>'
+            + 'max=' + maxG.toFixed(1) + ' dBi, min=' + actualMin.toFixed(1) + ' dBi<br>'
+            + 'spread ' + spreadDb.toFixed(1) + ' dB — <em>' + shape + '</em>'
+            + _peakLine
+        );
+        qsoMap.fitBounds(antennaPatternLayer.getBounds(), {padding:[40,40]});
+    }
+
+    // Compute lat/lon offset from a starting point by (bearing_deg, distance_km)
+    // using a small-earth flat approximation — accurate enough for 0-500 km.
+    function offsetLatLon(lat, lon, bearingDeg, km) {
+        const R = 6371;
+        const b = bearingDeg * Math.PI / 180;
+        const dlat = (km / R) * Math.cos(b);
+        const dlon = (km / R) * Math.sin(b) / Math.cos(lat * Math.PI / 180);
+        return [lat + dlat * 180 / Math.PI, lon + dlon * 180 / Math.PI];
+    }
+
+    function getSessionQTH() {
+        // Peek at the marker created in loadMapQSOs()'s call (via /api/position)
+        // by asking the endpoint again — simple + no state coupling.
+        // Returns {lat, lon} or null if map's my-station marker isn't there.
+        // For synchronous callers we can't await, so tolerate null.
+        return null;
+    }
+
+    // Beam-heading line — hooked from map pin popups. Fetches best-for and
+    // draws QTH→target line colored by top result's gain.
+    function drawBeamHeading(targetLat, targetLon, band) {
+        if (!qsoMap) return;
+        const sid = currentSessionId;
+        const qs = 'lat=' + targetLat + '&lon=' + targetLon
+                 + '&band=' + encodeURIComponent(band)
+                 + (sid ? '&session_id=' + sid : '');
+        fetch('/api/antennas/best-for?' + qs).then(r => r.json()).then(d => {
+            if (!d.ok || !d.results.length) return;
+            const best = d.results[0];
+            const qth = best.qth_used;
+            const color = beamColorForGain(best.gain_dBi, best.is_null);
+            if (antennaBeamLine) qsoMap.removeLayer(antennaBeamLine);
+            antennaBeamLine = L.polyline(
+                [[qth.lat, qth.lon], [targetLat, targetLon]],
+                {color: color, weight: 3, opacity: 0.8, dashArray: '8,6'}
+            ).addTo(qsoMap);
+            antennaBeamLine.bindPopup(
+                '<b>' + T['antenna_best_for'] + ' ' + band + '</b><br>'
+                + escapeHtml(best.name) + '<br>'
+                + T['antenna_gain'] + ': ' + (best.gain_dBi ?? '—') + ' dBi<br>'
+                + T['antenna_beam_to'] + ': ' + best.azimuth_deg + '°  ('
+                + best.distance_km + ' km)'
+            );
+        });
+    }
+
+    function beamColorForGain(g, isNull) {
+        if (g == null || isNull) return '#c92a2a';   // red / null
+        if (g < 0)  return '#f59e0b';                 // amber / marginal
+        return '#22c55e';                              // green / good
     }
 </script>
 {% endblock %}

@@ -1,0 +1,127 @@
+#!/bin/bash
+#
+# Author  : Sylvain Deguire (VA2OPS)
+# Purpose : The ONE authoritative rigctld recovery path. Called from
+#           mode_engine._restart_rigctld() and li-automation's
+#           rigctld_ensure_ready(). Does the full recovery dance in the
+#           right order, returns 0 on success, non-zero with clear
+#           diagnostics on failure.
+#
+#           Recovery sequence:
+#             1. reset-failed  — clear systemd's failed-state flag
+#             2. stop          — clean stop
+#             3. killall       — catch any stragglers
+#             4. wait          — for TCP port 4532 to release
+#             5. start         — bring service back up
+#             6. wait+probe    — for port to bind AND rig to respond
+#
+#           All sudo calls use -n (non-interactive) — if sudoers is
+#           misconfigured we fail fast rather than hang on a prompt.
+#
+# Exit codes:
+#   0 — rigctld is up and rig responds to 'get freq'
+#   1 — sudo failed (sudoers policy is wrong; install liaisonos-services)
+#   2 — rigctld failed to come up (likely stuck serial port — unplug/replug)
+#   3 — rigctld came up but rig doesn't respond (radio off, cable issue)
+#
+# Usage   : li-rigctld-recover
+#           li-rigctld-recover --quiet    # suppress info-level output
+#
+
+PORT=4532
+STARTUP_TIMEOUT_S=15
+PORT_FREE_TIMEOUT_S=3
+
+QUIET=0
+[[ "${1:-}" == "--quiet" ]] && QUIET=1
+
+log() {
+    if [[ $QUIET -eq 0 ]]; then echo "[rigctld-recover] $*" >&2; fi
+}
+err() { echo "[rigctld-recover] ERR: $*" >&2; }
+
+# ── 1. Sudo pre-check ────────────────────────────────────────────────────────
+# If sudo needs a password, ALL our sudo calls will just fail. Detect that
+# up-front so we exit with a clear code instead of running the whole flow.
+if ! sudo -n /usr/bin/systemctl is-enabled rigctld >/dev/null 2>&1 \
+     && ! sudo -n /usr/bin/systemctl is-active rigctld >/dev/null 2>&1; then
+    # is-enabled/is-active exit non-zero when the service is in a bad state,
+    # so the meaningful check is whether sudo itself demanded a password.
+    # Retry with a definitely-succeeding sudo command to isolate that.
+    if ! sudo -n /usr/bin/true 2>/dev/null; then
+        err "passwordless sudo is not configured for this shell"
+        err "install the liaisonos-services sudoers policy first"
+        exit 1
+    fi
+fi
+
+# ── 2. Reset systemd failed state ────────────────────────────────────────────
+# Harmless if not failed. Critical if it IS — without this, `systemctl start`
+# returns 0 without actually starting anything.
+sudo -n /usr/bin/systemctl reset-failed rigctld 2>/dev/null
+
+# ── 3. Clean stop ────────────────────────────────────────────────────────────
+sudo -n /usr/bin/systemctl stop rigctld 2>/dev/null
+
+# ── 4. Kill stragglers ───────────────────────────────────────────────────────
+# systemctl stop should be enough, but a rigctld that lost its way (Wine
+# corrupted its serial state) sometimes ignores SIGTERM. killall is the
+# hammer for the corner case.
+sudo -n /usr/bin/killall rigctld 2>/dev/null || true
+
+# ── 5. Wait for port to release ──────────────────────────────────────────────
+for _ in $(seq 1 $((PORT_FREE_TIMEOUT_S * 2))); do
+    if ! ss -ltn "sport = :$PORT" 2>/dev/null | grep -q LISTEN; then
+        break
+    fi
+    sleep 0.5
+done
+
+# ── 6. Start fresh ───────────────────────────────────────────────────────────
+if ! sudo -n /usr/bin/systemctl start rigctld 2>/dev/null; then
+    err "systemctl start rigctld failed"
+    err "  check: sudo systemctl status rigctld"
+    exit 2
+fi
+
+# ── 7. Wait for port bind ────────────────────────────────────────────────────
+deadline=$(( $(date +%s) + STARTUP_TIMEOUT_S ))
+port_bound=0
+while [[ $(date +%s) -lt $deadline ]]; do
+    if ss -ltn "sport = :$PORT" 2>/dev/null | grep -q LISTEN; then
+        port_bound=1
+        break
+    fi
+    sleep 0.3
+done
+if [[ $port_bound -eq 0 ]]; then
+    err "rigctld failed to bind port $PORT within ${STARTUP_TIMEOUT_S}s"
+    err "  likely stuck serial port from a prior Wine session"
+    err "  fix: unplug and replug the radio USB cable"
+    exit 2
+fi
+
+# ── 8. Verify rig actually responds ──────────────────────────────────────────
+# Port bound doesn't mean the rig is talking — it just means rigctld is
+# listening. Send 'f' (get frequency), expect a numeric response. Anything
+# else (RPRT -X, timeout, garbage) means the rig itself is unresponsive.
+response=$(
+    exec 3<>/dev/tcp/127.0.0.1/$PORT 2>/dev/null || exit 1
+    echo "f" >&3
+    IFS= read -r -t 3 line <&3
+    exec 3<&-
+    echo "$line"
+) 2>/dev/null
+
+if [[ "$response" =~ ^[0-9]+$ ]]; then
+    log "rigctld back up on freq ${response} Hz"
+    exit 0
+elif [[ -z "$response" ]]; then
+    err "rigctld bound $PORT but rig isn't responding (no reply to 'f')"
+    err "  check: radio is powered on, CAT cable seated, correct baud in hamlib config"
+    exit 3
+else
+    err "rigctld bound $PORT but rig replied unexpectedly: $response"
+    err "  likely: radio is off or CAT config is wrong"
+    exit 3
+fi
