@@ -10,10 +10,10 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://liaisonos.com/download.html">
   <meta property="og:title" content="Download LiaisonOS — Ham Radio Linux ISO">
-  <meta property="og:description" content="Download LiaisonOS v2.4.1 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
+  <meta property="og:description" content="Download LiaisonOS v2.4.2 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
   <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Download LiaisonOS v2.4.1">
+  <meta name="twitter:title" content="Download LiaisonOS v2.4.2">
   <meta name="twitter:description" content="Debian 13 live ISO for ham radio EMCOMM. QtDashboard, Touch Mode, JS8Call, Pat-Winlink, VARA, VarAC, fldigi — ready to go.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -214,30 +214,31 @@
         <strong>Continuous development notice —</strong> LiaisonOS uses an agile, continuous-release model. Each version is fully functional. <strong>Always boot and test from USB first</strong> before committing to a permanent install.
       </div>
       <div class="whats-new">
-        <p class="whats-new-title">What's new in v2.4.1</p>
-        <ul>
-          <li><strong>Best antenna for target — end guessing which antenna to use.</strong> New <em>Antennas</em> tab in the Field Logger configures your whole station (Sloper EFHW, verticals, inverted-V NVIS, <strong>Delta loop</strong>, <strong>Horizontal loop / skywarmer</strong>, <strong>Horizontal EFHW / NVIS</strong>). Real NEC-2 modeling via PyNEC computes the actual radiation pattern for each antenna on each band and draws it as a polar overlay on the map near your QTH. Click any QSO or park pin and the app tells you which antenna gives the best gain toward that station — with a color-coded line (green good / amber marginal / red null) and the predicted gain in dBi.</li>
-          <li><strong>Takeoff-angle picker + peak-radiation estimator</strong> — the same antenna radiates a very different pattern at NVIS (50°), regional (22°) and DX (12°) elevation angles. Toggle the picker on the map to switch between them; a geometry-derived <em>peak radiation</em> label tells you what elevation your antenna is actually best at. Bands accept just names now (<code>40m, 20m</code>) — auto-picks midpoint frequency. Site lat/lon prefilled from your profile.</li>
-          <li><strong>QtPatWinlink: manual RMS entry</strong> — new <em>+ Manual</em> button for offline-gateway work when Winlink's online RMS list can't refresh. Enter callsign, freq (10 Hz resolution — e.g. 7.10325 MHz), bandwidth, and modem (VARA HF/FM, Winmor, Pactor, Packet). Entries persist across launches, editable via right-click, auto-selected after add so a single Connect click sends it.</li>
-          <li><strong>QtGpsSync: grid save on partial success</strong> — when the wall clock is more than a few seconds off from GPS, the clock-sync path could time out and silently drop the position too. Now: if GpsSync got a valid GPS fix, the grid is pushed to the Dashboard even when clock-sync fails (amber "clock sync failed — grid updated" state instead of red failure). Also: the Field Logger's top-right grid badge now honors manual profile edits within 30 seconds.</li>
-          <li><strong>VarAC updated to 15.0.18</strong> — the bundled Wine-based VarAC install refreshed with the latest upstream release.</li>
+        <p class="whats-new-title">What's new in v2.4.2</p>
+                <ul>
+          <li><strong>Reliable Winlink automation — no more stuck missions.</strong> Scheduled Winlink sessions now correctly detect end-of-transfer on <em>receive</em> (previously a mission could hang waiting on a signal that never arrived). New <strong>retry-on-fail</strong> option lets you set the number of retries and the minutes between them; after the last attempt the station returns to its presence mode and runs again at its next scheduled time.</li>
+          <li><strong>Rock-solid scheduled QSY.</strong> The Automation Editor now <strong>validates each frequency against its band</strong> and flags out-of-band typos before they ever reach the rig. A new <strong>CAT watchdog</strong> plus USB-serial hardening detect and auto-recover a wedged CAT link, so a scheduled QSY lands — and stays — on the right frequency on any rig/adapter.</li>
+          <li><strong>QtAprsBeacon — new APRS mode.</strong> Distance-based automatic beaconing over a KISS TNC with position from GPS, plus APRS messaging (send/receive with ACK tracking). Desktop and Touch Mode layouts.</li>
+          <li><strong>Antenna patterns now included out of the box.</strong> The Field Logger's real NEC-2 antenna modeling (PyNEC) ships and works on first boot — polar radiation-pattern overlay per band near your QTH, with best-antenna-toward-station gain hints.</li>
+          <li><strong>Fresh callsign database.</strong> Refreshed US data and improved geocoded Canadian (ISED) data with latitude/longitude — callsign lookups show accurate location, distance and bearing.</li>
+          <li><strong>QtPatWinlink polish.</strong> Removed an offline banner that could oversize the window on touchscreens; the Connect view stays clean when off-grid.</li>
         </ul>
       </div>
 
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.1.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.2.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label"><span class="il il-en">Latest release</span><span class="il il-fr">Dernière version</span></p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.4.1.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.4.2.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; <span class="il il-en">Released</span> <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.1</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.2</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">License</p><p class="stat-val">Ms-PL</p></div>
@@ -248,8 +249,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.4.1</span>
-      <span class="checksum-val" id="hashval">9b226f86d2fb3414ef41241924765ce8e3d1efd7e57e558593aae6304f0a3adf</span>
+      <span class="checksum-label">SHA256 - v2.4.2</span>
+      <span class="checksum-val" id="hashval">2930317d64195aadb9383a31e8a0799713432f6ff05e8b461e44bac7514d5705</span>
       <button class="copy-btn" onclick="copyHash('hashval')"><span class="il il-en">Copy</span><span class="il il-fr">Copier</span></button>
     </div>
 
@@ -265,15 +266,15 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.4.1.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.4.2.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.1.iso">⬇ Download</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.2.iso">⬇ Download</a></td>
         </tr>
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span></td>
           <td>4.56 MB</td>
-          <td>2026-05-03</td>
+          <td>2026-08-22</td>
           <td><a class="dl-btn" href="https://releases.liaisonos.com/APK/LiaisonGPS.apk">⬇ Download</a></td>
         </tr>
         <tr>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QtAprsBeacon — APRS beaconing paired with LiaisonGPS — LiaisonOS Blog</title>
+  <meta name="description" content="QtAprsBeacon is a new APRS mode in LiaisonOS 2.4.2 — automatic distance-based position beaconing over a KISS TNC, plus APRS messaging, using GPS from your phone via the LiaisonGPS Android app.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    h3 { font-size: 14px; font-weight: 500; color: #c8e8d8; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    code {
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      background: #16231a; border: 1px solid rgba(125,232,176,0.15);
+      border-radius: 4px; padding: 1px 6px; color: #7de8b0;
+    }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 1rem 0; }
+    .feature-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .feature-card-icon { font-size: 20px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 4px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    .article-photo {
+      width: 100%; background: #16231a;
+      border: 1px solid rgba(125,232,176,0.12); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2rem; overflow: hidden;
+    }
+    .article-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+    .article-photo-placeholder {
+      font-size: 12px; color: #3a6a4a; font-family: 'IBM Plex Mono', monospace;
+      text-align: center; padding: 3rem;
+    }
+
+    .cta {
+      display: inline-flex; align-items: center; gap: 8px; font-size: 13px;
+      color: #7de8b0; text-decoration: none; border: 1px solid rgba(125,232,176,0.25);
+      border-radius: 6px; padding: 8px 14px; background: #1a3a2a; margin: 4px 8px 4px 0;
+    }
+    .cta:hover { background: #1f4432; color: #7de8b0; }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Home</a>
+    <a href="../download.html">Download</a>
+    <a href="index.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="qtaprsbeacon_fr.html" class="lang-link">🇫🇷 FR</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index.html">← Back to Blog</a>
+  <div class="article-meta">
+    <span class="article-date">2026-09-06</span>
+    <span class="article-tag">APRS &amp; Position</span>
+  </div>
+  <h1 class="article-title">QtAprsBeacon — <span>APRS beaconing, paired with LiaisonGPS</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">A new mode in LiaisonOS 2.4.2: automatic distance-based APRS position beaconing over a KISS TNC, plus APRS messaging — with your position coming from your phone via the LiaisonGPS Android app. No USB GPS puck required.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.4.2</p>
+</div>
+
+<div style="max-width:720px; margin:0 auto; padding:0 2rem;">
+  <div class="article-photo">
+    <div class="article-photo-placeholder">QtAprsBeacon — APRS beacon + messaging &middot; Touch Mode</div>
+  </div>
+</div>
+
+<div class="article-body">
+
+  <h2>Put yourself <span>on the map</span></h2>
+  <p>APRS is how the ham world shares position, status, and short messages over RF. QtAprsBeacon brings native APRS beaconing to LiaisonOS as a first-class mode — it keys your position onto the local APRS network through your radio and a KISS TNC (Direwolf or a hardware TNC), with nothing to configure beyond your callsign-SSID, path, and symbol.</p>
+  <p>Instead of beaconing blindly on a fixed timer, QtAprsBeacon is <strong>distance-based</strong>: it fires an initial beacon when you start, then a fresh one only after you have actually moved a set number of metres (great-circle / Haversine distance). Sitting still uses zero airtime; on the move, your track stays current without hammering the channel.</p>
+
+  <h2>Key <span>features</span></h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-card-icon">📍</div>
+      <div class="feature-card-title">Distance-based beaconing</div>
+      <div class="feature-card-desc">Beacons on movement, not a blind timer — set the minimum distance in metres and QtAprsBeacon fires only when you've actually moved.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">💬</div>
+      <div class="feature-card-title">APRS messaging</div>
+      <div class="feature-card-desc">Send and receive APRS text messages to any station, with automatic ACK tracking so you can see when your message was received.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🛰️</div>
+      <div class="feature-card-title">GPS from your phone</div>
+      <div class="feature-card-desc">Position comes from the LiaisonGPS Android app over Bluetooth — no USB GPS puck, no extra hardware to carry.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">👆</div>
+      <div class="feature-card-title">Desktop &amp; Touch Mode</div>
+      <div class="feature-card-desc">A full desktop window or a big-button Touch Mode layout with inline compose and history — plus a lock-screen button for field use.</div>
+    </div>
+  </div>
+
+  <h2>Paired with <span>LiaisonGPS</span></h2>
+  <p>The piece that makes this effortless is <strong>LiaisonGPS</strong>, the LiaisonOS Android companion app. Instead of hunting for a USB GPS dongle, LiaisonGPS turns the phone already in your pocket into your station's GPS source: it reads the phone's location and broadcasts it over Bluetooth as standard NMEA sentences.</p>
+  <p>LiaisonOS receives that Bluetooth NMEA stream and feeds it to <code>gpsd</code>, the same local GPS service every position-aware app on the system reads. QtAprsBeacon simply asks <code>gpsd</code> for the current fix — so the moment LiaisonGPS is paired and streaming, your beacons carry a live, accurate position. The same fix also drives the Dashboard grid, the Field Logger, and GPS clock-sync.</p>
+
+  <div class="note">
+    <strong>Why a phone?</strong> Modern phones have excellent multi-constellation GNSS receivers, and you always have one with you. LiaisonGPS keeps the GPS off your radio bench and out of your USB ports — one less cable in the field.
+  </div>
+
+  <p style="margin-top:1rem">
+    <a class="cta" href="https://play.google.com/store/apps/details?id=com.liaisonos.liaisongps&amp;hl=en" target="_blank" rel="noopener">▶ LiaisonGPS on Google Play</a>
+    <a class="cta" href="https://releases.liaisonos.com/APK/LiaisonGPS.apk" target="_blank" rel="noopener">⬇ Direct APK download</a>
+  </p>
+
+  <h2>How a <span>beacon session</span> works</h2>
+  <p>Pick your position source (GPS from LiaisonGPS, or a manual lat/lon you enter by hand), set your SSID, digipeater path, comment, APRS symbol, and the minimum move distance — then press <strong>Start Beaconing</strong>. QtAprsBeacon fires an initial position beacon immediately so you appear on the map right away, then watches the GPS fix and beacons again each time you've moved past your distance threshold.</p>
+  <p>Everything goes out through your KISS TNC over the radio you already have running, so it works fully off-grid — no internet, no APRS-IS gateway required. Anyone monitoring the frequency, or any nearby digipeater and iGate, picks you up.</p>
+
+  <h2>Messaging, <span>the APRS way</span></h2>
+  <p>QtAprsBeacon also does APRS messaging. Type a short message to another station and send it; QtAprsBeacon tracks the outgoing message and matches the <code>ackNNNNN</code> reply addressed back to your SSID, so a sent message flips to <em>acknowledged</em> the moment the other end confirms it. Inbound messages addressed to you are surfaced and logged. It is deliberately fire-and-forget — no noisy auto-retry storms on the channel; if you want to resend, you re-send.</p>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">Available in LiaisonOS 2.4.2 and later &middot; Mode developed by VA2OPS &middot; Get the companion app: <a href="https://releases.liaisonos.com/APK/LiaisonGPS.apk">LiaisonGPS.apk</a></p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>

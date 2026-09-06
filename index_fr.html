@@ -146,7 +146,7 @@
     <a class="btn-secondary" href="mailto:info@liaisonos.com">✉ Nous joindre</a>
   </div>
   <div class="badges">
-    <span class="badge"><span>v2.4.1</span></span>
+    <span class="badge"><span>v2.4.2</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Licence <span>Ms-PL</span></span>
@@ -202,10 +202,10 @@ data-beehiiv-form="12328a64-4ff4-456a-9557-fc3ecb84804d"></script></div>
   </div>
 
   <div class="section">
-    <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.1</span></h2>
+    <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.2</span></h2>
 
     <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
-      <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.1</span> &nbsp; <strong>Meilleure antenne pour la cible — le Journal de Terrain sait maintenant ce que vos antennes font réellement.</strong> Nouvel onglet <em>Antennes</em> pour configurer votre station complète (Sloper EFHW, verticales, inverted-V NVIS, <strong>Boucle delta</strong>, <strong>Boucle horizontale / skywarmer</strong>, <strong>EFHW horizontal / NVIS</strong>). Modélisation NEC-2 réelle via PyNEC calcule le patron de rayonnement pour chaque antenne sur chaque bande, dessiné en superposition polaire sur la carte près de votre QTH. Cliquez sur n'importe quel indicatif ou parc et l'app vous dit quelle antenne donne le meilleur gain vers cette station — avec une ligne colorée (vert bon / orange marginal / rouge nul) et le gain prédit en dBi. Un <strong>sélecteur d'angle de radiation</strong> sur la carte bascule entre DX 12°, régional 22° et NVIS 50° pour la même antenne — le patron change radicalement par élévation, et une étiquette <em>pic de radiation</em> dérivée de la géométrie vous indique à quel angle votre antenne est réellement la meilleure. Les bandes acceptent simplement les noms (<code>40m, 20m</code>) ; coordonnées du site pré-remplies depuis votre profil. <strong>QtPatWinlink</strong> obtient une saisie manuelle RMS pour le travail hors-ligne (résolution 10 Hz, persistante, modifiable). <strong>QtGpsSync</strong> sauvegarde maintenant le carré locator quand il obtient une position GPS valide même si la synchronisation d'horloge échoue — les grands écarts entre l'horloge système et le GPS ne perdent plus silencieusement la position. Le badge de carré locator du Journal de Terrain respecte les modifications manuelles du profil en moins de 30 secondes. <strong>VarAC mis à jour à 15.0.18</strong>. <strong>Réservé aux titulaires Supérieure</strong> selon les règles d'ISDE — le démon d'automatisation est livré en pause par défaut.</p>
+      <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.2</span> &nbsp; <strong>Automatisation Winlink fiable et QSY planifié solide.</strong> Les missions Winlink planifiées détectent maintenant correctement la fin de transfert en réception (fini les blocages), avec une nouvelle option de réessai sur échec — réglez le nombre de tentatives et les minutes d’attente ; après la dernière tentative, la station revient à son mode de présence et repart à l’heure planifiée suivante. L’éditeur d’automatisation <strong>valide chaque fréquence selon sa bande</strong> (détectant les fautes hors bande avant qu’elles n’atteignent la radio), et un nouveau <strong>chien de garde CAT</strong> ainsi qu’un durcissement USB-série détectent et récupèrent automatiquement un lien CAT bloqué, pour qu’un QSY planifié se cale — et reste — sur la bonne fréquence, quelle que soit la radio ou l’adaptateur. Le nouveau mode <strong>QtAprsBeacon</strong> ajoute une balise APRS basée sur la distance via KISS avec position GPS et messagerie APRS (suivi des ACK), en dispositions bureau et tactile. La modélisation d’antenne NEC-2 (PyNEC) du Journal de Terrain est maintenant incluse et fonctionne d’office. Base de données d’indicatifs rafraîchie — données US mises à jour plus données canadiennes (ISED) géocodées améliorées avec lat/lon pour lieu, distance et azimut exacts. <strong>Réservé aux titulaires Supérieure</strong> selon les règles d’ISDE — le démon d’automatisation est livré en pause par défaut.</p>
     </div>
 
   </div>

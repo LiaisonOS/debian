@@ -134,28 +134,29 @@
     </div>
 
     <div class="whats-new">
-      <p class="whats-new-title">Nouveautés de la v2.4.1</p>
-      <ul>
-        <li><strong>Meilleure antenne pour la cible — fini de deviner quelle antenne utiliser.</strong> Nouvel onglet <em>Antennes</em> dans le Journal de Terrain pour configurer votre station complète (Sloper EFHW, verticales, inverted-V NVIS, <strong>Boucle delta</strong>, <strong>Boucle horizontale / skywarmer</strong>, <strong>EFHW horizontal / NVIS</strong>). Modélisation NEC-2 réelle via PyNEC calcule le patron de rayonnement pour chaque antenne sur chaque bande, dessiné en superposition polaire sur la carte près de votre QTH. Cliquez sur n'importe quel indicatif ou parc et l'app vous dit quelle antenne donne le meilleur gain vers cette station — avec une ligne colorée (vert bon / orange marginal / rouge nul) et le gain prédit en dBi.</li>
-        <li><strong>Sélecteur d'angle de radiation + estimateur du pic géométrique</strong> — la même antenne rayonne un patron très différent aux angles NVIS (50°), régional (22°) et DX (12°). Basculez le sélecteur sur la carte pour comparer ; une étiquette <em>pic de radiation</em> dérivée de la géométrie vous indique à quel angle votre antenne est réellement la meilleure. Les bandes acceptent maintenant simplement les noms (<code>40m, 20m</code>) — la fréquence centrale est choisie automatiquement. Lat/lon du site pré-remplis depuis votre profil.</li>
-        <li><strong>QtPatWinlink : saisie manuelle RMS</strong> — nouveau bouton <em>+ Manuel</em> pour travailler avec des passerelles hors-ligne quand la liste RMS en ligne de Winlink ne peut pas se rafraîchir. Entrez l'indicatif, la fréquence (résolution 10 Hz — ex : 7,10325 MHz), la bande passante, et le modem (VARA HF/FM, Winmor, Pactor, Packet). Les entrées persistent d'un lancement à l'autre, modifiables par clic droit, auto-sélectionnées après ajout pour qu'un seul clic Connect les envoie.</li>
-        <li><strong>QtGpsSync : sauvegarde du carré locator en cas de succès partiel</strong> — quand l'horloge système est décalée de plus de quelques secondes du GPS, la synchronisation d'horloge pouvait expirer et perdre silencieusement la position aussi. Maintenant : si GpsSync obtient une position GPS valide, le carré locator est envoyé au Tableau de bord même si la synchronisation d'horloge échoue (état orange « synchronisation d'horloge échouée — carré mis à jour » au lieu d'un échec rouge). Aussi : le badge de carré locator en haut à droite du Journal de Terrain respecte maintenant les modifications manuelles du profil en moins de 30 secondes.</li>
-        <li><strong>VarAC mis à jour à 15.0.18</strong> — l'installation Wine intégrée de VarAC rafraîchie avec la dernière version amont.</li>
-      </ul>
+      <p class="whats-new-title">Nouveautés de la v2.4.2</p>
+              <ul>
+          <li><strong>Automatisation Winlink fiable — fini les missions bloquées.</strong> Les sessions Winlink planifiées détectent maintenant correctement la fin de transfert en <em>réception</em> (auparavant une mission pouvait rester bloquée en attente d'un signal qui n'arrivait jamais). Nouvelle option <strong>réessai sur échec</strong> : réglez le nombre de tentatives et les minutes d'attente entre chacune ; après la dernière tentative, la station revient à son mode de présence et repart à l'heure planifiée suivante.</li>
+          <li><strong>QSY planifié fiable.</strong> L'éditeur d'automatisation <strong>valide chaque fréquence selon sa bande</strong> et signale les fautes de frappe hors bande avant qu'elles n'atteignent la radio. Un nouveau <strong>chien de garde CAT</strong> et un durcissement USB-série détectent et récupèrent automatiquement un lien CAT bloqué, pour qu'un QSY planifié se cale — et reste — sur la bonne fréquence, quelle que soit la radio ou l'adaptateur.</li>
+          <li><strong>QtAprsBeacon — nouveau mode APRS.</strong> Balise automatique basée sur la distance via un TNC KISS avec position GPS, plus messagerie APRS (envoi/réception avec suivi des ACK). Dispositions bureau et Mode Tactile.</li>
+          <li><strong>Diagrammes d'antenne inclus d'office.</strong> La modélisation d'antenne NEC-2 réelle (PyNEC) du Field Logger est incluse et fonctionne dès le premier démarrage — superposition polaire du diagramme de rayonnement par bande près de votre QTH, avec indications de gain vers la station.</li>
+          <li><strong>Base de données d'indicatifs à jour.</strong> Données US rafraîchies et données canadiennes (ISED) géocodées améliorées avec latitude/longitude — les recherches affichent lieu, distance et azimut exacts.</li>
+          <li><strong>Améliorations QtPatWinlink.</strong> Suppression d'une bannière hors-ligne qui pouvait agrandir la fenêtre sur écran tactile ; la vue Connexion reste propre hors réseau.</li>
+        </ul>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.1.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.2.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label">Dernière version</p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.4.1.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.4.2.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; Publiée <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.1</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.2</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">Licence</p><p class="stat-val">Ms-PL</p></div>
@@ -163,8 +164,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.4.1</span>
-      <span class="checksum-val" id="hashval">9b226f86d2fb3414ef41241924765ce8e3d1efd7e57e558593aae6304f0a3adf</span>
+      <span class="checksum-label">SHA256 - v2.4.2</span>
+      <span class="checksum-val" id="hashval">2930317d64195aadb9383a31e8a0799713432f6ff05e8b461e44bac7514d5705</span>
       <button class="copy-btn" onclick="copyHash('hashval')">Copier</button>
     </div>
 
@@ -180,15 +181,15 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.4.1.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.4.2.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.1.iso">⬇ Télécharger</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.2.iso">⬇ Télécharger</a></td>
         </tr>
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span></td>
           <td>4.56 MB</td>
-          <td>2026-05-03</td>
+          <td>2026-08-22</td>
           <td><a class="dl-btn" href="https://releases.liaisonos.com/APK/LiaisonGPS.apk">⬇ Télécharger</a></td>
         </tr>
         <tr>
