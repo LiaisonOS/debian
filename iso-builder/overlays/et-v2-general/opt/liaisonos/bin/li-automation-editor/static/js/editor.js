@@ -115,6 +115,7 @@ function renderPresence(idx, p) {
         <label><span>QSY kHz</span>
           <input type="number" step="0.1" value="${p.qsy_khz ?? ''}" placeholder="7078.0"
                  onchange="updPresence(${idx},'qsy_khz',parseFloat(this.value)||0)">
+          ${bandFreqWarning(p.band, p.qsy_khz)}
         </label>
         <label><span>Rig mode</span>
           <input type="text" value="${p.rig_mode || ''}" placeholder="PKTUSB"
@@ -138,6 +139,31 @@ function renderPresence(idx, p) {
 }
 
 
+// ── band ↔ frequency sanity check ───────────────────────────────────────────
+// Ham band edges in kHz (HF + 6m + 2m). Mirrors BANDS_KHZ in the li-automation
+// daemon validator — keep the two in sync.
+const BAND_RANGES = {
+    "160m":[1800,2000],"80m":[3500,4000],"60m":[5250,5450],"40m":[7000,7300],
+    "30m":[10100,10150],"20m":[14000,14350],"17m":[18068,18168],"15m":[21000,21450],
+    "12m":[24890,24990],"10m":[28000,29700],"6m":[50000,54000],"2m":[144000,148000],
+};
+function bandRange(band) {
+    if (typeof band !== "string") return null;
+    return BAND_RANGES[band.trim().toLowerCase().replace(/\s+/g, "")] || null;
+}
+// Returns an inline red warning span iff freq is outside the declared band.
+// Unknown/blank band → no judgement (empty string).
+function bandFreqWarning(band, khz) {
+    const r = bandRange(band);
+    if (!r || typeof khz !== "number" || isNaN(khz)) return "";
+    if (khz < r[0] || khz > r[1]) {
+        return `<span class="freq-warn" style="color:#c0392b;font-weight:bold;`
+             + `display:block;margin-top:2px;">⚠ ${khz} kHz is outside ${band} `
+             + `(${r[0]}–${r[1]} kHz)</span>`;
+    }
+    return "";
+}
+
 // ── qsy_schedule sub-block (one per presence card) ──────────────────────────
 function renderQsyScheduleBlock(presenceIdx, presence) {
     const schedule = presence.qsy_schedule || [];
@@ -155,6 +181,7 @@ function renderQsyScheduleBlock(presenceIdx, presence) {
                onchange="updQsy(${presenceIdx},${j},'rig_bw',parseInt(this.value))">
         <button class="btn btn-small btn-danger" onclick="delQsy(${presenceIdx},${j})">×</button>
       </div>
+      ${bandFreqWarning(q.band ?? presence.band, q.qsy_khz)}
     `).join("");
     const label = (LANG === "fr")
         ? "QSY planifié (réglages de la station courante uniquement)"
@@ -193,6 +220,8 @@ function updQsy(presenceIdx, qsyIdx, key, value) {
     } else {
         ev[key] = value;
     }
+    // Refresh the live band↔frequency warning on the row.
+    if (key === "band" || key === "qsy_khz") renderPresenceList();
 }
 
 
@@ -215,7 +244,9 @@ function updPresence(idx, key, value) {
     } else {
         state.presence[idx][key] = value;
     }
-    if (key === "mode") renderPresenceList();   // mode change can show/hide modem
+    // mode change can show/hide modem; band/qsy_khz change refreshes the
+    // live band↔frequency warning.
+    if (key === "mode" || key === "band" || key === "qsy_khz") renderPresenceList();
 }
 
 

@@ -40,6 +40,33 @@ def _dbg(msg: str) -> None:
         print(f"  [dbg] {msg}", flush=True)
 VALID_ON_FAIL = {"skip", "retry_same", "retry_alt"}
 
+# Ham band edges in kHz (HF + 6m + 2m). Used to sanity-check qsy_khz against
+# the declared band so a typo like 140708 (= 140.7 MHz) for a 20m presence is
+# rejected before it ever reaches the rig.
+BANDS_KHZ = {
+    "160m": (1800, 2000),   "80m": (3500, 4000),   "60m": (5250, 5450),
+    "40m":  (7000, 7300),   "30m": (10100, 10150), "20m": (14000, 14350),
+    "17m":  (18068, 18168), "15m": (21000, 21450), "12m": (24890, 24990),
+    "10m":  (28000, 29700), "6m":  (50000, 54000), "2m":  (144000, 148000),
+}
+
+def band_range_khz(band):
+    """Return (min,max) kHz for a band label ('20m','20M','20 m'...), else None."""
+    if not isinstance(band, str):
+        return None
+    return BANDS_KHZ.get(band.strip().lower().replace(" ", ""))
+
+def check_qsy_in_band(qsy_khz, band, ctx, rep):
+    """If band is a known ham band and qsy_khz is a number, require the freq to
+    fall within that band. Unknown/blank band → no cross-check (can't judge)."""
+    rng = band_range_khz(band)
+    if rng is None or not isinstance(qsy_khz, (int, float)):
+        return
+    lo, hi = rng
+    if not (lo <= qsy_khz <= hi):
+        rep.err(ctx, f"qsy_khz {qsy_khz:g} kHz is outside band {band} "
+                     f"({lo}-{hi} kHz) — check the frequency or the band")
+
 RE_TIME = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 RE_WINDOW = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$")
 
@@ -126,6 +153,8 @@ def validate_presence(presence: Any, rep: Report) -> None:
             rep.err(ctx, "band must be string")
         if "qsy_khz" in p and not isinstance(p["qsy_khz"], (int, float)):
             rep.err(ctx, "qsy_khz must be number")
+        # Cross-check: qsy_khz must fall inside the declared band.
+        check_qsy_in_band(p.get("qsy_khz"), p.get("band"), ctx, rep)
         if "rig_mode" in p and not isinstance(p["rig_mode"], str):
             rep.err(ctx, "rig_mode must be string (e.g. PKTUSB, PKTFM, USB)")
         if "rig_bw" in p and not isinstance(p["rig_bw"], int):
@@ -162,6 +191,8 @@ def validate_presence(presence: Any, rep: Report) -> None:
                         rep.err(qctx, f"qsy_khz must be > 0 (got {qkhz})")
                     if "band" in q and not isinstance(q["band"], str):
                         rep.err(qctx, "band must be string (e.g. 40m)")
+                    # Cross-check freq vs band (entry band, else the presence band).
+                    check_qsy_in_band(qkhz, q.get("band", p.get("band")), qctx, rep)
                     if "rig_mode" in q and not isinstance(q["rig_mode"], str):
                         rep.err(qctx, "rig_mode must be string (e.g. PKTUSB)")
                     if "rig_bw" in q and not isinstance(q["rig_bw"], int):
@@ -1249,6 +1280,71 @@ def wait_until_idle(timeout_sec: float = 15.0, poll: float = 0.3) -> bool:
     return False
 
 
+# ── Rig-sanity watchdog ─────────────────────────────────────────────────────
+# A wedged/garbled CAT link (e.g. a Digirig CP2102 that got stuck, cleared only
+# by a reboot/re-enumerate) can leave the rig on an absurd frequency — a x100
+# garble puts 14.078 MHz at ~140 kHz. Below the floor no ham operation is
+# possible, so we treat it as a wedged CAT: recover the link and re-QSY. This
+# is ADAPTER-AGNOSTIC (it watches the symptom, not the chip) and inert during
+# normal operation. Flip RIG_SANITY_WATCHDOG=False to disable without reverting.
+RIG_SANITY_WATCHDOG = True
+RIG_SANE_MIN_HZ = 1_500_000       # below 160m (1.8 MHz) → garbled read
+RIG_SANE_MAX_HZ = 500_000_000     # above any ham allocation → garbled read
+
+def rigctld_read_freq_hz(host: str = "127.0.0.1", port: int = 4532,
+                         timeout_s: float = 5.0):
+    """Read the current dial frequency (Hz) via rigctld 'f'. int or None."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout_s)
+        s.connect((host, port))
+        s.sendall(b"f\n")
+        data = s.recv(64).decode("utf-8", errors="replace").strip()
+        s.close()
+        return int(data.splitlines()[0])
+    except (OSError, ValueError):
+        return None
+
+def rig_sanity_check(expected_khz) -> bool:
+    """If rigctld reports an OUT-OF-BAND frequency (wedged CAT), recover the rig
+    link via li-rigctld-recover and re-QSY to expected_khz. Debounced with a
+    second read so a one-off transient garble (e.g. mid-poll) never disrupts a
+    healthy session. Returns True iff it acted."""
+    if not RIG_SANITY_WATCHDOG:
+        return False
+    hz = rigctld_read_freq_hz()
+    if hz is None or (RIG_SANE_MIN_HZ <= hz <= RIG_SANE_MAX_HZ):
+        return False
+    # Confirm — don't disrupt a good session on a single transient bad read.
+    time.sleep(1.0)
+    hz2 = rigctld_read_freq_hz()
+    if hz2 is None or (RIG_SANE_MIN_HZ <= hz2 <= RIG_SANE_MAX_HZ):
+        return False
+    print(f"[watchdog] rig reads {hz2/1000:.1f} kHz — OUT OF BAND "
+          "(wedged CAT); recovering rig link")
+    _notify("critical", "LiaisonOS Automation",
+            f"CAT link wedged — rig read {hz2/1000:.1f} kHz (out of band). "
+            "Recovering the rig link and re-tuning.")
+    try:
+        r = subprocess.run(["/opt/liaisonos/bin/li-rigctld-recover", "--quiet"],
+                           timeout=30, capture_output=True, text=True)
+        recovered = (r.returncode == 0)
+        if r.stderr:
+            for line in r.stderr.rstrip().splitlines():
+                print(f"  [watchdog] {line}")
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        print(f"  [watchdog] li-rigctld-recover failed: {e}")
+        recovered = False
+    if recovered and expected_khz:
+        try:
+            okk, reason = rigctld_set_freq(int(float(expected_khz) * 1000))
+            print(f"  [watchdog] re-QSY {float(expected_khz):.1f} kHz — "
+                  f"{'ok' if okk else 'FAILED'}: {reason}")
+        except (TypeError, ValueError):
+            pass
+    return True
+
+
 def next_scheduled_event(missions: list, presences: list,
                          now: datetime, fired_today: set) -> tuple | None:
     """Return (when_dt, kind, name) for the next upcoming event today.
@@ -2110,11 +2206,16 @@ def cmd_run(args: argparse.Namespace) -> int:
                         our_presence_mode = expected_mode
                 elif current_mode and current_mode == our_presence_mode \
                         and expected_presence:
-                    # We own the current presence and it matches the window —
-                    # check the qsy_schedule for events to fire.
-                    _process_qsy_schedule(
-                        expected_presence, now, last_tick_dt,
-                        qsy_fired_today, _dbg)
+                    # Rig-sanity watchdog: catch a wedged/garbled CAT that left
+                    # the rig out of band; recover + re-QSY. Runs ~once per idle
+                    # tick (≈1/min) so it adds negligible CAT load. If it acted,
+                    # skip the qsy_schedule this tick (it already re-QSY'd).
+                    if not rig_sanity_check(expected_presence.get("qsy_khz")):
+                        # We own the current presence and it matches the window —
+                        # check the qsy_schedule for events to fire.
+                        _process_qsy_schedule(
+                            expected_presence, now, last_tick_dt,
+                            qsy_fired_today, _dbg)
                 elif current_mode and current_mode == expected_mode \
                         and current_mode != our_presence_mode:
                     # Supervisor is already running the mode we'd want to

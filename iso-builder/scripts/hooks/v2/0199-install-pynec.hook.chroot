@@ -1,0 +1,35 @@
+#!/bin/bash
+# =============================================================================
+# 0199-install-pynec.hook.chroot
+# Install PyNEC — Python NEC2 wrapper used by et-logger for antenna
+# radiation-pattern modeling (efhw_nec_model.py / antenna_service.py).
+# Not a Debian package, so it is pip-installed. et-logger lazy-imports PyNEC
+# and runs fine without it, but the antenna-pattern routes return 503 until
+# PyNEC is present.
+#
+# Author   : Sylvain Deguire (VA2OPS)
+# =============================================================================
+
+set -e
+echo "=== Installing PyNEC (antenna patterns for et-logger) ==="
+
+# Deps: numpy at runtime; swig + C++ headers to build the NEC2++ engine from an
+# sdist if no matching wheel is available. build-essential + python3-pip are
+# already in the ISO package list.
+apt-get install -y --no-install-recommends \
+    python3-numpy python3-dev swig
+
+# Debian's Python is externally-managed → force with --break-system-packages.
+# Non-fatal on failure: a build-time network hiccup must NOT abort the whole
+# ISO build (et-logger degrades gracefully without PyNEC).
+if pip3 install --break-system-packages --no-input PyNEC; then
+    if python3 -c "import PyNEC" 2>/dev/null; then
+        echo "PyNEC installed and imports OK"
+    else
+        echo "WARNING: PyNEC installed but failed to import" >&2
+    fi
+else
+    echo "WARNING: PyNEC pip install FAILED (no PyPI access during build?) — antenna patterns will be unavailable" >&2
+fi
+
+echo "=== PyNEC hook complete ==="

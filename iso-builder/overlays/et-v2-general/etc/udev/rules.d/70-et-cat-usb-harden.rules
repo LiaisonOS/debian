@@ -1,0 +1,32 @@
+# Author  : Sylvain Deguire (VA2OPS)
+# Purpose : Harden USB-serial CAT links against the transient "wedged CAT"
+#           failure — the symptom is garbled CAT reads/writes (e.g. a rig on
+#           14.078 MHz reading back as ~140 kHz, a x100 garble) that only a
+#           reboot / re-enumerate clears. Two root-cause mitigations, matched by
+#           the ADAPTER CHIP so they cover EVERY rig using that chip (and leave
+#           anything else untouched):
+#
+#   1. Disable USB autosuspend on common CAT USB-serial adapters. When the
+#      kernel autosuspends the adapter mid-session the link can wedge; keeping
+#      it powered ("on") avoids that. Harmless on adapters that never suspend.
+#
+#   2. FTDI only: drop the default 16 ms latency_timer to 1 ms — the classic
+#      Hamlib/WSJT-X reliability tweak. No such knob on CP210x/CH340, so those
+#      simply don't match this line.
+#
+# Loads before the per-rig rules (75-99); sets device-power attributes only,
+# so it never conflicts with the et-cat symlink rules.
+
+# ── Disable USB autosuspend on the CAT adapter (by chip vendor) ──────────────
+# Silicon Labs CP210x — Digirig Mobile (10c4:ea60), IC-7300/IC-9700 (ea60),
+# FT-991A (ea70), Xiegu X6100, etc.
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="10c4", ATTR{power/control}="on"
+# FTDI (many generic CAT cables, Yaesu CT-62 clones)
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0403", ATTR{power/control}="on"
+# WCH CH340/CH341
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="1a86", ATTR{power/control}="on"
+# Prolific PL2303
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="067b", ATTR{power/control}="on"
+
+# ── FTDI-only: lower latency timer 16ms -> 1ms ──────────────────────────────
+ACTION=="add", SUBSYSTEM=="usb-serial", DRIVER=="ftdi_sio", ATTR{latency_timer}="1"
