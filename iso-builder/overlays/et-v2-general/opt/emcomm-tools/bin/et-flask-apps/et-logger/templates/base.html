@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ t['title'] }}{% endblock %} - LiaisonOS</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/logger.css') }}">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet bundled LOCALLY (was loaded from a CDN, which fails offline:
+         no global L, no map at all). This is the real offline-maps fix. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}" />
+    <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
 </head>
 <body>
     <div class="container">

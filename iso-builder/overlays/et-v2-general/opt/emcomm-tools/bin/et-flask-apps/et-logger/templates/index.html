@@ -1565,6 +1565,60 @@
         parkMarkers = [];
     }
 
+    // Add local mbtileserver tiles as base layers, DISCOVERED from /services so
+    // we never depend on a hardcoded filename. The tilesets are zoom-limited
+    // (world = zoom 0-7 overview, regions = 0-10), so we:
+    //   • add the world tileset as the base, then every regional tileset on top
+    //     (regional detail shows where covered; world shows through elsewhere);
+    //   • set maxNativeZoom per tileset so Leaflet UPSCALES past a tileset's real
+    //     zoom instead of showing blank — this is what previously made the map
+    //     vanish when it zoomed to the QSO/park level;
+    //   • do NOT swap to online OSM on a single missing tile (that needs internet
+    //     and defeats offline). Online OSM is used ONLY when no local tilesets
+    //     exist at all.
+    function addLocalBaseTiles(map) {
+        function osmFallback() {
+            if (map._localTilesAdded || map._fallbackAdded) return;
+            map._fallbackAdded = true;
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap', maxZoom: 19
+            }).addTo(map);
+        }
+        var svcUrl = function (s) { return s.url || ('http://localhost:1982/services/' + (s.id || s.name || '')); };
+        var isWorld = function (s) { return /world/i.test(svcUrl(s)); };
+        var nativeZoom = function (s) {
+            var m = /zoom0to(\d+)/i.exec(svcUrl(s));   // tt-world-zoom0to7 -> 7, tt-ca-zoom0to10 -> 10
+            return m ? parseInt(m[1], 10) : 10;
+        };
+        fetch('http://localhost:1982/services')
+            .then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (services) {
+                if (!Array.isArray(services) || services.length === 0) { osmFallback(); return; }
+                // Fetch each tileset's TileJSON to get its bounds, then set the
+                // Leaflet `bounds` option so it only requests tiles WHERE that
+                // tileset has coverage. Without this, stacking every regional
+                // tileset fires ~16 tile requests per position (most 404) — much
+                // slower than the single online layer. With bounds, only the
+                // world + the region you're in actually load.
+                return Promise.all(services.map(function (s) {
+                    return fetch(svcUrl(s))
+                        .then(function (r) { return r.json(); })
+                        .then(function (meta) { return { s: s, meta: meta }; })
+                        .catch(function () { return { s: s, meta: {} }; });
+                })).then(function (entries) {
+                    entries.sort(function (a, b) { return (isWorld(b.s) ? 1 : 0) - (isWorld(a.s) ? 1 : 0); });
+                    entries.forEach(function (e) {
+                        var opts = { attribution: 'LiaisonOS', maxNativeZoom: nativeZoom(e.s), maxZoom: 13 };
+                        var b = e.meta && e.meta.bounds;      // TileJSON bounds = [west, south, east, north]
+                        if (b && b.length === 4) opts.bounds = L.latLngBounds([[b[1], b[0]], [b[3], b[2]]]);
+                        L.tileLayer(svcUrl(e.s) + '/tiles/{z}/{x}/{y}.png', opts).addTo(map);
+                    });
+                    map._localTilesAdded = true;
+                });
+            })
+            .catch(osmFallback);
+    }
+
     function initMap() {
         // Refresh the antenna cache so QSO/park popups can show the
         // "best antenna for band" button. Silent — no UI blocking.
@@ -1585,20 +1639,13 @@
 
         qsoMap = L.map('qso-map').setView(center, zoom);
 
-        // Try local mbtileserver first, fallback to OSM online
-        L.tileLayer('http://localhost:1982/services/tt-world/tiles/{z}/{x}/{y}.png', {
-            attribution: 'LiaisonOS',
-            maxZoom: 14
-        }).on('tileerror', function() {
-            // Fallback to OSM online if mbtileserver not running
-            if (!qsoMap._fallbackAdded) {
-                qsoMap._fallbackAdded = true;
-                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap',
-                    maxZoom: 19
-                }).addTo(qsoMap);
-            }
-        }).addTo(qsoMap);
+        // Base tiles: DISCOVER the served tileset from mbtileserver instead of
+        // hardcoding a name. mbtileserver names each service after its .mbtiles
+        // file (e.g. tt-world-zoom0to7), which varies by release — a fixed
+        // 'tt-world' 404s and silently falls back to ONLINE OSM, so the map only
+        // works with internet. Discovery uses whatever local tileset is actually
+        // served (same approach as et-predict-app); online OSM is a last resort.
+        addLocalBaseTiles(qsoMap);
 
         // Get position and center map
         fetch('/api/position').then(r => r.json()).then(data => {
