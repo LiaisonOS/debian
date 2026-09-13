@@ -1833,9 +1833,38 @@ def run_flask(port):
             use_reloader=False, threaded=True)
 
 
+def ensure_mbtileserver():
+    """Start the local raster tile server (mbtileserver on :1982) if it isn't
+    already running, so the Map tab has OFFLINE tiles without depending on
+    et-predict-app to have been opened first. Mirrors et-predict's launcher:
+    if the port is closed and tilesets exist, launch mbtileserver detached."""
+    import socket, glob, shutil
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.5)
+            if s.connect_ex(('127.0.0.1', 1982)) == 0:
+                return  # already running (e.g. started by et-predict)
+    except OSError:
+        pass
+    tiles_dir = os.path.realpath(
+        os.path.expanduser('~/.local/share/emcomm-tools/mbtileserver/tilesets'))
+    if not glob.glob(os.path.join(tiles_dir, '*.mbtiles')):
+        return  # no tilesets to serve yet
+    binpath = shutil.which('mbtileserver') or '/usr/local/bin/mbtileserver'
+    try:
+        subprocess.Popen(
+            [binpath, '--port', '1982', '-d', tiles_dir, '--enable-fs-watch'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True)   # detach so it outlives et-logger
+        time.sleep(2)
+    except (OSError, ValueError):
+        pass
+
+
 if __name__ == '__main__':
     port = 5059
     init_db()
+    ensure_mbtileserver()   # ensure offline map tiles are served
 
     if '--no-browser' in sys.argv:
         app.run(host='127.0.0.1', port=port, debug=False, threaded=True)

@@ -264,7 +264,7 @@
   </div>
 
   <div class="badges">
-    <span class="badge"><span>v2.4.2</span></span>
+    <span class="badge"><span>v2.4.3</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Ms-PL <span>License</span></span>
@@ -397,7 +397,11 @@
   <!-- WHATS NEW -->
   <div class="section">
     <div class="lang-en">
-      <h2 class="section-title">What's new <span class="new-badge">v2.4.2</span></h2>
+      <h2 class="section-title">What's new <span class="new-badge">v2.4.3</span></h2>
+
+      <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
+        <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.3</span> &nbsp; <strong>Field Logger maps now work fully offline.</strong> The Field Logger's map engine and map tiles are now bundled with the system instead of being loaded from the internet, and the local tile server starts automatically with the logger — so your QSO map renders off-grid, not just when connected.</p>
+      </div>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
         <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.2</span> &nbsp; <strong>Reliable Winlink automation and rock-solid scheduled QSY.</strong> Scheduled Winlink missions now correctly detect end-of-transfer on receive (no more hangs), with a new retry-on-fail option — set the number of retries and the minutes between them; after the last attempt the station returns to its presence mode and runs again at its next scheduled time. The Automation Editor now <strong>validates every frequency against its band</strong> (catching out-of-band typos before they reach the rig), and a new <strong>CAT watchdog</strong> plus USB-serial hardening detect and auto-recover a wedged CAT link so a scheduled QSY lands — and stays — on the right frequency on any rig or adapter. New <strong>QtAprsBeacon</strong> mode adds distance-based APRS beaconing over KISS with GPS position and APRS messaging (ACK tracking), in desktop and Touch layouts. The Field Logger’s NEC-2 antenna modeling (PyNEC) now ships and works out of the box. Refreshed callsign database — updated US plus improved geocoded Canadian (ISED) data with lat/lon for accurate location, distance and bearing. <strong>Advanced-cert ops only</strong> per ISED rules — the automation daemon ships paused by default.</p>
@@ -405,7 +409,11 @@
 
     </div>
     <div class="lang-fr">
-      <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.2</span></h2>
+      <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.3</span></h2>
+
+      <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
+        <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.3</span> &nbsp; <strong>Les cartes du Field Logger fonctionnent maintenant entièrement hors ligne.</strong> Le moteur de carte et les tuiles sont désormais inclus dans le système au lieu d'être chargés depuis Internet, et le serveur de tuiles local démarre automatiquement avec le journal — votre carte de QSO s'affiche hors réseau, pas seulement en ligne.</p>
+      </div>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
         <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.2</span> &nbsp; <strong>Automatisation Winlink fiable et QSY planifié solide.</strong> Les missions Winlink planifiées détectent maintenant correctement la fin de transfert en réception (fini les blocages), avec une nouvelle option de réessai sur échec — réglez le nombre de tentatives et les minutes d’attente ; après la dernière tentative, la station revient à son mode de présence et repart à l’heure planifiée suivante. L’éditeur d’automatisation <strong>valide chaque fréquence selon sa bande</strong> (détectant les fautes hors bande avant qu’elles n’atteignent la radio), et un nouveau <strong>chien de garde CAT</strong> ainsi qu’un durcissement USB-série détectent et récupèrent automatiquement un lien CAT bloqué, pour qu’un QSY planifié se cale — et reste — sur la bonne fréquence, quelle que soit la radio ou l’adaptateur. Le nouveau mode <strong>QtAprsBeacon</strong> ajoute une balise APRS basée sur la distance via KISS avec position GPS et messagerie APRS (suivi des ACK), en dispositions bureau et tactile. La modélisation d’antenne NEC-2 (PyNEC) du Journal de Terrain est maintenant incluse et fonctionne d’office. Base de données d’indicatifs rafraîchie — données US mises à jour plus données canadiennes (ISED) géocodées améliorées avec lat/lon pour lieu, distance et azimut exacts. <strong>Réservé aux titulaires Supérieure</strong> selon les règles d’ISDE — le démon d’automatisation est livré en pause par défaut.</p>
