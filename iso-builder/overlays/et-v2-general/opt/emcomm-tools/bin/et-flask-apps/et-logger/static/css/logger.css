@@ -334,7 +334,15 @@ body {
     background: #2a2a2a; border: 1px solid var(--border); border-radius: 4px;
     max-height: 250px; overflow-y: auto; display: none;
 }
+.add-call-btn {
+    margin-left: 8px; padding: 1px 8px; font-size: 0.72rem; font-weight: 600;
+    color: var(--accent); background: transparent;
+    border: 1px solid var(--accent); border-radius: 10px;
+    cursor: pointer; vertical-align: middle; line-height: 1.4;
+}
+.add-call-btn:hover { background: var(--accent); color: #111; }
 .p2p-selected { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+#selected-calls:not(:empty) { margin-bottom: 4px; }
 .p2p-park-tag {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 6px 10px; background: #2a2a2a; border-radius: 4px;

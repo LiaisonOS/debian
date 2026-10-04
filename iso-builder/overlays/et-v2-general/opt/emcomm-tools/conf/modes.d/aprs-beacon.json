@@ -2,8 +2,8 @@
     "$schema": "et-mode-v2",
     "id": "aprs-beacon",
     "name": {
-        "en": "APRS Beacon (distance)",
-        "fr": "Balise APRS (distance)"
+        "en": "APRS Beacon",
+        "fr": "Balise APRS"
     },
     "category": "packet",
     "requires_bands": ["VHF", "UHF"],

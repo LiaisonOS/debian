@@ -77,7 +77,10 @@
         <div class="log-form">
             <div class="form-row">
                 <div class="form-group form-group-call">
-                    <label>{{ t['callsign'] }}</label>
+                    <label>{{ t['callsign'] }}
+                        <button type="button" class="add-call-btn" onclick="addCurrentCall()"
+                                title="Add another callsign — log more than one contact in one entry">+ add</button>
+                    </label>
                     <input type="text" id="qso-call" placeholder="{{ t['search_callsign'] }}"
                            oninput="onCallsignInput(this.value)" autocomplete="off" autofocus>
                     <div class="callsign-dropdown" id="call-dropdown"></div>
@@ -99,6 +102,11 @@
                     <input type="hidden" id="qso-rst-sent-s" value="9">
                 </div>
             </div>
+
+            <!-- Extra callsigns queued for this entry (multi-QSO). Each call is
+                 logged against each P2P park below: calls x parks contacts. -->
+            <div class="p2p-selected" id="selected-calls"></div>
+
             <div class="form-row">
                 <div class="form-group">
                     <label>{{ t['frequency'] }} (MHz)</label>
@@ -930,9 +938,53 @@
         }, 200);  // Small delay so click on dropdown item registers first
     });
 
+    // Extra callsigns queued for a multi-contact entry (chips). The call
+    // currently typed in the box is added automatically on Log, so a single
+    // contact stays fast: type it and press Enter.
+    let selectedCalls = [];
+
+    function addCurrentCall() {
+        const field = document.getElementById('qso-call');
+        const call = field.value.toUpperCase().trim();
+        if (!call) { field.focus(); return; }
+        if (!selectedCalls.includes(call)) selectedCalls.push(call);
+        // Reset the box for the next call without re-triggering the search.
+        skipNextSearch = true;
+        field.value = '';
+        document.getElementById('call-dropdown').innerHTML = '';
+        document.getElementById('call-dropdown').style.display = 'none';
+        document.getElementById('call-info').style.display = 'none';
+        document.getElementById('call-dup').style.display = 'none';
+        renderSelectedCalls();
+        field.focus();
+    }
+
+    function removeCall(call) {
+        selectedCalls = selectedCalls.filter(c => c !== call);
+        renderSelectedCalls();
+    }
+
+    function renderSelectedCalls() {
+        const container = document.getElementById('selected-calls');
+        if (!container) return;
+        if (selectedCalls.length === 0) { container.innerHTML = ''; return; }
+        container.innerHTML = selectedCalls.map(c =>
+            '<div class="p2p-park-tag">' +
+            '<span class="p2p-ref">' + c + '</span>' +
+            ' <button class="btn-icon" onclick="removeCall(\'' + c + '\')">&times;</button>' +
+            '</div>'
+        ).join('');
+    }
+
     function logQSO() {
-        const call = document.getElementById('qso-call').value.trim();
-        if (!call || !currentSessionId) return;
+        if (!currentSessionId) return;
+
+        // Callsigns = queued chips + whatever is typed in the box right now.
+        const field = document.getElementById('qso-call');
+        const typed = field.value.toUpperCase().trim();
+        const calls = selectedCalls.slice();
+        if (typed && !calls.includes(typed)) calls.push(typed);
+        if (calls.length === 0) return;
 
         // Use current field values — no radio query
         {
@@ -946,7 +998,7 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     session_id: currentSessionId,
-                    call: call,
+                    calls: calls,
                     freq: parseFloat(document.getElementById('qso-freq').value) || null,
                     band: document.getElementById('qso-band').value,
                     mode: document.getElementById('qso-mode').value,
@@ -959,25 +1011,30 @@
                 })
             }).then(r => r.json()).then(data => {
                 if (data.success) {
+                    const nParks = Math.max(1, selectedP2PParks.length);
+                    const made = data.inserted || (calls.length * nParks);
                     const p2pMsg = selectedP2PParks.length > 0 ?
                         ' P2P: ' + selectedP2PParks.map(p => p.ref).join('+') : '';
-                    showToast('success', call + ' logged! (' + data.count + ' QSOs)' + p2pMsg);
+                    showToast('success', made + ' QSO' + (made > 1 ? 's' : '') +
+                        ' logged — ' + calls.join(', ') + p2pMsg);
                     updateQSOCounter(data.count);
                     loadSession(currentSessionId);
                     // Remember power for next QSO
                     lastPower = parseFloat(document.getElementById('qso-power').value) || 100;
                     // Reset form but keep P2P enabled if it was
-                    document.getElementById('qso-call').value = '';
+                    field.value = '';
                     resetRST();
                     document.getElementById('qso-comment').value = '';
                     document.getElementById('call-info').style.display = 'none';
                     document.getElementById('call-dup').style.display = 'none';
                     document.getElementById('call-dropdown').innerHTML = '';
                     document.getElementById('call-dropdown').style.display = 'none';
-                    // Clear P2P parks for next QSO
+                    // Clear queued calls + P2P parks for next entry
+                    selectedCalls = [];
+                    renderSelectedCalls();
                     selectedP2PParks = [];
                     renderSelectedParks();
-                    document.getElementById('qso-call').focus();
+                    field.focus();
                 }
             });
         }

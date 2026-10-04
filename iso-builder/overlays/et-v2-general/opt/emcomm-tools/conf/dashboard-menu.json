@@ -34,7 +34,7 @@
       "items": [
         { "type": "mode", "id": "aprs-client",     "label": "Client (YAAC)",       "label_abbr": "YAAC",  "strip_icon": "📍" },
         { "type": "mode", "id": "aprs-client-bt",  "label": "Client (YAAC BT)",    "label_abbr": "YACBT", "strip_icon": "📍" },
-        { "type": "mode", "id": "aprs-beacon",     "label": "Beacon (distance)",   "label_abbr": "BCON",  "strip_icon": "📶" },
+        { "type": "mode", "id": "aprs-beacon",     "label": "Beacon",             "label_abbr": "BCON",  "strip_icon": "📶" },
         { "type": "mode", "id": "aprs-digipeater", "label": "Digipeater",          "label_abbr": "DIGI",  "strip_icon": "📡" }
       ]
     },

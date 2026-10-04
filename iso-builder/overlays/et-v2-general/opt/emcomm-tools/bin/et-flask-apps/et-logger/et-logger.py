@@ -1034,7 +1034,15 @@ def _p2p_or_callsign_location(sig_info, call_info):
 
 @app.route('/api/qso', methods=['POST'])
 def api_log_qso():
-    """Log a new QSO."""
+    """Log one or more QSOs.
+
+    Accepts a list of callsigns ('calls') and comma-separated their-parks
+    ('sig_info'), and logs the cross-product as individual QSO rows:
+    N callsigns x M P2P parks = N*M contacts (POTA P2P n-fer — e.g. 2 calls
+    at a 2-park station = 4 QSOs). Each row carries a single call and a single
+    park so every park gets its own ADIF record. Falls back to a single 'call'
+    string for backward compatibility.
+    """
     data = request.get_json()
     now = datetime.now(timezone.utc)
 
@@ -1042,49 +1050,69 @@ def api_log_qso():
     freq = data.get('freq')
     band = data.get('band', '')
     mode = data.get('mode', 'SSB')
+    session_id = data.get('session_id')
 
-    # Lookup callsign for name/location
-    call_info = lookup_callsign(data.get('call', ''))
-    # P2P: use park location, otherwise callsign home QTH
-    qso_lat, qso_lon = _p2p_or_callsign_location(data.get('sig_info', ''), call_info)
+    # Callsigns — a list ('calls'), or a single 'call' (back-compat).
+    raw_calls = data.get('calls') or [data.get('call', '')]
+    calls = []
+    for c in raw_calls:
+        c = (c or '').upper().strip()
+        if c and c not in calls:
+            calls.append(c)
+    if not calls or not session_id:
+        return jsonify({'success': False, 'error': 'no callsign'}), 400
+
+    # Their P2P parks — one QSO row per park so each gets its own ADIF record.
+    sig = data.get('sig', '')
+    parks = [p.strip() for p in data.get('sig_info', '').split(',') if p.strip()]
+    if not parks:
+        parks = ['']  # non-P2P: single row per call, no park
+
+    qso_date = data.get('qso_date', now.strftime('%Y%m%d'))
+    time_on = data.get('time_on', now.strftime('%H%M'))
+    rst_sent = data.get('rst_sent', '59')
+    rst_rcvd = data.get('rst_rcvd', '59')
+    tx_pwr = data.get('tx_pwr')
+    comment = data.get('comment', '')
+    # Trust frontend-provided name/loc only for a single call (they came from
+    # one lookup); for multiple calls, look each up per row.
+    single = len(calls) == 1
 
     conn = get_db()
-    cursor = conn.execute("""
-        INSERT INTO qsos (session_id, qso_date, time_on, call, freq, band,
-                          mode, rst_sent, rst_rcvd, tx_pwr, gridsquare,
-                          name, state, country, sig, sig_info, comment,
-                          qso_lat, qso_lon)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        data.get('session_id'),
-        data.get('qso_date', now.strftime('%Y%m%d')),
-        data.get('time_on', now.strftime('%H%M')),
-        data.get('call', '').upper().strip(),
-        freq,
-        band,
-        mode,
-        data.get('rst_sent', '59'),
-        data.get('rst_rcvd', '59'),
-        data.get('tx_pwr'),
-        data.get('gridsquare', ''),
-        data.get('name', '') or (call_info.get('name', '') if call_info else ''),
-        data.get('state', '') or (call_info.get('state', '') if call_info else ''),
-        data.get('country', '') or (call_info.get('country', '') if call_info else ''),
-        data.get('sig', ''),
-        data.get('sig_info', ''),
-        data.get('comment', ''),
-        qso_lat,
-        qso_lon,
-    ))
+    last_id = None
+    inserted = 0
+    for call in calls:
+        call_info = lookup_callsign(call) or {}
+        name = (data.get('name', '') if single else '') or call_info.get('name', '')
+        state = (data.get('state', '') if single else '') or call_info.get('state', '')
+        country = (data.get('country', '') if single else '') or call_info.get('country', '')
+        gridsquare = data.get('gridsquare', '') if single else ''
+        for park in parks:
+            row_sig = sig if park else ''
+            # P2P: use park location, otherwise callsign home QTH
+            qso_lat, qso_lon = _p2p_or_callsign_location(park, call_info)
+            cursor = conn.execute("""
+                INSERT INTO qsos (session_id, qso_date, time_on, call, freq, band,
+                                  mode, rst_sent, rst_rcvd, tx_pwr, gridsquare,
+                                  name, state, country, sig, sig_info, comment,
+                                  qso_lat, qso_lon)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                session_id, qso_date, time_on, call, freq, band, mode,
+                rst_sent, rst_rcvd, tx_pwr, gridsquare, name, state, country,
+                row_sig, park, comment, qso_lat, qso_lon,
+            ))
+            last_id = cursor.lastrowid
+            inserted += 1
     conn.commit()
-    qso_id = cursor.lastrowid
 
     # Get updated count
     count = conn.execute("SELECT COUNT(*) FROM qsos WHERE session_id = ?",
-                         (data.get('session_id'),)).fetchone()[0]
+                         (session_id,)).fetchone()[0]
     conn.close()
 
-    return jsonify({'success': True, 'id': qso_id, 'count': count})
+    return jsonify({'success': True, 'id': last_id, 'count': count,
+                    'inserted': inserted})
 
 
 @app.route('/api/qso/<int:qso_id>', methods=['GET'])

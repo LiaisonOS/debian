@@ -1837,6 +1837,15 @@ def cmd_run(args: argparse.Namespace) -> int:
                     last_state = _get_mission_state(ended_mission["name"])
                     print(f"  Mission terminal state: {last_state or 'unknown'}")
 
+                    # SUCCESS ends the cycle — always wipe any pending retry so a
+                    # leftover entry (with a now-past next_retry_at) can't keep
+                    # re-firing the mission with no delay. Previously only
+                    # bbs_publish cleared on success; winlink never did, so a
+                    # successful run left the retry armed and it looped forever.
+                    if last_state != "failed":
+                        bbs_publish_clear_retry(ended_mission.get(
+                            "_parent_name", ended_mission["name"]))
+
                     # Determine if on_fail policy should fire a retry.
                     # Only acts when state is explicitly "failed" — an
                     # "unknown" state (no broadcast received) is treated
@@ -1999,6 +2008,15 @@ def cmd_run(args: argparse.Namespace) -> int:
                     if not parent or parent.get("type", "winlink") \
                             not in ("bbs_publish", "winlink"):
                         # Mission was removed or retyped — drop the orphan.
+                        bbs_publish_clear_retry(retry_name)
+                        continue
+                    if parent.get("on_fail", "skip") != "retry_same":
+                        # The operator turned the retry feature OFF (or changed
+                        # it) on this mission. Honour the CURRENT config over the
+                        # saved state — otherwise a stale retry entry keeps
+                        # firing forever even though retries are no longer wanted.
+                        print(f"[{now:%H:%M:%S}] retry cleared: {retry_name} "
+                              "no longer has on_fail=retry_same — dropping stale retry")
                         bbs_publish_clear_retry(retry_name)
                         continue
                     if bbs_publish_disabled(retry_name):
@@ -2216,6 +2234,21 @@ def cmd_run(args: argparse.Namespace) -> int:
                         _process_qsy_schedule(
                             expected_presence, now, last_tick_dt,
                             qsy_fired_today, _dbg)
+                elif current_mode and current_mode == our_presence_mode \
+                        and not expected_presence:
+                    # Our presence window has ENDED and no other window covers
+                    # `now` (e.g. a single 13:00-23:59 window, or a gap between
+                    # windows). The swap branch above only fires when there's a
+                    # successor window; with none, nothing was stopping us and
+                    # the presence ran indefinitely. Stand down. This is a NORMAL
+                    # scheduled end — NOT operator intervention — so we do NOT
+                    # auto-pause: the daemon stays engaged and will start
+                    # presence again at the next window's start time.
+                    print(f"[{now:%H:%M:%S}] Presence window ended — stopping "
+                          f"'{our_presence_mode}' (no window covers "
+                          f"{now:%H:%M}); daemon stays engaged for the next window")
+                    stop_current()
+                    our_presence_mode = ""
                 elif current_mode and current_mode == expected_mode \
                         and current_mode != our_presence_mode:
                     # Supervisor is already running the mode we'd want to
