@@ -227,7 +227,7 @@
 </div>
 
 <nav>
-  <a class="nav-logo" href="https://liaisonos.com">
+  <a class="nav-logo" href="index.html">
     <div class="nav-logo-icon">
       <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
         <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
@@ -264,7 +264,7 @@
   </div>
 
   <div class="badges">
-    <span class="badge"><span>v2.4.4</span></span>
+    <span class="badge"><span>v2.4.5</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Ms-PL <span>License</span></span>
@@ -397,7 +397,11 @@
   <!-- WHATS NEW -->
   <div class="section">
     <div class="lang-en">
-      <h2 class="section-title">What's new <span class="new-badge">v2.4.4</span></h2>
+      <h2 class="section-title">What's new <span class="new-badge">v2.4.5</span></h2>
+
+      <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
+        <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.5</span> &nbsp; <strong>Set up and test your rig without a terminal.</strong> The Radio Configuration editor adds four one-click tools: <strong>Find…</strong> fills the Hamlib Rig ID, <strong>Test CAT</strong> reads your live frequency, <strong>PTT</strong> keys the rig to test transmit (green “ON AIR”, auto-releases), and <strong>Detect COM</strong> picks the right VARA FM COM port for you — every profile now defaults to the correct port. The Field Logger's map now follows the <strong>POTA park you're activating</strong> (not your home grid) for correct distance and bearing, and <strong>VarAC is updated to v16.8.1</strong>.</p>
+      </div>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
         <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.4</span> &nbsp; <strong>APRS goes online, and faster field logging.</strong> QtAprsBeacon now works over the internet (APRS-IS) as well as RF — at the same time — and can act as a full <strong>i-gate</strong> bridging RF↔internet, with a timed beacon for fixed stations, a saved home position that survives restarts, a live traffic monitor and new map symbols (House/VHF, Digipeater, I-gate, EOC). The Field Logger lets you log <strong>several callsigns and parks in a single entry</strong> (each becomes its own QSO) for fast pile-ups and park-to-park. Scheduled automation is more dependable too — mission retries now respect your count and delay, and presence windows end cleanly.</p>
@@ -406,14 +410,13 @@
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
         <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.3</span> &nbsp; <strong>Field Logger maps now work fully offline.</strong> The Field Logger's map engine and map tiles are now bundled with the system instead of being loaded from the internet, and the local tile server starts automatically with the logger — so your QSO map renders off-grid, not just when connected.</p>
       </div>
-
-      <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
-        <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.2</span> &nbsp; <strong>Reliable Winlink automation and rock-solid scheduled QSY.</strong> Scheduled Winlink missions now correctly detect end-of-transfer on receive (no more hangs), with a new retry-on-fail option — set the number of retries and the minutes between them; after the last attempt the station returns to its presence mode and runs again at its next scheduled time. The Automation Editor now <strong>validates every frequency against its band</strong> (catching out-of-band typos before they reach the rig), and a new <strong>CAT watchdog</strong> plus USB-serial hardening detect and auto-recover a wedged CAT link so a scheduled QSY lands — and stays — on the right frequency on any rig or adapter. New <strong>QtAprsBeacon</strong> mode adds distance-based APRS beaconing over KISS with GPS position and APRS messaging (ACK tracking), in desktop and Touch layouts. The Field Logger’s NEC-2 antenna modeling (PyNEC) now ships and works out of the box. Refreshed callsign database — updated US plus improved geocoded Canadian (ISED) data with lat/lon for accurate location, distance and bearing. <strong>Advanced-cert ops only</strong> per ISED rules — the automation daemon ships paused by default.</p>
-      </div>
-
     </div>
     <div class="lang-fr">
-      <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.4</span></h2>
+      <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.5</span></h2>
+
+      <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
+        <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.5</span> &nbsp; <strong>Réglez et testez votre radio sans terminal.</strong> L'éditeur de Configuration Radio ajoute quatre outils en un clic : <strong>Trouver…</strong> remplit l'ID Rig Hamlib, <strong>Tester CAT</strong> lit votre fréquence en direct, <strong>PTT</strong> passe la radio en émission pour tester (vert « ON AIR », relâche automatique), et <strong>Détecter COM</strong> choisit le bon port COM VARA FM pour vous — chaque profil utilise désormais le bon port par défaut. La carte du Journal de Terrain suit maintenant le <strong>parc POTA que vous activez</strong> (et non votre grille maison) pour une distance et un azimut corrects, et <strong>VarAC passe en v16.8.1</strong>.</p>
+      </div>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
         <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.4</span> &nbsp; <strong>L'APRS passe en ligne, et journalisation de terrain plus rapide.</strong> QtAprsBeacon fonctionne maintenant via Internet (APRS-IS) en plus de la RF — en même temps — et peut servir d'<strong>i-gate</strong> complet reliant RF↔Internet, avec balise programmée pour station fixe, position fixe mémorisée au redémarrage, moniteur de trafic en direct et nouveaux symboles carte (Maison/VHF, Digipeater, I-gate, EOC). Le Journal de Terrain permet d'enregistrer <strong>plusieurs indicatifs et parcs en une seule entrée</strong> (chacun devient un QSO distinct) pour les pile-ups et le parc-à-parc. L'automatisation planifiée est aussi plus fiable — les réessais de mission respectent votre nombre et délai, et les fenêtres de présence se terminent proprement.</p>
@@ -422,12 +425,18 @@
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
         <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.3</span> &nbsp; <strong>Les cartes du Field Logger fonctionnent maintenant entièrement hors ligne.</strong> Le moteur de carte et les tuiles sont désormais inclus dans le système au lieu d'être chargés depuis Internet, et le serveur de tuiles local démarre automatiquement avec le journal — votre carte de QSO s'affiche hors réseau, pas seulement en ligne.</p>
       </div>
-
-      <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
-        <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.2</span> &nbsp; <strong>Automatisation Winlink fiable et QSY planifié solide.</strong> Les missions Winlink planifiées détectent maintenant correctement la fin de transfert en réception (fini les blocages), avec une nouvelle option de réessai sur échec — réglez le nombre de tentatives et les minutes d’attente ; après la dernière tentative, la station revient à son mode de présence et repart à l’heure planifiée suivante. L’éditeur d’automatisation <strong>valide chaque fréquence selon sa bande</strong> (détectant les fautes hors bande avant qu’elles n’atteignent la radio), et un nouveau <strong>chien de garde CAT</strong> ainsi qu’un durcissement USB-série détectent et récupèrent automatiquement un lien CAT bloqué, pour qu’un QSY planifié se cale — et reste — sur la bonne fréquence, quelle que soit la radio ou l’adaptateur. Le nouveau mode <strong>QtAprsBeacon</strong> ajoute une balise APRS basée sur la distance via KISS avec position GPS et messagerie APRS (suivi des ACK), en dispositions bureau et tactile. La modélisation d’antenne NEC-2 (PyNEC) du Journal de Terrain est maintenant incluse et fonctionne d’office. Base de données d’indicatifs rafraîchie — données US mises à jour plus données canadiennes (ISED) géocodées améliorées avec lat/lon pour lieu, distance et azimut exacts. <strong>Réservé aux titulaires Supérieure</strong> selon les règles d’ISDE — le démon d’automatisation est livré en pause par défaut.</p>
-      </div>
-
     </div>
+  </div>
+
+  <!-- LATEST BLOG POST -->
+  <div class="section">
+    <h2 class="section-title">From the blog</h2>
+    <a class="card" href="blog/radio-configuration.html" style="display:block; border-color: rgba(90,184,135,0.35); background: rgba(90,184,135,0.05); text-decoration:none; color:inherit;">
+      <p style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5ab887; margin:0 0 6px 0;">2026-10-13 &middot; Latest article</p>
+      <h3 style="margin:0 0 8px 0;">Radio Configuration — taming CAT, from cold rig to on-the-air</h3>
+      <p style="margin:0 0 12px 0;">CAT, PTT and baud made simple — plus the new one-click <strong>Find…</strong>, <strong>Test CAT</strong>, <strong>PTT</strong> and <strong>Detect COM</strong> helpers in v2.4.5, with worked settings for the Yaesu FT-891, FT-991A and Icom IC-7300.</p>
+      <span style="color:#5ab887; font-weight:600;">Read the article →</span>
+    </a>
   </div>
 
   <!-- VARA -->

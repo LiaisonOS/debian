@@ -115,7 +115,7 @@
 </div>
 
 <nav>
-  <a class="nav-logo" href="https://liaisonos.com">
+  <a class="nav-logo" href="index_fr.html">
     <div class="nav-logo-icon">
       <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
         <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
@@ -128,7 +128,7 @@
   <div class="nav-links">
     <a href="index_fr.html" class="active">Accueil</a>
     <a href="download_fr.html">Télécharger</a>
-    <a href="blog/index.html">Blog</a>
+    <a href="blog/index_fr.html">Blog</a>
     <a href="https://va2ops.ca">VA2OPS</a>
     <a href="index.html" class="lang-link">🇨🇦 EN</a>
   </div>
@@ -146,7 +146,7 @@
     <a class="btn-secondary" href="mailto:info@liaisonos.com">✉ Nous joindre</a>
   </div>
   <div class="badges">
-    <span class="badge"><span>v2.4.4</span></span>
+    <span class="badge"><span>v2.4.5</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Licence <span>Ms-PL</span></span>
@@ -202,7 +202,11 @@ data-beehiiv-form="12328a64-4ff4-456a-9557-fc3ecb84804d"></script></div>
   </div>
 
   <div class="section">
-    <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.4</span></h2>
+    <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.5</span></h2>
+
+    <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
+      <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.5</span> &nbsp; <strong>Réglez et testez votre radio sans terminal.</strong> L'éditeur de Configuration Radio ajoute quatre outils en un clic : <strong>Trouver…</strong> remplit l'ID Rig Hamlib, <strong>Tester CAT</strong> lit votre fréquence en direct, <strong>PTT</strong> passe la radio en émission pour tester (vert « ON AIR », relâche automatique), et <strong>Détecter COM</strong> choisit le bon port COM VARA FM pour vous — chaque profil utilise désormais le bon port par défaut. La carte du Journal de Terrain suit maintenant le <strong>parc POTA que vous activez</strong> (et non votre grille maison) pour une distance et un azimut corrects, et <strong>VarAC passe en v16.8.1</strong>.</p>
+    </div>
 
     <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
       <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.4</span> &nbsp; <strong>L'APRS passe en ligne, et journalisation de terrain plus rapide.</strong> QtAprsBeacon fonctionne maintenant via Internet (APRS-IS) en plus de la RF — en même temps — et peut servir d'<strong>i-gate</strong> complet reliant RF↔Internet, avec balise programmée pour station fixe, position fixe mémorisée au redémarrage, moniteur de trafic en direct et nouveaux symboles carte (Maison/VHF, Digipeater, I-gate, EOC). Le Journal de Terrain permet d'enregistrer <strong>plusieurs indicatifs et parcs en une seule entrée</strong> (chacun devient un QSO distinct) pour les pile-ups et le parc-à-parc. L'automatisation planifiée est aussi plus fiable — les réessais de mission respectent votre nombre et délai, et les fenêtres de présence se terminent proprement.</p>
@@ -211,11 +215,17 @@ data-beehiiv-form="12328a64-4ff4-456a-9557-fc3ecb84804d"></script></div>
     <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
       <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.3</span> &nbsp; <strong>Les cartes du Field Logger fonctionnent maintenant entièrement hors ligne.</strong> Le moteur de carte et les tuiles sont désormais inclus dans le système au lieu d'être chargés depuis Internet, et le serveur de tuiles local démarre automatiquement avec le journal — votre carte de QSO s'affiche hors réseau, pas seulement en ligne.</p>
     </div>
+  </div>
 
-    <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
-      <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.2</span> &nbsp; <strong>Automatisation Winlink fiable et QSY planifié solide.</strong> Les missions Winlink planifiées détectent maintenant correctement la fin de transfert en réception (fini les blocages), avec une nouvelle option de réessai sur échec — réglez le nombre de tentatives et les minutes d’attente ; après la dernière tentative, la station revient à son mode de présence et repart à l’heure planifiée suivante. L’éditeur d’automatisation <strong>valide chaque fréquence selon sa bande</strong> (détectant les fautes hors bande avant qu’elles n’atteignent la radio), et un nouveau <strong>chien de garde CAT</strong> ainsi qu’un durcissement USB-série détectent et récupèrent automatiquement un lien CAT bloqué, pour qu’un QSY planifié se cale — et reste — sur la bonne fréquence, quelle que soit la radio ou l’adaptateur. Le nouveau mode <strong>QtAprsBeacon</strong> ajoute une balise APRS basée sur la distance via KISS avec position GPS et messagerie APRS (suivi des ACK), en dispositions bureau et tactile. La modélisation d’antenne NEC-2 (PyNEC) du Journal de Terrain est maintenant incluse et fonctionne d’office. Base de données d’indicatifs rafraîchie — données US mises à jour plus données canadiennes (ISED) géocodées améliorées avec lat/lon pour lieu, distance et azimut exacts. <strong>Réservé aux titulaires Supérieure</strong> selon les règles d’ISDE — le démon d’automatisation est livré en pause par défaut.</p>
-    </div>
-
+  <!-- LATEST BLOG POST -->
+  <div class="section">
+    <h2 class="section-title">Sur le blogue</h2>
+    <a class="card" href="blog/radio-configuration_fr.html" style="display:block; border-color: rgba(90,184,135,0.35); background: rgba(90,184,135,0.05); text-decoration:none; color:inherit;">
+      <p style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5ab887; margin:0 0 6px 0;">2026-10-13 &middot; Dernier article</p>
+      <h3 style="margin:0 0 8px 0;">Configuration Radio — apprivoiser le CAT, du branchement à l'antenne</h3>
+      <p style="margin:0 0 12px 0;">CAT, PTT et débit, simplifiés — avec les nouveaux boutons <strong>Trouver…</strong>, <strong>Tester CAT</strong>, <strong>PTT</strong> et <strong>Détecter COM</strong> de la 2.4.5, et des réglages tout prêts pour les Yaesu FT-891, FT-991A et Icom IC-7300.</p>
+      <span style="color:#5ab887; font-weight:600;">Lire l'article →</span>
+    </a>
   </div>
 
   <div class="section">

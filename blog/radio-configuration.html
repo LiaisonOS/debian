@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radio Configuration — taming CAT, from cold rig to on-the-air — LiaisonOS Blog</title>
+  <meta name="description" content="The LiaisonOS Radio Configuration editor turns the fiddliest part of station setup — CAT, PTT, baud — into a few fields, now with one-click Hamlib model lookup, a live CAT test, a no-mode PTT transmit test, and Detect COM so VARA FM always finds your radio. With worked settings for the Yaesu FT-891, FT-991A and Icom IC-7300.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none;
+    }
+    .lang-link:hover { background: #1f4432; }
+
+    .article-header { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 1.5rem; }
+    .article-back { font-size: 12px; color: #5ab887; text-decoration: none; display: inline-block; margin-bottom: 1.5rem; }
+    .article-back:hover { color: #7de8b0; }
+    .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .article-date { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: #5ab887; }
+    .article-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(125,232,176,0.08); color: #7de8b0;
+      border: 1px solid rgba(125,232,176,0.2);
+    }
+    .article-title { font-size: 26px; font-weight: 500; line-height: 1.3; margin-bottom: 0.5rem; }
+    .article-title span { color: #7de8b0; }
+    .article-byline { font-size: 12px; color: #5ab887; }
+
+    .article-body { max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+    h2 { font-size: 16px; font-weight: 500; color: #e8f5ee; margin: 2rem 0 0.75rem;
+         padding-bottom: 0.4rem; border-bottom: 1px solid rgba(125,232,176,0.1); }
+    h2 span { color: #7de8b0; }
+    h3 { font-size: 14px; font-weight: 500; color: #c8e8d8; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.75; margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.25rem; }
+    li { font-size: 14px; color: #9dbfad; line-height: 1.75; }
+    hr { border: none; border-top: 1px solid rgba(125,232,176,0.1); margin: 2rem 0; }
+
+    .note {
+      background: #16231a; border-left: 3px solid #7de8b0;
+      padding: 0.75rem 1rem; border-radius: 4px;
+      font-size: 13px; color: #9dbfad; margin: 1rem 0;
+    }
+    .note strong { color: #7de8b0; }
+
+    code {
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      background: #16231a; border: 1px solid rgba(125,232,176,0.15);
+      border-radius: 4px; padding: 1px 6px; color: #7de8b0;
+    }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 1rem 0; }
+    .feature-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .feature-card-icon { font-size: 20px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 4px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    .rig-card {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.1);
+      border-radius: 8px; padding: 1rem 1.25rem; margin: 0.75rem 0;
+    }
+    .rig-card h3 { margin-top: 0; }
+    .rig-spec { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #7de8b0; margin: 0.4rem 0 0.6rem; }
+    .rig-spec span { color: #6a9a7a; }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #6a9a7a; }
+    footer a:hover { color: #7de8b0; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0.875rem 1rem; }
+      .article-header, .article-body { padding-left: 1rem; padding-right: 1rem; }
+      .article-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://liaisonos.com">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Home</a>
+    <a href="../download.html">Download</a>
+    <a href="index.html" class="active">Blog</a>
+    <a href="https://va2ops.ca">VA2OPS</a>
+    <a href="radio-configuration_fr.html" class="lang-link">🇫🇷 FR</a>
+  </div>
+</nav>
+
+<div class="article-header">
+  <a class="article-back" href="index.html">← Back to Blog</a>
+  <div class="article-meta">
+    <span class="article-date">2026-10-13</span>
+    <span class="article-tag">Radios &amp; CAT</span>
+  </div>
+  <h1 class="article-title">Radio Configuration — <span>taming CAT, from cold rig to on-the-air</span></h1>
+  <p style="font-size:15px; color:#9dbfad; margin-bottom:0.3rem">CAT, PTT, baud — the fiddliest part of any station setup. The LiaisonOS Radio Configuration editor turns it into a few fields, and in 2.4.5 adds one-click Hamlib model lookup, a live CAT test, a no-mode PTT transmit test, and Detect COM (so VARA FM always finds your radio) — you stop guessing. With worked settings for the Yaesu FT-891, FT-991A and Icom IC-7300.</p>
+  <p class="article-byline">Sylvain Deguire (VA2OPS) &middot; LiaisonOS 2.4.5</p>
+</div>
+
+<div style="max-width:720px; margin:0 auto; padding:0 2rem;">
+  <div class="article-photo" style="width:100%; background:#16231a; border:1px solid rgba(125,232,176,0.12); border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:2rem; overflow:hidden;">
+    <div style="font-size:12px; color:#3a6a4a; font-family:'IBM Plex Mono', monospace; text-align:center; padding:3rem;">Radio Configuration &middot; CAT Control &middot; Find… + Test CAT + PTT + Detect COM</div>
+  </div>
+</div>
+
+<div class="article-body">
+
+  <h2>The part everyone <span>dreads</span></h2>
+  <p>Getting a radio talking to a computer is the classic stumbling block: which Hamlib model number? what baud rate? how does PTT key — over CAT, a serial line, or VOX? Get one wrong and nothing works, usually with no clear error.</p>
+  <p>LiaisonOS tackles it by storing every radio as a small <strong>profile</strong> (a JSON file in <code>radios.d</code>). It ships a library of known-good <strong>stock</strong> radios, and the <strong>Radio Configuration</strong> editor lets you create or tweak your own in a simple window. Pick a radio to make it <em>active</em>, and from then on <code>rigctld</code> — the Hamlib control daemon the whole system shares — engages automatically the moment the rig's USB is connected.</p>
+
+  <h2>What a profile <span>holds</span></h2>
+  <p>The top of the editor is just identity: <strong>Vendor</strong> and <strong>Model</strong> (which auto-generate the profile ID and filename), and the <strong>Bands</strong> the rig covers (HF / VHF / UHF). The rest is grouped into toggle-able sections — CAT Control, VARA FM, Bluetooth TNC, Audio — and you only fill in what your radio needs.</p>
+
+  <h2>CAT Control — the three questions <span>that matter</span></h2>
+  <p>Enable <strong>CAT Control</strong> if your radio has computer control, and answer three things:</p>
+  <ul>
+    <li><strong>Hamlib Rig ID</strong> — the model number Hamlib uses for your radio (more on finding it below). <code>1</code> means "Dummy / no real CAT".</li>
+    <li><strong>Baud Rate</strong> — the serial speed, which must match the rate set in the radio's own CAT menu.</li>
+    <li><strong>PTT Method</strong> — how <code>rigctld</code> keys transmit: <strong>RIG</strong> (over the CAT command link — most modern rigs), <strong>RTS</strong>/<strong>DTR</strong> (assert that serial control line — common with sound-card interfaces), or <strong>NONE</strong> (don't key from software — VOX or an external keyer).</li>
+  </ul>
+  <p>Two optional extras cover edge cases: <strong>Hamlib --set-conf</strong> for per-rig serial quirks (e.g. <code>rts_state=OFF</code>), and <strong>PTT Only Mode</strong> when you want the link for keying only, not full control. Leave CAT Control off entirely and LiaisonOS treats the rig as no-CAT — fine for an HT on a sound-card interface with VOX.</p>
+
+  <h2>New in 2.4.5 — <span>stop guessing</span></h2>
+  <p>Setting those fields used to mean digging through manuals and the command line. Four new helpers in the editor do the hard parts for you:</p>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-card-icon">🔎</div>
+      <div class="feature-card-title">Find…</div>
+      <div class="feature-card-desc">Searches Hamlib's own model list by vendor/model and fills the Rig ID for you. Type "IC-7300" and pick the row — no more hunting for the right number.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">✅</div>
+      <div class="feature-card-title">Test CAT</div>
+      <div class="feature-card-desc">Reads the current frequency straight off the live, already-engaged rigctld. Green + a frequency = your radio's CAT is talking. Nothing to spawn, nothing to stop.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">📡</div>
+      <div class="feature-card-title">PTT</div>
+      <div class="feature-card-desc">A transmit test — like WSJT-X's — with no mode running. Click to key the rig through the live CAT; it goes green "ON AIR" when it's really transmitting, click again to stop. Auto-releases after 10 s so it can't stick.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🔌</div>
+      <div class="feature-card-title">Detect COM</div>
+      <div class="feature-card-desc">In the VARA FM section: finds which Wine COM port actually reaches your radio and fills PTT Port for you. It's COM10 — and the button proves it, so you never look up a COM number again.</div>
+    </div>
+  </div>
+  <div class="note">
+    <strong>Why "live"?</strong> In LiaisonOS, <code>rigctld</code> comes up the instant the rig's USB is plugged in and stays engaged. So Test CAT doesn't start its own temporary link that would fight the running one — it simply asks the engaged rigctld "what frequency are you on?" and shows the answer. A pure, safe read-back.
+  </div>
+
+  <h2>VARA FM &amp; the <span>COM port</span></h2>
+  <p>VARA FM runs under Wine, so it keys your radio through a <em>Windows</em> COM port — and historically that was the one setting people got wrong. In LiaisonOS the answer is always the same: <strong>COM10</strong>. That Wine port is wired to <code>/dev/et-cat</code>, the stable link to whatever rig (or DigiRig) is plugged in, so it reaches the radio no matter what the underlying device is called.</p>
+  <p>You shouldn't ever have to think about it. New profiles <strong>prefill COM10</strong>; the <strong>Detect COM</strong> button confirms it (and would flag any other port if your setup were unusual); and LiaisonOS <strong>re-links COM10 → <code>/dev/et-cat</code> every time VARA FM starts</strong>, so it can't drift. <em>(A few older Icom profiles shipped COM5, which pointed at a dead serial port — corrected in 2.4.5 so every radio is on COM10.)</em></p>
+  <div class="note">
+    <strong>The rule of thumb:</strong> if VARA FM won't key the radio, don't hunt for a COM number — just press <strong>Detect COM</strong>. It tells you the right port in plain language and fills it in.
+  </div>
+
+  <h2>Worked examples — <span>three popular rigs</span></h2>
+  <p>These are solid starting points. After entering them, click <strong>Test CAT</strong> — a frequency means you're done.</p>
+
+  <div class="rig-card">
+    <h3>Yaesu FT-891 &nbsp;<span style="font-size:11px;color:#6a9a7a">HF + 6 m, compact mobile</span></h3>
+    <div class="rig-spec">Rig ID <strong>1036</strong> &nbsp;·&nbsp; Baud <strong>38400</strong> &nbsp;·&nbsp; PTT <strong>RIG</strong></div>
+    <p>The FT-891 pairs cleanly with a <strong>DigiRig Mobile</strong> made for it: the DigiRig's <strong>accessory cable carries the audio</strong>, and a single <strong>USB cable handles both CAT and PTT</strong>. Set the radio's <strong>CAT RATE</strong> to 38400 to match; PTT is sent as a CAT command (<code>RIG</code>) over that same USB serial. Highlight: tiny footprint, 100 W HF — the go-to portable SSB/data rig, and the DigiRig keeps it to one tidy interface.</p>
+  </div>
+
+  <div class="rig-card">
+    <h3>Yaesu FT-991A &nbsp;<span style="font-size:11px;color:#6a9a7a">HF/VHF/UHF all-mode</span></h3>
+    <div class="rig-spec">Rig ID <strong>1035</strong> &nbsp;<span>(the FT-991 driver covers the 991A)</span> &nbsp;·&nbsp; Baud <strong>38400</strong> &nbsp;·&nbsp; PTT <strong>RIG</strong></div>
+    <p>One USB cable gives you CAT <em>and</em> a built-in USB sound card. Set the radio's <strong>CAT RATE</strong> to 38400. The 991A enumerates two serial ports (an "Enhanced" CAT port and a second port) — LiaisonOS's <code>/dev/et-cat</code> symlink lands on the CAT one for you. Highlight: HF through 70 cm, all modes, CAT + audio over a single cable — a complete shack-in-a-box.</p>
+  </div>
+
+  <div class="rig-card">
+    <h3>Icom IC-7300 &nbsp;<span style="font-size:11px;color:#6a9a7a">HF + 6 m, SDR</span></h3>
+    <div class="rig-spec">Rig ID <strong>3073</strong> &nbsp;·&nbsp; Baud <strong>115200</strong> &nbsp;·&nbsp; PTT <strong>RIG</strong></div>
+    <p>The digital-mode favourite: a single USB cable carries CI-V CAT <em>and</em> the USB audio codec. In the radio's CONNECTORS menu, set <strong>CI-V USB Baud Rate</strong> to 115200 (and leaving <strong>CI-V USB Echo Back</strong> ON helps). PTT over CAT (RIG) works; many ops also key via the USB port's send line. Highlight: built-in sound card + real-spectrum scope, zero extra interfaces.</p>
+  </div>
+
+  <h2>CAT reads, but the rig <span>won't transmit?</span></h2>
+  <p>That's almost always the <strong>PTT Method</strong>. If Test CAT shows a frequency (so CAT is clearly fine) but keying does nothing, work through it: try <strong>RIG</strong> first, then <strong>RTS</strong>, then <strong>DTR</strong> — whichever your cable is wired for, and hit the <strong>PTT</strong> button after each until it turns green. No mode to launch, no guesswork: the button keys the rig directly so you can isolate PTT from CAT in seconds. A radio with no computer PTT at all? Use <strong>NONE</strong> and let the rig's VOX transmit on audio. <em>(Keying transmits — use a dummy load or a clear frequency; the button auto-releases after 10 s either way.)</em></p>
+
+  <div class="note">
+    <strong>Full field reference on every install.</strong> A complete, plain-language explanation of every field — including the VARA FM PTT modes, Bluetooth TNC, and a glossary (CAT, CI-V, VOX, RTS/DTR, KISS…) — ships at <code>~/Documents/LiaisonOS-Radio-Configuration-Fields.md</code> on your LiaisonOS machine.
+  </div>
+
+  <hr>
+  <p style="font-size:13px; color:#6a9a7a;">Radio Configuration ships in every LiaisonOS release &middot; Find… / Test CAT / PTT / Detect COM added in 2.4.5 &middot; Built by VA2OPS</p>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>
