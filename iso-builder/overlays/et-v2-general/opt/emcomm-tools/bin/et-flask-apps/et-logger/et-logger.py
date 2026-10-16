@@ -865,7 +865,27 @@ def api_position():
          declared grid, authoritative for the top-right display.
       3. Grid derived from user.json lat/lon (source='config-latlon') —
          only when no 'grid' is set at all.
+
+    Optional ?session_id=<id>: when that session is a POTA activation
+    (my_sig_info set), the operator's location IS the activated park — return
+    the session's stored park lat/lon/grid (source='park') so the map pin,
+    centre, distance/bearing and the grid badge all reflect the park rather
+    than the (possibly stale or unset) home grid.
     """
+    session_id = request.args.get('session_id', '').strip()
+    if session_id:
+        try:
+            conn = get_db()
+            row = conn.execute(
+                "SELECT my_sig_info, my_lat, my_lon, my_grid FROM sessions WHERE id = ?",
+                (session_id,)).fetchone()
+            conn.close()
+            if row and (row['my_sig_info'] or '').strip() and row['my_lat'] is not None:
+                return jsonify({'lat': row['my_lat'], 'lon': row['my_lon'],
+                                'grid': row['my_grid'] or '', 'source': 'park'})
+        except Exception:
+            pass  # any DB hiccup → fall through to live GPS/grid, never 500
+
     lat, lon, coord_source = get_position()
 
     config = load_user_config()
@@ -960,7 +980,18 @@ def api_create_session():
     """Create a new logging session."""
     data = request.get_json()
     config = load_user_config()
+    sig_info = data.get('sig_info', '')
     lat, lon, _ = get_position()
+    # POTA activation: the operator's location IS the activated park, so use the
+    # park's coordinates instead of GPS/home grid. Off-grid the home grid is
+    # often stale or unset and GPS may be unavailable — but the operator always
+    # knows which park they're on. Non-POTA sessions fall back to get_position()
+    # (GPS → user.json → profile grid), exactly as before.
+    if sig_info:
+        first_park = sig_info.split(',')[0].strip()
+        plat, plon = lookup_park_location(first_park)
+        if plat is not None:
+            lat, lon = plat, plon
     grid = latlon_to_grid(lat, lon) if lat else config.get('grid', '')
 
     conn = get_db()

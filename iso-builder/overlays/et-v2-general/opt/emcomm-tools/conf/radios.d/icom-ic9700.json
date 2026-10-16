@@ -14,8 +14,8 @@
   },
   "varafm": {
     "rig": "134",
-    "pttPort": "COM5",
-    "catPort": "COM5",
+    "pttPort": "COM10",
+    "catPort": "COM10",
     "pttVia": "2",
     "rts": "1",
     "dtr": "0"
@@ -42,7 +42,7 @@
     "",
     "=== VARA FM Notes ===",
     "PTT Via COM port using RTS (not CAT commands)",
-    "Wine COM5 must be symlinked to /dev/ttyUSB0 (Digirig)",
+    "VARA FM uses COM10, which LiaisonOS maps to /dev/et-cat (the rig or DigiRig CAT/PTT serial)",
     "If using USB cable directly, PTT can use CAT instead of RTS"
   ]
 }

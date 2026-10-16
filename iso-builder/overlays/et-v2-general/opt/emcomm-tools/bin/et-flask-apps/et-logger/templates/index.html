@@ -875,7 +875,7 @@
                 document.getElementById('call-location').textContent =
                     (data.city || '') + ', ' + (data.state || '') + ' ' + (data.country || '');
                 if (data.lat && data.lon) {
-                    fetch('/api/position').then(r => r.json()).then(pos => {
+                    fetch('/api/position' + (currentSessionId ? '?session_id=' + currentSessionId : '')).then(r => r.json()).then(pos => {
                         if (pos.lat) {
                             const R = 6371;
                             const dLat = (data.lat - pos.lat) * Math.PI / 180;
@@ -1137,7 +1137,7 @@
             });
 
             // Add my position to bounds
-            fetch('/api/position').then(r => r.json()).then(data => {
+            fetch('/api/position' + (currentSessionId ? '?session_id=' + currentSessionId : '')).then(r => r.json()).then(data => {
                 if (data.lat) bounds.push([data.lat, data.lon]);
                 if (bounds.length > 0) {
                     qsoMap.fitBounds(bounds, {padding: [40, 40], maxZoom: 14});
@@ -1705,7 +1705,7 @@
         addLocalBaseTiles(qsoMap);
 
         // Get position and center map
-        fetch('/api/position').then(r => r.json()).then(data => {
+        fetch('/api/position' + (currentSessionId ? '?session_id=' + currentSessionId : '')).then(r => r.json()).then(data => {
             if (data.lat) {
                 if (!skipMapFit) qsoMap.setView([data.lat, data.lon], 6);
                 // Add my station marker
@@ -1806,7 +1806,7 @@
     // manual edits to user.json (or GpsSync clock-only success) left the
     // header showing a stale grid until the browser was reloaded.
     function refreshPositionBadges() {
-        return fetch('/api/position').then(r => r.json()).then(data => {
+        return fetch('/api/position' + (currentSessionId ? '?session_id=' + currentSessionId : '')).then(r => r.json()).then(data => {
             const gpsBadge  = document.getElementById('gps-badge');
             const gridBadge = document.getElementById('grid-badge');
             if (data.lat) {

@@ -15,6 +15,8 @@ import os
 import sys
 import json
 import re
+import socket
+import subprocess
 import webbrowser
 import threading
 import time
@@ -228,6 +230,14 @@ TRANSLATIONS = {
         'bt': 'Bluetooth',
         'audio_only': 'Audio Only',
         'enable_section': 'Enable',
+        'find_model': 'Find…',
+        'find_model_search': 'Search vendor or model…',
+        'test_cat': 'Test CAT',
+        'test_hint': 'Reads the frequency from the live CAT (rigctld is engaged whenever the radio is connected). Green = your active radio is responding.',
+        'ptt_test': 'PTT',
+        'ptt_hint': 'Keys the radio through the live CAT to test PTT — no mode needed. Green = transmitting (click again to stop). Auto-releases after 10 s. This puts the rig ON AIR; use a dummy load or a clear frequency.',
+        'detect_com': 'Detect COM',
+        'detect_hint': 'Finds which Wine COM port reaches your radio (/dev/et-cat). COM10 is the LiaisonOS standard — leave it unless Detect says otherwise.',
     },
     'fr': {
         'title': 'Configuration Radio',
@@ -285,6 +295,14 @@ TRANSLATIONS = {
         'bt': 'Bluetooth',
         'audio_only': 'Audio seul',
         'enable_section': 'Activer',
+        'find_model': 'Trouver…',
+        'find_model_search': 'Rechercher fabricant ou modele…',
+        'test_cat': 'Tester CAT',
+        'test_hint': 'Lit la frequence via le CAT engage (rigctld est actif des que la radio est branchee). Vert = la radio active repond.',
+        'ptt_test': 'PTT',
+        'ptt_hint': 'Active l\'emission via le CAT engage pour tester le PTT — aucun mode requis. Vert = en emission (recliquer pour arreter). Relache automatiquement apres 10 s. Ceci met la radio EN ONDE; utilisez une charge fictive ou une frequence libre.',
+        'detect_com': 'Detecter COM',
+        'detect_hint': 'Trouve quel port COM Wine atteint votre radio (/dev/et-cat). COM10 est le standard LiaisonOS — laissez-le sauf si Detecter indique autre chose.',
     }
 }
 
@@ -487,6 +505,201 @@ def api_delete():
 
     delete_radio(filename)
     return jsonify({'success': True, 'message': t['deleted']})
+
+
+# ============================================================================
+# Diagnostics — READ-ONLY helpers. These NEVER write a radio file or touch the
+# save path; they only look things up (rigctl -l) or probe CAT on a temporary
+# rigctld. Worst case on failure is "the helper returns an error" — a radio
+# JSON can never be affected by code that doesn't write JSON.
+# ============================================================================
+
+RIGCTLD_PORT = 4532           # LiaisonOS rigctld — always running while the rig's USB is connected
+_RIG_STATUSES = {"Alpha", "Untested", "Beta", "Stable", "Unstable", "Bench"}
+
+
+def _port_open(port):
+    """True if something is listening on 127.0.0.1:<port>."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(0.3)
+    try:
+        return s.connect_ex(("127.0.0.1", port)) == 0
+    except OSError:
+        return False
+    finally:
+        s.close()
+
+
+@app.route('/api/rig-models')
+def api_rig_models():
+    """List Hamlib rig models from `rigctl -l`, optionally filtered by ?q=.
+    Pure lookup for the Hamlib Rig ID field — reads nothing but Hamlib's own
+    model table, writes nothing."""
+    q = request.args.get('q', '').strip().lower()
+    try:
+        res = subprocess.run(['rigctl', '-l'], capture_output=True,
+                             text=True, timeout=10)
+    except (FileNotFoundError, OSError, subprocess.SubprocessError):
+        return jsonify({'available': False, 'models': []})
+
+    models = []
+    for line in res.stdout.splitlines():
+        m = re.match(r'^\s*(\d+)\s+(.*\S)\s*$', line)
+        if not m:
+            continue
+        rid = m.group(1)
+        toks = m.group(2).split()
+        # Trim the trailing columns (macro, status, version) to leave Mfg+Model.
+        if toks and toks[-1].startswith('RIG_MODEL_'):
+            toks.pop()
+        status = toks.pop() if (toks and toks[-1] in _RIG_STATUSES) else ''
+        if toks and re.match(r'^\d{6,}', toks[-1]):
+            toks.pop()  # version date like 20250517.11
+        mfg = toks[0] if toks else ''
+        model = ' '.join(toks[1:]) if len(toks) > 1 else ''
+        label = (mfg + ' ' + model).strip() or re.sub(r'\s{2,}', ' ', m.group(2))
+        if q and q not in f"{rid} {label} {status}".lower():
+            continue
+        models.append({'id': rid, 'mfg': mfg, 'model': model,
+                       'status': status, 'label': label})
+    return jsonify({'available': True, 'models': models[:120]})
+
+
+@app.route('/api/test-cat', methods=['POST'])
+def api_test_cat():
+    """Check the LIVE CAT link. In LiaisonOS, rigctld is engaged the moment the
+    rig's USB is connected and runs continuously on :4532 for the active radio —
+    so we do NOT spawn our own rigctld (that would fight the running one over the
+    serial port). We simply ask the already-running rigctld for the current
+    frequency. Read-only: spawns nothing, touches no serial device, writes no
+    config."""
+    if not _port_open(RIGCTLD_PORT):
+        return jsonify({'ok': False,
+                        'message': 'CAT not engaged — no rigctld on :%d. Connect '
+                                   'the radio (and select it) first.' % RIGCTLD_PORT})
+    try:
+        q = subprocess.run(['rigctl', '-m', '2',
+                            '-r', '127.0.0.1:%d' % RIGCTLD_PORT, 'f'],
+                           capture_output=True, text=True, timeout=6)
+        lines = [ln.strip() for ln in (q.stdout or '').splitlines() if ln.strip()]
+        freq = next((ln for ln in lines if re.fullmatch(r'\d{3,}', ln)), None)
+        if freq:
+            return jsonify({'ok': True,
+                            'message': 'CAT OK — active radio at %.6f MHz.'
+                                       % (int(freq) / 1_000_000.0),
+                            'freq_hz': int(freq)})
+        return jsonify({'ok': False,
+                        'message': 'rigctld is running but did not return a '
+                                   'frequency — check the cable / radio / baud.',
+                        'detail': ('\n'.join(lines) or (q.stderr or '').strip())[:200]})
+    except subprocess.TimeoutExpired:
+        return jsonify({'ok': False,
+                        'message': 'CAT query timed out — rigctld not responding.'})
+    except (OSError, subprocess.SubprocessError) as e:
+        return jsonify({'ok': False, 'message': 'Test error: %s' % e})
+
+
+@app.route('/api/ptt', methods=['POST'])
+def api_ptt():
+    """Key / unkey PTT through the LIVE rigctld that LiaisonOS already runs on
+    :4532 for the connected radio — so transmit can be tested WITHOUT starting a
+    mode. Like Test CAT, it does NOT spawn its own rigctld; it drives the engaged
+    one, which keys PTT by whatever method the active radio profile configured.
+    Writes NO config/JSON — it only toggles rigctld's PTT line and reads it back.
+
+    This TRANSMITS. The caller must pair 'on' with 'off'; the UI also auto-
+    releases after a short timeout and on page unload so a test cannot leave the
+    rig stuck keyed. On any error we best-effort send PTT off."""
+    data = request.get_json(silent=True) or {}
+    want_on = bool(data.get('on'))
+
+    if not _port_open(RIGCTLD_PORT):
+        return jsonify({'ok': False, 'ptt': False,
+                        'message': 'CAT not engaged — no rigctld on :%d. Connect '
+                                   'the radio (and select it) first.' % RIGCTLD_PORT})
+
+    def _rigctl(*args):
+        return subprocess.run(['rigctl', '-m', '2',
+                               '-r', '127.0.0.1:%d' % RIGCTLD_PORT] + list(args),
+                              capture_output=True, text=True, timeout=6)
+
+    try:
+        _rigctl('T', '1' if want_on else '0')
+        # Read the real PTT state back so "green" means genuinely keyed.
+        chk = _rigctl('t')
+        state = next((ln.strip() for ln in (chk.stdout or '').splitlines()
+                      if ln.strip() in ('0', '1')), None)
+        is_on = (state == '1')
+        if want_on:
+            if is_on:
+                return jsonify({'ok': True, 'ptt': True,
+                                'message': 'PTT ON — the radio is transmitting.'})
+            return jsonify({'ok': False, 'ptt': False,
+                            'message': 'rigctld took the command but PTT did not '
+                                       'engage — check PTT Method / cabling.'})
+        return jsonify({'ok': True, 'ptt': is_on,
+                        'message': 'PTT released.' if not is_on else
+                        'Tried to release PTT but it still reads keyed!'})
+    except subprocess.TimeoutExpired:
+        try:
+            _rigctl('T', '0')
+        except Exception:
+            pass
+        return jsonify({'ok': False, 'ptt': False,
+                        'message': 'PTT command timed out — released as a precaution.'})
+    except (OSError, subprocess.SubprocessError) as e:
+        try:
+            _rigctl('T', '0')
+        except Exception:
+            pass
+        return jsonify({'ok': False, 'ptt': False, 'message': 'PTT error: %s' % e})
+
+
+@app.route('/api/detect-vara-com')
+def api_detect_vara_com():
+    """Report which Wine COM port reaches the rig, so the operator never has to
+    guess. VARA FM talks to the radio through ~/.wine32/dosdevices/comN symlinks;
+    the one pointing at /dev/et-cat (the stable symlink for the connected rig or
+    DigiRig) is the correct port. Pure read: scans the symlinks only, writes
+    nothing, opens no serial device."""
+    dosdev = os.path.expanduser('~/.wine32/dosdevices')
+    etcat = '/dev/et-cat'
+    if not os.path.isdir(dosdev):
+        return jsonify({'available': False,
+                        'message': 'Wine prefix not found — install VARA FM first.'})
+
+    mappings = []
+    recommended = None
+    etcat_real = os.path.realpath(etcat)
+    for entry in sorted(os.listdir(dosdev)):
+        if not re.fullmatch(r'com\d+', entry, re.IGNORECASE):
+            continue
+        link = os.path.join(dosdev, entry)
+        if not os.path.islink(link):
+            continue
+        target = os.readlink(link)
+        com = entry.upper()
+        hits_rig = (target == etcat or os.path.realpath(link) == etcat_real)
+        mappings.append({'com': com, 'target': target, 'rig': hits_rig})
+        if hits_rig and recommended is None:
+            recommended = com
+
+    etcat_exists = os.path.exists(etcat)
+    if recommended:
+        if etcat_exists:
+            msg = '%s reaches your radio (%s -> %s). Use %s.' % (
+                recommended, recommended, etcat, recommended)
+        else:
+            msg = ('%s is mapped to the rig (%s), but no radio is connected '
+                   'right now — plug it in to confirm.' % (recommended, etcat))
+    else:
+        recommended = 'COM10'
+        msg = ('No COM is mapped to your rig yet. COM10 is the LiaisonOS '
+               'standard — set it and LiaisonOS will link it to your radio '
+               'on the next VARA FM start.')
+    return jsonify({'available': True, 'recommended': recommended,
+                    'etcat_exists': etcat_exists, 'mappings': mappings,
+                    'message': msg})
 
 
 @app.route('/shutdown', methods=['POST'])

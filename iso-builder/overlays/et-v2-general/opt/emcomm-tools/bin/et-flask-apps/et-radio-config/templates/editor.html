@@ -5,6 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title }} - {{ t.title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+    /* Diagnostic helpers (Find model + Test CAT) — additive, self-contained;
+       they never touch the save path. */
+    .id-find-row { display: flex; gap: 8px; align-items: center; }
+    .id-find-row input { flex: 1; }
+    .btn-find, .btn-test {
+        background: var(--bg-input, #2d2d2d); color: var(--accent-primary, #FFA500);
+        border: 1px solid var(--accent-primary, #FFA500); border-radius: 6px;
+        padding: 8px 14px; cursor: pointer; white-space: nowrap; font-size: 0.9rem;
+    }
+    .btn-find:hover, .btn-test:hover:enabled { background: var(--bg-hover, #353535); }
+    .btn-test:disabled { opacity: 0.5; cursor: default; }
+    .find-model-panel {
+        margin-top: 8px; border: 1px solid var(--border-color, #404040);
+        border-radius: 6px; background: var(--bg-input, #2d2d2d); padding: 8px;
+    }
+    .find-model-panel.hidden { display: none; }
+    .find-model-panel input { width: 100%; margin-bottom: 6px; }
+    .find-model-results { max-height: 220px; overflow-y: auto; }
+    .fm-row { padding: 6px 8px; border-radius: 4px; cursor: pointer;
+              color: var(--text-primary, #e0e0e0); font-size: 0.9rem; }
+    .fm-row:hover { background: var(--bg-hover, #353535); }
+    .fm-id { color: var(--accent-primary, #FFA500); font-weight: 700; margin-right: 6px; }
+    .fm-status { color: var(--text-secondary, #9e9e9e); font-size: 0.8rem; }
+    .fm-empty { color: var(--text-secondary, #9e9e9e); padding: 6px 8px; font-size: 0.9rem; }
+    .test-cat-row { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .test-result { font-size: 0.9rem; }
+    .test-result.test-ok  { color: var(--accent-success, #4ade80); }
+    .test-result.test-bad { color: var(--accent-danger, #f87171); }
+    .test-note { color: var(--text-secondary, #9e9e9e); font-size: 0.8rem; margin-top: 4px; }
+    .detect-com-row { margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .btn-detect {
+        background: var(--bg-input, #2d2d2d); color: var(--accent-primary, #FFA500);
+        border: 1px solid var(--accent-primary, #FFA500); border-radius: 6px;
+        padding: 6px 12px; cursor: pointer; white-space: nowrap; font-size: 0.85rem;
+    }
+    .btn-detect:hover:enabled { background: var(--bg-hover, #353535); }
+    .btn-detect:disabled { opacity: 0.5; cursor: default; }
+    .detect-hint { display: block; color: var(--text-secondary, #9e9e9e); font-size: 0.8rem; margin-top: 4px; }
+    .btn-ptt {
+        background: var(--bg-input, #2d2d2d); color: var(--accent-primary, #FFA500);
+        border: 1px solid var(--accent-primary, #FFA500); border-radius: 6px;
+        padding: 8px 18px; cursor: pointer; white-space: nowrap; font-size: 0.9rem;
+        font-weight: 700; min-width: 64px; letter-spacing: 0.05em;
+    }
+    .btn-ptt:hover:enabled { background: var(--bg-hover, #353535); }
+    .btn-ptt:disabled { opacity: 0.6; cursor: default; }
+    .btn-ptt.ptt-on  { background: var(--accent-success, #4ade80); color: #0a0a0a; border-color: var(--accent-success, #4ade80); }
+    .btn-ptt.ptt-bad { background: var(--accent-danger, #f87171); color: #0a0a0a; border-color: var(--accent-danger, #f87171); }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -72,7 +122,14 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>{{ t.hamlib_id }} *</label>
-                                <input type="text" id="rigctrl_id" value="{{ radio.get('rigctrl', {}).get('id', '') }}" placeholder="3085">
+                                <div class="id-find-row">
+                                    <input type="text" id="rigctrl_id" value="{{ radio.get('rigctrl', {}).get('id', '') }}" placeholder="3085">
+                                    <button type="button" class="btn-find" onclick="toggleFindModel()">{{ t.find_model }}</button>
+                                </div>
+                                <div class="find-model-panel hidden" id="findModelPanel">
+                                    <input type="text" id="findModelSearch" placeholder="{{ t.find_model_search }}" oninput="searchModels(this.value)" autocomplete="off">
+                                    <div class="find-model-results" id="findModelResults"></div>
+                                </div>
                                 <div class="input-hint">rigctld -m ID</div>
                             </div>
                             <div class="form-group">
@@ -119,6 +176,16 @@
                                 {{ t.prime_rig }}
                             </label>
                         </div>
+                        <div class="test-cat-row">
+                            <button type="button" class="btn-test" id="testCatBtn" onclick="testCat()">{{ t.test_cat }}</button>
+                            <span class="test-result" id="testCatResult"></span>
+                        </div>
+                        <div class="test-note">{{ t.test_hint }}</div>
+                        <div class="test-cat-row">
+                            <button type="button" class="btn-ptt" id="pttBtn" onclick="togglePtt()">{{ t.ptt_test }}</button>
+                            <span class="test-result" id="pttResult"></span>
+                        </div>
+                        <div class="test-note">{{ t.ptt_hint }}</div>
                     </div>
                 </div>
 
@@ -139,7 +206,12 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>{{ t.ptt_port }}</label>
-                                <input type="text" id="varafm_pttPort" value="{{ radio.get('varafm', {}).get('pttPort', '') }}" placeholder="COM5">
+                                <input type="text" id="varafm_pttPort" value="{{ radio.get('varafm', {}).get('pttPort', 'COM10') }}" placeholder="COM10">
+                                <div class="detect-com-row">
+                                    <button type="button" class="btn-detect" onclick="detectVaraCom()">{{ t.detect_com }}</button>
+                                    <span class="test-result" id="detectComResult"></span>
+                                </div>
+                                <small class="detect-hint">{{ t.detect_hint }}</small>
                             </div>
                             <div class="form-group">
                                 <label>{{ t.ptt_via }}</label>
@@ -449,6 +521,173 @@
         })
         .catch(function() {
             showAlert('Error communicating with server', 'error');
+        });
+    }
+
+    /* ---- Find model: read-only lookup; only fills the Rig ID field ---- */
+    var _findTimer = null;
+    function escapeHtml(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function toggleFindModel() {
+        var p = document.getElementById('findModelPanel');
+        p.classList.toggle('hidden');
+        if (!p.classList.contains('hidden')) {
+            var s = document.getElementById('findModelSearch');
+            s.focus();
+            searchModels(s.value);
+        }
+    }
+    function searchModels(q) {
+        if (_findTimer) clearTimeout(_findTimer);
+        _findTimer = setTimeout(function () {
+            fetch('/api/rig-models?q=' + encodeURIComponent(q))
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    var box = document.getElementById('findModelResults');
+                    if (!d.available) { box.innerHTML = '<div class="fm-empty">rigctl not found on this system</div>'; return; }
+                    if (!d.models.length) { box.innerHTML = '<div class="fm-empty">No match</div>'; return; }
+                    box.innerHTML = d.models.map(function (m) {
+                        var st = m.status ? ' <span class="fm-status">' + escapeHtml(m.status) + '</span>' : '';
+                        return '<div class="fm-row" onclick="pickModel(\'' + m.id + '\')">' +
+                               '<span class="fm-id">' + escapeHtml(m.id) + '</span>' +
+                               escapeHtml(m.label || '') + st + '</div>';
+                    }).join('');
+                })
+                .catch(function () {});
+        }, 250);
+    }
+    function pickModel(id) {
+        document.getElementById('rigctrl_id').value = id;
+        document.getElementById('findModelPanel').classList.add('hidden');
+    }
+
+    /* ---- Test CAT: transient probe; never writes config ---- */
+    function testCat() {
+        var btn = document.getElementById('testCatBtn');
+        var res = document.getElementById('testCatResult');
+        btn.disabled = true;
+        res.className = 'test-result';
+        res.textContent = 'Testing… (a few seconds)';
+        fetch('/api/test-cat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                id: document.getElementById('rigctrl_id').value.trim(),
+                baud: getSelectValue('cs_rigctrl_baud'),
+                ptt: getSelectValue('cs_rigctrl_ptt'),
+                conf: document.getElementById('rigctrl_conf').value.trim()
+            })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            btn.disabled = false;
+            res.className = 'test-result ' + (d.ok ? 'test-ok' : 'test-bad');
+            res.textContent = d.message + (d.detail ? ('  [' + d.detail + ']') : '');
+        })
+        .catch(function () {
+            btn.disabled = false;
+            res.className = 'test-result test-bad';
+            res.textContent = 'Server communication error';
+        });
+    }
+
+    /* ---- Test PTT: keys the rig through the live rigctld (no mode). Green =
+       actually transmitting, red = failed. Auto-releases after 10 s and on
+       leaving the page so a test can't leave the rig stuck keyed. ---- */
+    var PTT_LABEL = {{ t.ptt_test | tojson }};
+    var pttOn = false;
+    var pttTimer = null;
+    var PTT_MAX_MS = 10000;
+
+    function clearPttTimer() { if (pttTimer) { clearTimeout(pttTimer); pttTimer = null; } }
+
+    function renderPtt(d) {
+        var btn = document.getElementById('pttBtn');
+        var res = document.getElementById('pttResult');
+        btn.classList.remove('ptt-on', 'ptt-bad');
+        if (!d.ok) {
+            pttOn = false;
+            btn.classList.add('ptt-bad');
+            btn.textContent = PTT_LABEL;
+            res.className = 'test-result test-bad';
+        } else if (d.ptt) {
+            pttOn = true;
+            btn.classList.add('ptt-on');
+            btn.textContent = 'ON AIR';
+            res.className = 'test-result test-ok';
+        } else {
+            pttOn = false;
+            btn.textContent = PTT_LABEL;
+            res.className = 'test-result';
+        }
+        res.textContent = d.message || '';
+    }
+
+    function setPtt(on, cb) {
+        fetch('/api/ptt', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({on: on})
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { cb(d); })
+        .catch(function () { cb({ok: false, ptt: false, message: 'Server communication error'}); });
+    }
+
+    function togglePtt() {
+        var btn = document.getElementById('pttBtn');
+        btn.disabled = true;
+        if (!pttOn) {
+            setPtt(true, function (d) {
+                btn.disabled = false;
+                renderPtt(d);
+                if (d.ok && d.ptt) {       // safety auto-release
+                    clearPttTimer();
+                    pttTimer = setTimeout(function () { if (pttOn) togglePtt(); }, PTT_MAX_MS);
+                }
+            });
+        } else {
+            clearPttTimer();
+            setPtt(false, function (d) { btn.disabled = false; renderPtt(d); });
+        }
+    }
+
+    // Hard safety: if the page is closed/navigated while keyed, release PTT.
+    window.addEventListener('beforeunload', function () {
+        if (pttOn && navigator.sendBeacon) {
+            navigator.sendBeacon('/api/ptt',
+                new Blob([JSON.stringify({on: false})], {type: 'application/json'}));
+        }
+    });
+
+    /* ---- Detect COM: read-only; finds which Wine COM reaches the rig and
+       fills the port field. Never writes config. ---- */
+    function detectVaraCom() {
+        var btn = document.querySelector('.btn-detect');
+        var res = document.getElementById('detectComResult');
+        btn.disabled = true;
+        res.className = 'test-result';
+        res.textContent = 'Detecting…';
+        fetch('/api/detect-vara-com')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            btn.disabled = false;
+            if (!d.available) {
+                res.className = 'test-result test-bad';
+                res.textContent = d.message;
+                return;
+            }
+            if (d.recommended) {
+                document.getElementById('varafm_pttPort').value = d.recommended;
+            }
+            res.className = 'test-result ' + (d.etcat_exists ? 'test-ok' : 'test-result');
+            res.textContent = d.message;
+        })
+        .catch(function () {
+            btn.disabled = false;
+            res.className = 'test-result test-bad';
+            res.textContent = 'Server communication error';
         });
     }
     </script>

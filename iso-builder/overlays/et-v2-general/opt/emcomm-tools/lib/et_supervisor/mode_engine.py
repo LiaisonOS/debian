@@ -1682,6 +1682,32 @@ class ModeEngine:
     # Wine/VARA action implementations
     # -----------------------------------------------------------------
 
+    def _ensure_wine_com_to_etcat(self, *com_names):
+        """Guarantee the Wine COM port(s) VARA uses point at /dev/et-cat.
+
+        The dosdevices COM->serial symlinks in the Wine prefix are static
+        and can drift (an old prefix may leave a COM pointing at a stale
+        ttyS*). Since /dev/et-cat is the stable udev symlink for whatever
+        rig or DigiRig is connected, we (re)create dosdevices/<com> ->
+        /dev/et-cat so VARA FM always reaches the radio without the
+        operator ever having to discover a COM number. Idempotent; never
+        fatal to a mode launch.
+        """
+        dosdev = os.path.expanduser("~/.wine32/dosdevices")
+        target = "/dev/et-cat"
+        for com in {c.lower() for c in com_names if c}:
+            link = os.path.join(dosdev, com)
+            try:
+                if os.path.islink(link) and os.readlink(link) == target:
+                    continue  # already correct
+                if os.path.lexists(link):
+                    os.remove(link)
+                os.symlink(target, link)
+                log.info("Wine COM mapping fixed: %s -> %s", com, target)
+            except OSError as e:
+                log.warning("Could not set Wine COM mapping %s -> %s: %s",
+                            com, target, e)
+
     def _apply_vara_fm_ptt_config(self):
         """Update VARAFM.ini with PTT settings from active-radio.json.
 
@@ -1699,7 +1725,7 @@ class ModeEngine:
         # Defaults from et-vara-fm v1
         defaults = {
             "rig": None,        # VARA FM rig number (radio-specific)
-            "pttPort": "COM5",
+            "pttPort": "COM10", # COM10 -> /dev/et-cat (the rig); never COM5
             "catPort": None,    # CAT port (defaults to pttPort if not set)
             "pttVia": "2",      # 0=VOX, 1=CAT, 2=COM (RTS/DTR), 3=CM108
             "baud": "38400",
@@ -1722,6 +1748,11 @@ class ModeEngine:
         # CATPort defaults to PTTPort if not specified
         if not settings["catPort"]:
             settings["catPort"] = settings["pttPort"]
+
+        # Guarantee the COM port(s) VARA uses actually reach the rig.
+        # /dev/et-cat is the stable symlink for the connected rig/DigiRig,
+        # so this self-heals any drifted Wine COM mapping before VARA runs.
+        self._ensure_wine_com_to_etcat(settings["pttPort"], settings["catPort"])
 
         # Calculate Pin from RTS/DTR
         rts = settings["rts"] == "1"
