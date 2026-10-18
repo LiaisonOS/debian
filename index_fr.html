@@ -146,7 +146,7 @@
     <a class="btn-secondary" href="mailto:info@liaisonos.com">✉ Nous joindre</a>
   </div>
   <div class="badges">
-    <span class="badge"><span>v2.4.5</span></span>
+    <span class="badge"><span>v2.4.6</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Licence <span>Ms-PL</span></span>
@@ -202,7 +202,11 @@ data-beehiiv-form="12328a64-4ff4-456a-9557-fc3ecb84804d"></script></div>
   </div>
 
   <div class="section">
-    <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.5</span></h2>
+    <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.6</span></h2>
+
+    <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
+      <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.6</span> &nbsp; <strong>Le journal de concours arrive dans le Journal de Terrain — avec pointage en direct.</strong> Ajoutez une couche concours optionnelle par-dessus POTA : choisissez <strong>CQ WW</strong> (SSB/CW/RTTY), ARRL Field Day ou un concours personnalisé au démarrage d'une session. CQ WW offre un sélecteur de zone CQ rapide (01–39, plus « ?? » pour une vérification QRZ plus tard), un RST et une zone qui restent d'un QSO à l'autre, une invite anti-doublon par bande, et un <strong>tableau de pointage en direct</strong> — points, zones, pays, pointage — qui monte à mesure que vous enregistrez, calculé hors ligne à partir d'un fichier de pays inclus, avec export <strong>Cabrillo 3.0</strong> en un clic. Aussi : le <strong>BBS (LinBPQ)</strong> s'arrête et redémarre proprement du premier coup, et l'assistant de première configuration enregistre de façon fiable votre mot de passe Winlink et votre indicatif/grille.</p>
+    </div>
 
     <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
       <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.5</span> &nbsp; <strong>Réglez et testez votre radio sans terminal.</strong> L'éditeur de Configuration Radio ajoute quatre outils en un clic : <strong>Trouver…</strong> remplit l'ID Rig Hamlib, <strong>Tester CAT</strong> lit votre fréquence en direct, <strong>PTT</strong> passe la radio en émission pour tester (vert « ON AIR », relâche automatique), et <strong>Détecter COM</strong> choisit le bon port COM VARA FM pour vous — chaque profil utilise désormais le bon port par défaut. La carte du Journal de Terrain suit maintenant le <strong>parc POTA que vous activez</strong> (et non votre grille maison) pour une distance et un azimut corrects, et <strong>VarAC passe en v16.8.1</strong>.</p>
@@ -212,18 +216,15 @@ data-beehiiv-form="12328a64-4ff4-456a-9557-fc3ecb84804d"></script></div>
       <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.4</span> &nbsp; <strong>L'APRS passe en ligne, et journalisation de terrain plus rapide.</strong> QtAprsBeacon fonctionne maintenant via Internet (APRS-IS) en plus de la RF — en même temps — et peut servir d'<strong>i-gate</strong> complet reliant RF↔Internet, avec balise programmée pour station fixe, position fixe mémorisée au redémarrage, moniteur de trafic en direct et nouveaux symboles carte (Maison/VHF, Digipeater, I-gate, EOC). Le Journal de Terrain permet d'enregistrer <strong>plusieurs indicatifs et parcs en une seule entrée</strong> (chacun devient un QSO distinct) pour les pile-ups et le parc-à-parc. L'automatisation planifiée est aussi plus fiable — les réessais de mission respectent votre nombre et délai, et les fenêtres de présence se terminent proprement.</p>
     </div>
 
-    <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
-      <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.3</span> &nbsp; <strong>Les cartes du Field Logger fonctionnent maintenant entièrement hors ligne.</strong> Le moteur de carte et les tuiles sont désormais inclus dans le système au lieu d'être chargés depuis Internet, et le serveur de tuiles local démarre automatiquement avec le journal — votre carte de QSO s'affiche hors réseau, pas seulement en ligne.</p>
-    </div>
   </div>
 
   <!-- LATEST BLOG POST -->
   <div class="section">
     <h2 class="section-title">Sur le blogue</h2>
-    <a class="card" href="blog/radio-configuration_fr.html" style="display:block; border-color: rgba(90,184,135,0.35); background: rgba(90,184,135,0.05); text-decoration:none; color:inherit;">
-      <p style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5ab887; margin:0 0 6px 0;">2026-10-13 &middot; Dernier article</p>
-      <h3 style="margin:0 0 8px 0;">Configuration Radio — apprivoiser le CAT, du branchement à l'antenne</h3>
-      <p style="margin:0 0 12px 0;">CAT, PTT et débit, simplifiés — avec les nouveaux boutons <strong>Trouver…</strong>, <strong>Tester CAT</strong>, <strong>PTT</strong> et <strong>Détecter COM</strong> de la 2.4.5, et des réglages tout prêts pour les Yaesu FT-891, FT-991A et Icom IC-7300.</p>
+    <a class="card" href="blog/et-logger-contest_fr.html" style="display:block; border-color: rgba(90,184,135,0.35); background: rgba(90,184,135,0.05); text-decoration:none; color:inherit;">
+      <p style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5ab887; margin:0 0 6px 0;">2026-10-18 &middot; Dernier article</p>
+      <h3 style="margin:0 0 8px 0;">Le journal de concours dans le Journal de Terrain — pointage CQ WW en direct</h3>
+      <p style="margin:0 0 12px 0;">Nouveau en v2.4.6 : une couche concours optionnelle par-dessus POTA. Un sélecteur de zone CQ, un garde-fou anti-doublon par bande, un <strong>tableau de pointage en direct</strong> (points, zones, pays, pointage) calculé entièrement hors ligne, et un export <strong>Cabrillo 3.0</strong> en un clic — une session peut être POTA, concours, ou les deux.</p>
       <span style="color:#5ab887; font-weight:600;">Lire l'article →</span>
     </a>
   </div>
