@@ -40,6 +40,9 @@ meld
 vim
 udiskie
 
+# Remote access — x11vnc shares the live desktop over VNC (requires an X11 session, not Wayland)
+x11vnc
+
 # Email client
 thunderbird
 thunderbird-l10n-fr

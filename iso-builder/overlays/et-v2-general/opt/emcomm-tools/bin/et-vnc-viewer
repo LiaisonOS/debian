@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# et-vnc-viewer — install a VNC viewer and connect to a LiaisonOS node.
+# Use this on the machine you watch/control FROM. Pairs with et-vnc (server).
+# (The viewer is NOT pre-installed; this installs tigervnc-viewer on first use.)
+#
+# Usage: et-vnc-viewer [host[:port]]
+#   (no arg)   install the viewer, then prompt for the node IP
+#   host       connect to <host>:5900  (display :0)
+#   host:5901  connect to an explicit port/display
+set -u
+
+echo "== LiaisonOS VNC viewer (et-vnc-viewer) =="
+
+# 1) Install TigerVNC viewer if missing
+if ! command -v vncviewer >/dev/null 2>&1; then
+  echo "-- Installing tigervnc-viewer ..."
+  sudo apt-get update && sudo apt-get install -y tigervnc-viewer || { echo "!! install failed"; exit 1; }
+else
+  echo "-- vncviewer already installed."
+fi
+
+# 2) Figure out where to connect
+HOST="${1:-}"
+if [ -z "$HOST" ]; then
+  read -rp "Node IP or hostname to connect to (blank = just install): " HOST
+fi
+if [ -z "$HOST" ]; then
+  echo "-- Install done. Connect later with:  et-vnc-viewer <node-ip>"
+  exit 0
+fi
+
+# Append the default VNC port/display unless one was given
+case "$HOST" in
+  *:*) TARGET="$HOST" ;;
+  *)   TARGET="${HOST}:5900" ;;
+esac
+
+# 3) Connect. Password = first 8 characters of the node's Winlink password.
+echo "-- Connecting to ${TARGET} ..."
+exec vncviewer "$TARGET"

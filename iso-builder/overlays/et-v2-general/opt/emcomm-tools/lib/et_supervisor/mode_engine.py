@@ -638,6 +638,17 @@ class ModeEngine:
 
             self._pm.stop_all()
 
+            # LinBPQ runs INSIDE a QtTerminal wrapper, so stop_all() (which
+            # stops the tracked terminal) can leave the child linbpq alive —
+            # it keeps holding telnet/HTTP ports 8010/8012 and the SYSOP ends
+            # up pkill-ing it by hand. Tear it down here and wait for its
+            # ports to free so the next start binds cleanly.
+            if config:
+                chain = config.get("chain", [])
+                has_linbpq = any(s.get("name") == "linbpq" for s in chain)
+                if has_linbpq:
+                    self._stop_linbpq()
+
             # Kill QtMercury if Mercury modem was used
             if config:
                 chain = config.get("chain", [])
@@ -1077,6 +1088,11 @@ class ModeEngine:
             )
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
+        # Don't restart until LinBPQ has actually released its telnet/HTTP
+        # listen ports — otherwise the fresh instance fails to bind 8010/8012
+        # (the 'had to restart a few times' bug). No-op/instant when nothing
+        # is listening there (non-BBS modes).
+        self._wait_for_linbpq_ports_free()
         if wine_was_running:
             # Wait for serial port to be free after Wine releases it
             self._wait_for_serial_port_free()
@@ -1640,6 +1656,73 @@ class ModeEngine:
             time.sleep(delay)
         log.warning("Serial port %s still in use after %d attempts",
                     real_dev, max_attempts)
+
+    def _tcp_port_listening(self, port):
+        """True if a process is LISTENing on the given local TCP port."""
+        try:
+            result = subprocess.run(
+                ["ss", "-ltnH"], timeout=5, capture_output=True, text=True
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False  # can't tell — don't block the caller
+        target = str(port)
+        for line in result.stdout.splitlines():
+            parts = line.split()
+            if len(parts) >= 4:
+                # Local Address:Port is column 4 (e.g. 0.0.0.0:8012, [::]:8012)
+                if parts[3].rsplit(":", 1)[-1] == target:
+                    return True
+        return False
+
+    def _wait_for_linbpq_ports_free(self, ports=(8010, 8012),
+                                    timeout=8.0, escalate=True):
+        """Wait until LinBPQ's telnet + HTTP listen ports are released.
+
+        LinBPQ handles SIGTERM with a ~5 s graceful shutdown (it saves its
+        message/BID databases, config and restart data, THEN closes its
+        listeners). Restarting before 8010/8012 free up makes the new
+        instance fail to bind — the classic 'had to restart it a few times'
+        bug. Poll until the ports are free; if they're still held near the
+        end of the grace window, send SIGKILL so the kernel reclaims them
+        immediately (SO_REUSEADDR then lets the next instance bind at once).
+        """
+        deadline = time.monotonic() + timeout
+        killed = False
+        while True:
+            busy = [p for p in ports if self._tcp_port_listening(p)]
+            if not busy:
+                log.info("LinBPQ ports %s are free", list(ports))
+                return True
+            now = time.monotonic()
+            if escalate and not killed and now > deadline - 2.0:
+                log.warning("LinBPQ still holding %s — sending SIGKILL", busy)
+                try:
+                    subprocess.run(["pkill", "-9", "-x", "linbpq"],
+                                   timeout=5, capture_output=True)
+                except (FileNotFoundError, subprocess.TimeoutExpired):
+                    pass
+                killed = True
+            if now > deadline:
+                log.warning("LinBPQ ports %s still in use after %.0fs",
+                            busy, timeout)
+                return False
+            time.sleep(0.25)
+
+    def _stop_linbpq(self):
+        """Tear down LinBPQ cleanly: SIGTERM (graceful DB save), then wait for
+        its telnet/HTTP ports to free (escalating to SIGKILL if it overstays).
+
+        LinBPQ runs INSIDE a QtTerminal wrapper, so stopping the tracked
+        terminal can leave the child linbpq alive holding ports 8010/8012.
+        Match ONLY the exact process name `linbpq` (not the QtTerminal whose
+        argv contains 'linbpq').
+        """
+        try:
+            subprocess.run(["pkill", "-x", "linbpq"],
+                           timeout=5, capture_output=True)
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass
+        self._wait_for_linbpq_ports_free()
 
     def _stop_rigctld(self):
         """Stop rigctld by killing the process directly (not systemctl)."""

@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# et-vnc — configure and start the VNC server (x11vnc) on a LiaisonOS node.
+# x11vnc ships pre-installed with LiaisonOS. This is idempotent:
+#   - not installed  -> install (fallback; normally already present)
+#   - not configured -> set the password (from the Winlink profile)
+#   - already set up  -> just start the server
+# Shares the LIVE desktop on display :0 — needs an X11 session (not Wayland).
+#
+# Usage: et-vnc [--ask | --stop]
+#   (no flag) ensure installed + configured, then start (reuses saved password)
+#   --ask     set a NEW VNC password (type it), then (re)start
+#   --stop    stop the running x11vnc server and exit
+set -u
+
+VNCPASS="$HOME/.vnc/passwd"
+LOG="$HOME/.vnc/x11vnc.log"
+USER_CONF="$HOME/.config/liaisonos/user.json"
+
+# --stop: kill the server and exit (nothing else)
+if [ "${1:-}" = "--stop" ]; then
+  if pkill -x x11vnc 2>/dev/null; then echo "✓ x11vnc stopped."; else echo "x11vnc was not running."; fi
+  exit 0
+fi
+
+ASK=0; [ "${1:-}" = "--ask" ] && ASK=1
+
+echo "== LiaisonOS VNC server (et-vnc) =="
+
+# 1) Must be an X11 session (x11vnc can't capture Wayland's :0)
+if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
+  echo "!! This is a WAYLAND session — x11vnc won't see the screen."
+  echo "   Log out and pick the 'Xfce session' (X11), not 'Xfce Session Wayland', then re-run."
+  read -rp "Continue anyway? [y/N] " a; [ "${a,,}" = "y" ] || exit 1
+fi
+
+# 2) x11vnc ships with LiaisonOS — confirm present (install only as fallback)
+if ! command -v x11vnc >/dev/null 2>&1; then
+  echo "!! x11vnc not found (it normally ships with LiaisonOS) — installing ..."
+  sudo apt-get update && sudo apt-get install -y x11vnc || { echo "!! install failed"; exit 1; }
+else
+  echo "-- x11vnc present."
+fi
+
+# 3) Password — reuse the saved one if already configured; only set it when needed
+mkdir -p "$HOME/.vnc"
+
+get_winlink_pass() {
+  [ -r "$USER_CONF" ] || return 1
+  command -v jq >/dev/null 2>&1 || return 1
+  local p; p=$(jq -r '.winlinkPasswd // empty' "$USER_CONF" 2>/dev/null)
+  case "$p" in ""|null|NOPASS) return 1 ;; esac
+  printf '%s' "$p"
+}
+
+RECONFIGURED=0
+if [ "$ASK" -eq 1 ]; then
+  echo "-- Set a new VNC password:"
+  x11vnc -storepasswd && RECONFIGURED=1
+elif [ -s "$VNCPASS" ]; then
+  echo "-- Already configured — using the saved VNC password."
+else
+  WLPASS="$(get_winlink_pass || true)"
+  if [ -n "$WLPASS" ]; then
+    echo "-- First-time setup: using your Winlink password from the profile (first 8 chars)."
+    x11vnc -storepasswd "$WLPASS" "$VNCPASS" >/dev/null 2>&1 && RECONFIGURED=1
+  else
+    echo "-- First-time setup: set a VNC password:"
+    x11vnc -storepasswd && RECONFIGURED=1
+  fi
+fi
+[ -s "$VNCPASS" ] || { echo "!! No password file at $VNCPASS — aborting."; exit 1; }
+
+# 4) Start — if it's already running and we didn't change the password, leave it
+IP=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+if pgrep -x x11vnc >/dev/null && [ "$RECONFIGURED" -eq 0 ]; then
+  echo
+  echo "✓ VNC server already running."
+  echo "  Connect a VNC viewer to:  ${IP:-<this-host-ip>}:5900"
+  exit 0
+fi
+
+pkill -x x11vnc 2>/dev/null && { echo "-- restarting x11vnc ..."; sleep 1; }
+echo "-- Starting x11vnc on :0 ..."
+x11vnc -display :0 -auth guess -rfbauth "$VNCPASS" -forever -shared -noxdamage -bg -o "$LOG"
+
+sleep 1
+if pgrep -x x11vnc >/dev/null; then
+  echo
+  echo "✓ VNC server running."
+  echo "  Connect a VNC viewer to:  ${IP:-<this-host-ip>}:5900"
+  echo "  Password: your Winlink password (first 8 chars)"
+  echo "  Log file: $LOG"
+else
+  echo "!! x11vnc did not start — last log lines:"
+  tail -n 5 "$LOG" 2>/dev/null
+  exit 1
+fi

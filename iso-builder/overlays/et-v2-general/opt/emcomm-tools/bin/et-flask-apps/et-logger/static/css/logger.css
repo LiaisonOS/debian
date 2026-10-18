@@ -128,6 +128,42 @@ body {
 }
 .progress-ring.valid { background: #1a3a1a; color: var(--success); }
 
+/* Live CQ WW score bar */
+.score-bar {
+    display: flex; gap: 8px; margin-bottom: 10px;
+}
+.score-cell {
+    flex: 1; text-align: center; padding: 6px 4px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 6px;
+}
+.score-cell .score-num {
+    font-size: 1.35rem; font-weight: 700; line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+.score-cell .score-lbl {
+    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-dim, #999); margin-top: 2px;
+}
+.score-cell.score-total {
+    background: #1a3a1a; border-color: var(--success, #3a7a3a);
+}
+.score-cell.score-total .score-num { color: var(--success, #5fd35f); }
+/* brief flash when a value increases */
+.score-num.bump { animation: scorebump 0.5s ease; }
+@keyframes scorebump {
+    0% { color: var(--accent, #ffa500); transform: scale(1.25); }
+    100% { transform: scale(1); }
+}
+/* pre-log preview flags next to the callsign */
+.mult-flag {
+    display: inline-block; margin-left: 6px; padding: 1px 6px;
+    border-radius: 3px; font-size: 0.72rem; font-weight: 700;
+}
+.mult-flag.pts  { background: #333; color: #fff; }
+.mult-flag.zone { background: #1a2f4a; color: #7db4ff; }
+.mult-flag.ctry { background: #14331f; color: #6fe09a; }
+
 /* Log form */
 .log-form {
     background: var(--bg-card); padding: 12px; border-radius: 8px;
@@ -187,6 +223,21 @@ body {
     align-items: center; justify-content: center; z-index: 10000;
 }
 .generic-picker-overlay.show { display: flex; }
+/* Right-aligned variant — pops up near the thumb for the CQ-zone picker. */
+.generic-picker-overlay.align-right {
+    align-items: flex-start; justify-content: flex-end;
+    padding: 100px 16px 0 0;
+}
+/* CQ-zone grid: 5 columns × 8 rows (01-39 + ??), compact for touch. */
+.rst-picker-grid.zone-grid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+/* All CQ-zone buttons ~35% bigger for easy touch targets. */
+.rst-picker-grid.zone-grid .rst-pick-btn {
+    padding: 15px 8px; font-size: 1.6rem; min-width: 58px;
+}
+/* "??" (unknown zone) — bold for emphasis. */
+.rst-picker-grid.zone-grid .rst-pick-btn.zone-unknown {
+    font-weight: 800;
+}
 .form-group-wide { flex: 1; min-width: 100%; }
 .form-group label {
     display: block; font-size: 0.75rem; color: var(--text-secondary);

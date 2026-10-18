@@ -44,12 +44,56 @@ except ImportError as _e:
     ANTENNA_SERVICE_OK = False
     _antenna_import_error = str(_e)
 
+# CQ WW live-score engine (cty.dat parser + scorer). Non-fatal if the
+# module or cty.dat is missing — the score endpoints just report unavailable.
+try:
+    import cqww_scorer
+    CQWW_SCORER_OK = True
+except ImportError:
+    cqww_scorer = None
+    CQWW_SCORER_OK = False
+
 # Suppress Flask dev server warning
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
+# Anchor the working directory to this script's own folder BEFORE creating the
+# Flask app. Flask() calls os.getcwd() to locate its root/instance path; if the
+# process was launched from a directory that has since disappeared (e.g. a USB
+# that unmounted), getcwd() raises "OSError: [Errno 5] Input/output error" and
+# the app dies before it starts. Our own folder is always present, so chdir
+# here makes startup independent of where et-logger was launched from.
+try:
+    _APP_DIR = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(_APP_DIR)
+except OSError:
+    try:
+        os.chdir(os.path.expanduser('~'))
+    except OSError:
+        pass
+
 app = Flask(__name__)
 app.secret_key = 'emcomm-tools-logger-2026'
+
+
+@app.context_processor
+def _inject_asset_version():
+    """Cache-busting token for static assets.
+
+    The kiosk webview can't be hard-refreshed and caches /static/ by URL —
+    including an empty/failed response grabbed mid-restart, which shows as an
+    unstyled page. Appending ?v=<mtime> makes the URL change whenever the CSS
+    or JS changes, forcing a fresh fetch.
+    """
+    v = 0
+    for rel in ("css/logger.css", "js/app.js"):
+        try:
+            m = int(os.path.getmtime(os.path.join(app.static_folder, rel)))
+            if m > v:
+                v = m
+        except OSError:
+            pass
+    return {"asset_v": v}
 
 # ============================================================================
 # Configuration paths
@@ -227,7 +271,9 @@ def init_db():
             my_lat REAL,
             my_lon REAL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            notes TEXT DEFAULT ''
+            notes TEXT DEFAULT '',
+            contest TEXT DEFAULT '',
+            my_exch TEXT DEFAULT ''
         )
     """)
     conn.execute("""
@@ -252,6 +298,7 @@ def init_db():
             comment TEXT DEFAULT '',
             qso_lat REAL,
             qso_lon REAL,
+            exch_rcvd TEXT DEFAULT '',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (session_id) REFERENCES sessions(id)
         )
@@ -261,6 +308,14 @@ def init_db():
     # without PyNEC (dev boxes); the /api/antennas/* routes gate on the flag.
     if ANTENNA_SERVICE_OK:
         antenna_service.init_schema(conn)
+    # Additive migrations for pre-existing DBs (contest + exchange fields).
+    # New columns are harmless to older code paths that don't reference them.
+    for table, col in (("sessions", "contest"), ("sessions", "my_exch"),
+                       ("qsos", "exch_rcvd")):
+        have = [r[1] for r in conn.execute("PRAGMA table_info(%s)" % table)]
+        if col not in have:
+            conn.execute("ALTER TABLE %s ADD COLUMN %s TEXT DEFAULT ''" % (table, col))
+    conn.commit()
     conn.close()
 
 
@@ -563,6 +618,87 @@ def export_adif(session_id, park_override=None):
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------------------
+# Cabrillo contest log export (https://cqww.com/cabrillo.htm)
+# ---------------------------------------------------------------------------
+# Map our stored mode -> Cabrillo 2-char mode code. Anything not explicitly
+# phone/CW/RTTY/FM is treated as a digital mode (DG).
+_CABRILLO_MODE = {
+    'CW': 'CW',
+    'SSB': 'PH', 'USB': 'PH', 'LSB': 'PH', 'AM': 'PH', 'PH': 'PH',
+    'FM': 'FM',
+    'RTTY': 'RY', 'RY': 'RY',
+}
+
+
+def _cabrillo_mode(mode):
+    return _CABRILLO_MODE.get((mode or '').upper(), 'DG')
+
+
+def export_cabrillo(session_id):
+    """Render a session as a Cabrillo 3.0 contest log.
+
+    The operator sets CONTEST + their sent exchange (my_exch) on the session;
+    each QSO carries the received exchange (exch_rcvd). Frequency is emitted in
+    kHz (we store MHz). Category/score headers are sensible defaults the
+    operator can edit before submitting the log to the sponsor.
+    """
+    conn = get_db()
+    session = conn.execute("SELECT * FROM sessions WHERE id = ?",
+                           (session_id,)).fetchone()
+    if not session:
+        conn.close()
+        return None
+    qsos = conn.execute(
+        "SELECT * FROM qsos WHERE session_id = ? ORDER BY qso_date, time_on",
+        (session_id,)).fetchall()
+    conn.close()
+
+    mycall = (session['my_callsign'] or 'NOCALL').upper()
+    contest = (session['contest'] or session['name'] or 'CONTEST').strip()
+    my_exch = (session['my_exch'] or '').strip()
+    grid = (session['my_grid'] or '').strip()
+
+    lines = [
+        "START-OF-LOG: 3.0",
+        "CREATED-BY: LiaisonOS et-logger",
+        "CONTEST: %s" % contest,
+        "CALLSIGN: %s" % mycall,
+        "OPERATORS: %s" % mycall,
+    ]
+    if grid:
+        lines.append("GRID-LOCATOR: %s" % grid)
+    lines += [
+        "CATEGORY-OPERATOR: SINGLE-OP",
+        "CATEGORY-BAND: ALL",
+        "CATEGORY-POWER: LOW",
+        "CATEGORY-MODE: MIXED",
+        "CLAIMED-SCORE: 0",
+    ]
+
+    for q in qsos:
+        try:
+            khz = str(int(round(float(q['freq']) * 1000))) if q['freq'] else "0"
+        except (TypeError, ValueError):
+            khz = "0"
+        mode = _cabrillo_mode(q['mode'])
+        d = q['qso_date'] or ''
+        date = "%s-%s-%s" % (d[0:4], d[4:6], d[6:8]) if len(d) >= 8 else d
+        t = (q['time_on'] or '')[:4]
+        rcall = (q['call'] or '').upper()
+        rst_s = q['rst_sent'] or '59'
+        rst_r = q['rst_rcvd'] or '59'
+        exch_r = q['exch_rcvd'] or ''
+        lines.append(
+            ("QSO: %5s %-2s %s %-4s %-13s %-3s %-6s %-13s %-3s %-6s" % (
+                khz, mode, date, t,
+                mycall, rst_s, my_exch,
+                rcall, rst_r, exch_r)).rstrip()
+        )
+    lines.append("END-OF-LOG:")
+    return "\n".join(lines) + "\n"
+
+
 # ============================================================================
 # Translations
 # ============================================================================
@@ -586,6 +722,34 @@ TRANSLATIONS = {
         'cancel': 'Cancel',
         'delete': 'Delete',
         'export_adif': 'Export ADIF',
+        'export_cabrillo': 'Export Cabrillo',
+        'contest': 'Contest',
+        'contest_none': 'None',
+        'contest_custom': 'Custom…',
+        'contest_custom_name': 'Contest name',
+        'my_exch': 'My exchange (sent, no RST)',
+        'my_exch_ph': 'zone / section / serial — e.g. 04',
+        'exch_rcvd': 'Exchange received (no RST)',
+        'exch_rcvd_ph': 'their zone / section / serial — e.g. 05',
+        'my_cq_zone': 'My CQ Zone (sent)',
+        'my_cq_zone_ph': 'e.g. 05',
+        'cq_zone_rcvd': 'CQ Zone received',
+        'cq_zone_rcvd_ph': 'their zone — e.g. 04',
+        'zone_lbl': 'Zone',
+        'sb_qsos': 'QSOs',
+        'sb_points': 'Points',
+        'sb_zones': 'Zones',
+        'sb_countries': 'Countries',
+        'sb_score': 'Score',
+        'sb_pts_short': 'pts',
+        'new_zone': 'NEW ZONE',
+        'new_country': 'NEW COUNTRY',
+        'dup_title': 'Duplicate on this band',
+        'dup_no': 'No',
+        'dup_yes': 'Yes, log it',
+        'dup_already': 'Already worked on',
+        'dup_thisband': 'this band',
+        'dup_ask': 'Log the duplicate anyway?',
         'park_reference': 'Park Reference',
         'summit_reference': 'Summit Reference',
         'nearest_parks': 'Nearest Parks',
@@ -679,6 +843,34 @@ TRANSLATIONS = {
         'cancel': 'Annuler',
         'delete': 'Supprimer',
         'export_adif': 'Exporter ADIF',
+        'export_cabrillo': 'Exporter Cabrillo',
+        'contest': 'Concours',
+        'contest_none': 'Aucun',
+        'contest_custom': 'Personnalisé…',
+        'contest_custom_name': 'Nom du concours',
+        'my_exch': 'Mon échange (envoyé, sans RST)',
+        'my_exch_ph': 'zone / section / numéro — ex. 04',
+        'exch_rcvd': 'Échange reçu (sans RST)',
+        'exch_rcvd_ph': 'sa zone / section / numéro — ex. 05',
+        'my_cq_zone': 'Ma zone CQ (envoyée)',
+        'my_cq_zone_ph': 'ex. 05',
+        'cq_zone_rcvd': 'Zone CQ reçue',
+        'cq_zone_rcvd_ph': 'sa zone — ex. 04',
+        'zone_lbl': 'Zone',
+        'sb_qsos': 'QSO',
+        'sb_points': 'Points',
+        'sb_zones': 'Zones',
+        'sb_countries': 'Pays',
+        'sb_score': 'Pointage',
+        'sb_pts_short': 'pts',
+        'new_zone': 'NOUV. ZONE',
+        'new_country': 'NOUV. PAYS',
+        'dup_title': 'Doublon sur cette bande',
+        'dup_no': 'Non',
+        'dup_yes': 'Oui, enregistrer',
+        'dup_already': 'Déjà contacté sur',
+        'dup_thisband': 'cette bande',
+        'dup_ask': 'Enregistrer le doublon quand même ?',
         'park_reference': 'Référence Parc',
         'summit_reference': 'Référence Sommet',
         'nearest_parks': 'Parcs à proximité',
@@ -997,8 +1189,9 @@ def api_create_session():
     conn = get_db()
     cursor = conn.execute("""
         INSERT INTO sessions (name, program, my_sig, my_sig_info,
-                              my_callsign, my_grid, my_lat, my_lon, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              my_callsign, my_grid, my_lat, my_lon, notes,
+                              contest, my_exch)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data.get('name', f"Session {datetime.now().strftime('%Y-%m-%d %H:%M')}"),
         data.get('program', 'POTA'),
@@ -1008,6 +1201,8 @@ def api_create_session():
         grid,
         lat, lon,
         data.get('notes', ''),
+        data.get('contest', ''),
+        data.get('my_exch', ''),
     ))
     conn.commit()
     session_id = cursor.lastrowid
@@ -1093,6 +1288,10 @@ def api_log_qso():
     if not calls or not session_id:
         return jsonify({'success': False, 'error': 'no callsign'}), 400
 
+    # 'force' = operator confirmed a per-band duplicate on purpose (YES in the
+    # warning box) — log it anyway, bypassing the dedup guard below.
+    force = bool(data.get('force', False))
+
     # Their P2P parks — one QSO row per park so each gets its own ADIF record.
     sig = data.get('sig', '')
     parks = [p.strip() for p in data.get('sig_info', '').split(',') if p.strip()]
@@ -1105,6 +1304,7 @@ def api_log_qso():
     rst_rcvd = data.get('rst_rcvd', '59')
     tx_pwr = data.get('tx_pwr')
     comment = data.get('comment', '')
+    exch_rcvd = data.get('exch_rcvd', '')
     # Trust frontend-provided name/loc only for a single call (they came from
     # one lookup); for multiple calls, look each up per row.
     single = len(calls) == 1
@@ -1112,7 +1312,20 @@ def api_log_qso():
     conn = get_db()
     last_id = None
     inserted = 0
+    dupes = []
     for call in calls:
+        # Per-band duplicate guard — a station may be worked only ONCE per band
+        # in a session (contest rule, and a sane default for POTA too). Skip a
+        # call already present on this band and report it back so the UI can
+        # warn + offer to log it anyway (force). Only enforced when a band is
+        # known; the P2P n-fer (same call + band across several parks) is
+        # unaffected because those rows are inserted together in ONE submit,
+        # before any of them exist. 'force' bypasses the guard entirely.
+        if band and not force and conn.execute(
+                "SELECT 1 FROM qsos WHERE session_id = ? AND call = ? AND band = ? LIMIT 1",
+                (session_id, call, band)).fetchone():
+            dupes.append(call)
+            continue
         call_info = lookup_callsign(call) or {}
         name = (data.get('name', '') if single else '') or call_info.get('name', '')
         state = (data.get('state', '') if single else '') or call_info.get('state', '')
@@ -1126,12 +1339,12 @@ def api_log_qso():
                 INSERT INTO qsos (session_id, qso_date, time_on, call, freq, band,
                                   mode, rst_sent, rst_rcvd, tx_pwr, gridsquare,
                                   name, state, country, sig, sig_info, comment,
-                                  qso_lat, qso_lon)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                  qso_lat, qso_lon, exch_rcvd)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 session_id, qso_date, time_on, call, freq, band, mode,
                 rst_sent, rst_rcvd, tx_pwr, gridsquare, name, state, country,
-                row_sig, park, comment, qso_lat, qso_lon,
+                row_sig, park, comment, qso_lat, qso_lon, exch_rcvd,
             ))
             last_id = cursor.lastrowid
             inserted += 1
@@ -1143,7 +1356,7 @@ def api_log_qso():
     conn.close()
 
     return jsonify({'success': True, 'id': last_id, 'count': count,
-                    'inserted': inserted})
+                    'inserted': inserted, 'dupes': dupes, 'band': band})
 
 
 @app.route('/api/qso/<int:qso_id>', methods=['GET'])
@@ -1165,7 +1378,7 @@ def api_update_qso(qso_id):
     conn.execute("""
         UPDATE qsos SET call=?, qso_date=?, time_on=?, freq=?, band=?,
             mode=?, rst_sent=?, rst_rcvd=?, tx_pwr=?, name=?, state=?,
-            comment=?, sig=?, sig_info=?
+            comment=?, sig=?, sig_info=?, exch_rcvd=?
         WHERE id=?
     """, (
         data.get('call', ''),
@@ -1182,6 +1395,7 @@ def api_update_qso(qso_id):
         data.get('comment', ''),
         data.get('sig', ''),
         data.get('sig_info', ''),
+        data.get('exch_rcvd', ''),
         qso_id,
     ))
     conn.commit()
@@ -1248,6 +1462,59 @@ def api_export_session(session_id):
         )
 
 
+def _cabrillo_filename(session):
+    callsign = (session['my_callsign'] or 'NOCALL').upper()
+    contest = (session['contest'] or session['name'] or 'contest').strip()
+    contest = re.sub(r'[^A-Za-z0-9._-]+', '-', contest).strip('-') or 'contest'
+    date_str = session['created_at'][:10].replace('-', '') if session['created_at'] else ''
+    return f"{callsign}-{contest}-{date_str}.cbr"
+
+
+@app.route('/api/export-cabrillo/<int:session_id>', methods=['GET'])
+def api_export_cabrillo(session_id):
+    """Export a contest session as a Cabrillo (.cbr) log download."""
+    conn = get_db()
+    session = conn.execute("SELECT * FROM sessions WHERE id = ?",
+                           (session_id,)).fetchone()
+    if not session:
+        conn.close()
+        return jsonify({'error': 'Session not found'}), 404
+    filename = _cabrillo_filename(session)
+    conn.close()
+
+    cab = export_cabrillo(session_id)
+    if cab is None:
+        return jsonify({'error': 'Session not found'}), 404
+    return Response(
+        cab,
+        mimetype='text/plain',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
+
+
+@app.route('/api/export-cabrillo-save/<int:session_id>', methods=['POST'])
+def api_export_cabrillo_save(session_id):
+    """Export a contest session as Cabrillo and save it to ~/Documents/."""
+    conn = get_db()
+    session = conn.execute("SELECT * FROM sessions WHERE id = ?",
+                           (session_id,)).fetchone()
+    if not session:
+        conn.close()
+        return jsonify({'success': False, 'error': 'Session not found'})
+    filename = _cabrillo_filename(session)
+    conn.close()
+
+    cab = export_cabrillo(session_id)
+    if cab is None:
+        return jsonify({'success': False, 'error': 'Session not found'})
+
+    docs_dir = Path.home() / "Documents"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    with open(docs_dir / filename, 'w') as f:
+        f.write(cab)
+    return jsonify({'success': True, 'filename': filename, 'path': str(docs_dir)})
+
+
 @app.route('/api/export-save/<int:session_id>', methods=['POST'])
 def api_export_save(session_id):
     """Export session and save ADIF file(s) to ~/Documents/."""
@@ -1309,21 +1576,126 @@ def api_open_folder():
 
 @app.route('/api/duplicate-check', methods=['GET'])
 def api_duplicate_check():
-    """Check if a QSO is a duplicate."""
+    """Check if a QSO is a duplicate.
+
+    Per-band when a 'band' is supplied (a station may be worked once per band);
+    falls back to a session-wide call match when no band is given.
+    """
     session_id = request.args.get('session_id')
     call = request.args.get('call', '').upper().strip()
+    band = request.args.get('band', '').strip()
     if not session_id or not call:
         return jsonify({'duplicate': False})
 
     conn = get_db()
-    existing = conn.execute(
-        "SELECT id, time_on FROM qsos WHERE session_id = ? AND call = ?",
-        (session_id, call)).fetchone()
+    if band:
+        existing = conn.execute(
+            "SELECT id, time_on, band FROM qsos "
+            "WHERE session_id = ? AND call = ? AND band = ?",
+            (session_id, call, band)).fetchone()
+    else:
+        existing = conn.execute(
+            "SELECT id, time_on, band FROM qsos WHERE session_id = ? AND call = ?",
+            (session_id, call)).fetchone()
     conn.close()
 
     if existing:
-        return jsonify({'duplicate': True, 'time': existing['time_on']})
+        return jsonify({'duplicate': True, 'time': existing['time_on'],
+                        'band': existing['band']})
     return jsonify({'duplicate': False})
+
+
+# ============================================================================
+# CQ WW live score
+# ============================================================================
+
+def _build_cqww_scorer(session, conn):
+    """Replay the whole session log into a fresh CqwwScorer.
+
+    Always rebuilt from scratch (per spec: incremental math is unsafe when a
+    QSO is edited/deleted). Returns the scorer, or None if not a CQ WW
+    session / engine unavailable.
+    """
+    if not (CQWW_SCORER_OK and cqww_scorer.is_cqww(session['contest'])):
+        return None
+    try:
+        my_zone = int((session['my_exch'] or '').strip() or 0)
+    except (ValueError, TypeError):
+        my_zone = 0
+    scorer = cqww_scorer.CqwwScorer(session['my_callsign'] or '', my_zone)
+    rows = conn.execute(
+        "SELECT call, band, freq, exch_rcvd FROM qsos WHERE session_id = ? "
+        "ORDER BY qso_date, time_on, id", (session['id'],)).fetchall()
+    for r in rows:
+        try:
+            zr = int((r['exch_rcvd'] or '').strip() or 0)
+        except (ValueError, TypeError):
+            zr = 0
+        band_int = cqww_scorer.resolve_band(r['band'], r['freq'])
+        scorer.add_qso(r['call'], band_int, zr)
+    return scorer
+
+
+@app.route('/api/score/<int:session_id>', methods=['GET'])
+def api_score(session_id):
+    """Live claimed score for a CQ WW session (rebuilt from the full log)."""
+    conn = get_db()
+    session = conn.execute("SELECT * FROM sessions WHERE id = ?",
+                           (session_id,)).fetchone()
+    if not session:
+        conn.close()
+        return jsonify({'scoring': False, 'error': 'Session not found'}), 404
+    scorer = _build_cqww_scorer(session, conn)
+    conn.close()
+    if scorer is None:
+        # Not a CQ WW session (or cty.dat missing) — no live score.
+        return jsonify({'scoring': False,
+                        'cty_ok': bool(CQWW_SCORER_OK and cqww_scorer
+                                       and cqww_scorer.get_lookup().ok)})
+    out = scorer.summary()
+    out['scoring'] = True
+    out['cty_ok'] = scorer.lookup.ok
+    return jsonify(out)
+
+
+@app.route('/api/score-preview', methods=['GET'])
+def api_score_preview():
+    """Pre-log preview for the entry screen: points + NEW ZONE / NEW COUNTRY
+    for the currently typed call/band/zone, without mutating the log."""
+    session_id = request.args.get('session_id')
+    call = request.args.get('call', '')
+    band = request.args.get('band', '')
+    freq = request.args.get('freq', '')
+    try:
+        zone = int((request.args.get('zone', '') or '').strip() or 0)
+    except ValueError:
+        zone = 0
+    if not session_id:
+        return jsonify({'scoring': False})
+    conn = get_db()
+    session = conn.execute("SELECT * FROM sessions WHERE id = ?",
+                           (session_id,)).fetchone()
+    if not session:
+        conn.close()
+        return jsonify({'scoring': False})
+    scorer = _build_cqww_scorer(session, conn)
+    conn.close()
+    if scorer is None:
+        return jsonify({'scoring': False})
+    # Probe against the rebuilt state WITHOUT committing the QSO.
+    r = scorer.add_qso(call, cqww_scorer.resolve_band(band, freq), zone)
+    r['scoring'] = True
+    return jsonify(r)
+
+
+@app.route('/api/cty-info', methods=['GET'])
+def api_cty_info():
+    """Report cty.dat availability + source path (for diagnostics/UI)."""
+    if not CQWW_SCORER_OK:
+        return jsonify({'ok': False})
+    lk = cqww_scorer.get_lookup()
+    return jsonify({'ok': lk.ok, 'path': lk.path,
+                    'prefixes': len(lk.prefix), 'exact': len(lk.exact)})
 
 
 # ============================================================================

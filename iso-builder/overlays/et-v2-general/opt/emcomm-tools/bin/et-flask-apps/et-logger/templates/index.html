@@ -73,6 +73,15 @@
             </div>
         </div>
 
+        <!-- Live CQ WW score bar (CQ-WW contests only) -->
+        <div class="score-bar" id="score-bar" style="display:none;">
+            <div class="score-cell"><div class="score-num" id="score-qsos">0</div><div class="score-lbl">{{ t['sb_qsos'] }}</div></div>
+            <div class="score-cell"><div class="score-num" id="score-points">0</div><div class="score-lbl">{{ t['sb_points'] }}</div></div>
+            <div class="score-cell"><div class="score-num" id="score-zones">0</div><div class="score-lbl">{{ t['sb_zones'] }}</div></div>
+            <div class="score-cell"><div class="score-num" id="score-countries">0</div><div class="score-lbl">{{ t['sb_countries'] }}</div></div>
+            <div class="score-cell score-total"><div class="score-num" id="score-total">0</div><div class="score-lbl">{{ t['sb_score'] }}</div></div>
+        </div>
+
         <!-- Quick log form -->
         <div class="log-form">
             <div class="form-row">
@@ -100,6 +109,14 @@
                     </div>
                     <input type="hidden" id="qso-rst-sent-r" value="5">
                     <input type="hidden" id="qso-rst-sent-s" value="9">
+                </div>
+                <!-- CQ-WW zone picker — sits beside RST sent for fast entry.
+                     Writes the received zone into the shared #qso-exch-rcvd. -->
+                <div class="form-group form-group-rst" id="qso-zone-cell" style="display:none;">
+                    <label id="qso-zone-label">{{ t['zone_lbl'] }}</label>
+                    <div class="rst-display" onclick="openZonePicker()">
+                        <div class="rst-value" id="qso-zone-display">--</div>
+                    </div>
                 </div>
             </div>
 
@@ -142,6 +159,9 @@
                 <span id="call-dup" class="dup-warning" style="display:none;">DUPLICATE</span>
             </div>
 
+            <!-- Pre-log CQ WW preview: points + NEW ZONE / NEW COUNTRY -->
+            <div id="mult-preview" style="display:none; margin:2px 0 6px;"></div>
+
             <!-- Park-to-Park -->
             <div class="p2p-section">
                 <div class="p2p-toggle">
@@ -163,6 +183,14 @@
                 </div>
             </div>
 
+            <div class="form-row" id="qso-exch-row" style="display:none;">
+                <div class="form-group form-group-wide">
+                    <label id="qso-exch-label">{{ t['exch_rcvd'] }}</label>
+                    <input type="text" id="qso-exch-rcvd" inputmode="numeric" placeholder="{{ t['exch_rcvd_ph'] }}"
+                           onblur="padExchField(this, currentContest)">
+                </div>
+            </div>
+
             <div class="form-row">
                 <div class="form-group form-group-wide">
                     <label>{{ t['comment'] }}</label>
@@ -181,6 +209,7 @@
         <!-- Export button -->
         <div class="export-bar">
             <button class="btn btn-secondary" onclick="exportADIF()">{{ t['export_adif'] }}</button>
+            <button class="btn btn-secondary" id="btn-export-cabrillo" onclick="exportCabrillo()" style="display:none;">{{ t['export_cabrillo'] }}</button>
             <button class="btn btn-danger" onclick="deleteSession()">{{ t['delete'] }}</button>
         </div>
     </div>
@@ -436,6 +465,26 @@
                 <option value="General">General</option>
             </select>
         </div>
+        <div class="form-group">
+            <label>{{ t['contest'] }}</label>
+            <select id="new-session-contest" onchange="onContestChange()">
+                <option value="">{{ t['contest_none'] }}</option>
+                <option value="CQ-WW-SSB">CQ WW DX — SSB</option>
+                <option value="CQ-WW-CW">CQ WW DX — CW</option>
+                <option value="CQ-WW-RTTY">CQ WW DX — RTTY</option>
+                <option value="ARRL-FIELD-DAY">ARRL Field Day</option>
+                <option value="__custom__">{{ t['contest_custom'] }}</option>
+            </select>
+        </div>
+        <div class="form-group" id="new-session-contest-custom-group" style="display:none;">
+            <label>{{ t['contest_custom_name'] }}</label>
+            <input type="text" id="new-session-contest-custom" placeholder="MY-CONTEST">
+        </div>
+        <div class="form-group" id="new-session-exch-group" style="display:none;">
+            <label id="new-session-exch-label">{{ t['my_exch'] }}</label>
+            <input type="text" id="new-session-exch" placeholder="{{ t['my_exch_ph'] }}"
+                   onblur="padExchField(this, sessionContestValue())">
+        </div>
         <div class="form-group" style="position:relative;">
             <label>My Park(s) / Summit</label>
             <input type="text" id="new-session-park-search" placeholder="Search park reference or name..."
@@ -451,6 +500,20 @@
         <div class="modal-buttons">
             <button class="btn btn-secondary" onclick="closeNewSessionModal()">{{ t['cancel'] }}</button>
             <button class="btn btn-primary" onclick="createSession()">{{ t['save'] }}</button>
+        </div>
+    </div>
+</div>
+
+<!-- Duplicate-confirm Modal — default action is NO (don't log the dupe) -->
+<div class="modal-overlay" id="dup-confirm-modal" style="display:none;">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h3>{{ t['dup_title'] }}</h3>
+        <p id="dup-confirm-text" style="margin:12px 0;"></p>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" id="dup-confirm-no"
+                    onclick="resolveDupConfirm(false)">{{ t['dup_no'] }}</button>
+            <button class="btn btn-danger"
+                    onclick="resolveDupConfirm(true)">{{ t['dup_yes'] }}</button>
         </div>
     </div>
 </div>
@@ -521,6 +584,13 @@
                     <input type="text" id="edit-qso-state">
                 </div>
             </div>
+            <div class="form-row" id="edit-qso-exch-row" style="display:none;">
+                <div class="form-group form-group-wide">
+                    <label id="edit-qso-exch-label">{{ t['exch_rcvd'] }}</label>
+                    <input type="text" id="edit-qso-exch-rcvd" inputmode="numeric"
+                           onblur="padExchField(this, currentContest)">
+                </div>
+            </div>
             <div class="form-row">
                 <div class="form-group form-group-wide">
                     <label>{{ t['comment'] }}</label>
@@ -578,6 +648,7 @@
 <script>
     const T = {{ t | tojson }};
     let currentSessionId = null;
+    let currentContest = '';
     let radioTimer = null;
     let lastPower = 100;
 
@@ -717,7 +788,85 @@
         document.getElementById('new-session-park-search').value = '';
         document.getElementById('new-session-ref').value = '';
         document.getElementById('new-session-name').value = '';
+        document.getElementById('new-session-contest').value = '';
+        document.getElementById('new-session-contest-custom').value = '';
+        document.getElementById('new-session-exch').value = '';
+        onContestChange();
         document.getElementById('new-session-modal').style.display = 'flex';
+    }
+    // Show the custom-contest name + "my exchange" fields only when a contest
+    // is selected. Contest logging is an optional layer on top of POTA — a
+    // session can be POTA-only, contest-only, or both.
+    // CQ WW's exchange IS the CQ zone, so for those contests we label the
+    // exchange field explicitly "CQ Zone" rather than the generic wording.
+    function isCqWw(contest) {
+        return (contest || '').toUpperCase().indexOf('CQ-WW') === 0;
+    }
+    // CQ zones are two digits — the operator types "4", we store "04".
+    // Only pads a lone digit on CQ-WW contests; leaves sections/serials alone.
+    function padZoneStr(v, contest) {
+        v = (v || '').trim();
+        return (isCqWw(contest) && /^\d$/.test(v)) ? '0' + v : v;
+    }
+    function padExchField(el, contest) {
+        el.value = padZoneStr(el.value, contest);
+    }
+
+    // Duplicate confirm box. Resolves true (YES, log anyway) / false (NO,
+    // default). NO is the focused button so Enter/Esc both decline.
+    let _dupResolve = null;
+    function askDupConfirm(text) {
+        return new Promise(resolve => {
+            _dupResolve = resolve;
+            document.getElementById('dup-confirm-text').textContent = text;
+            document.getElementById('dup-confirm-modal').style.display = 'flex';
+            setTimeout(() => document.getElementById('dup-confirm-no').focus(), 50);
+        });
+    }
+    function resolveDupConfirm(val) {
+        document.getElementById('dup-confirm-modal').style.display = 'none';
+        if (_dupResolve) { _dupResolve(val); _dupResolve = null; }
+    }
+    // A per-band duplicate was detected and skipped. Ask (default NO); on YES,
+    // re-send just those calls with force so the server logs them anyway.
+    function confirmDupLog(dupes, band, payload) {
+        const msg = T['dup_already'] + ' ' + (band || T['dup_thisband']) +
+                    ': ' + dupes.join(', ') + '. ' + T['dup_ask'];
+        askDupConfirm(msg).then(yes => {
+            if (!yes) return;
+            const forced = Object.assign({}, payload, {calls: dupes, force: true});
+            fetch('/api/qso', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(forced)
+            }).then(r => r.json()).then(d => {
+                if (d.success && d.inserted > 0) {
+                    showToast('success', d.inserted + ' QSO' +
+                        (d.inserted > 1 ? 's' : '') + ' logged (dupe) — ' +
+                        dupes.join(', '));
+                    updateQSOCounter(d.count);
+                    loadSession(currentSessionId);
+                }
+            });
+        });
+    }
+    function onContestChange() {
+        const v = document.getElementById('new-session-contest').value;
+        const isCustom = v === '__custom__';
+        document.getElementById('new-session-contest-custom-group').style.display = isCustom ? '' : 'none';
+        document.getElementById('new-session-exch-group').style.display = v ? '' : 'none';
+        // Relabel the SENT-exchange field based on the chosen contest.
+        const cq = isCqWw(sessionContestValue());
+        document.getElementById('new-session-exch-label').textContent =
+            cq ? T['my_cq_zone'] : T['my_exch'];
+        document.getElementById('new-session-exch').placeholder =
+            cq ? T['my_cq_zone_ph'] : T['my_exch_ph'];
+    }
+    function sessionContestValue() {
+        const v = document.getElementById('new-session-contest').value;
+        if (v === '__custom__')
+            return (document.getElementById('new-session-contest-custom').value || '').trim().toUpperCase();
+        return v;
     }
     function closeNewSessionModal(e) {
         if (e && e.target !== document.getElementById('new-session-modal')) return;
@@ -737,6 +886,8 @@
                 program: document.getElementById('new-session-program').value,
                 sig_info: document.getElementById('new-session-ref').value,
                 my_callsign: document.getElementById('new-session-call').value,
+                contest: sessionContestValue(),
+                my_exch: padZoneStr(document.getElementById('new-session-exch').value, sessionContestValue()),
             })
         }).then(r => r.json()).then(data => {
             if (data.success) {
@@ -761,6 +912,9 @@
         document.getElementById('no-session-msg').style.display = 'none';
         document.getElementById('logger-panel').style.display = 'block';
         loadSession(id);
+        document.getElementById('qso-exch-rcvd').value = '';  // fresh per session
+        syncZoneDisplay();
+        resetRST();                                           // default 59 per session
         refreshRadio();  // One radio query to pre-fill freq/band/mode
         document.getElementById('qso-call').focus();
     }
@@ -774,6 +928,21 @@
                 (parks[0] || '--');
             document.getElementById('session-park-display').textContent =
                 data.session.my_sig + ': ' + parkLabel;
+            // Contest layer: reveal the received-exchange field + Cabrillo export
+            // only when this session is tied to a contest.
+            currentContest = data.session.contest || '';
+            const isContest = !!currentContest;
+            const cq = isCqWw(currentContest);
+            // WW → zone picker (01-39) beside RST. Other contests → free-text
+            // exchange row (section / serial). No contest → both hidden.
+            document.getElementById('qso-zone-cell').style.display = cq ? '' : 'none';
+            document.getElementById('qso-exch-row').style.display =
+                (isContest && !cq) ? '' : 'none';
+            document.getElementById('btn-export-cabrillo').style.display = isContest ? '' : 'none';
+            document.getElementById('qso-exch-label').textContent = T['exch_rcvd'];
+            document.getElementById('qso-exch-rcvd').placeholder = T['exch_rcvd_ph'];
+            syncZoneDisplay();
+            refreshScore();
             updateQSOCounter(data.count);
             renderQSOList(data.qsos);
             // Set power from last QSO in session
@@ -842,12 +1011,9 @@
             return;
         }
 
-        // Duplicate check
+        // Duplicate check (per band)
         if (currentSessionId && call.length >= 3) {
-            fetch('/api/duplicate-check?session_id=' + currentSessionId + '&call=' + call)
-                .then(r => r.json()).then(data => {
-                    document.getElementById('call-dup').style.display = data.duplicate ? 'inline' : 'none';
-                });
+            checkDuplicate(call);
         }
 
         callSearchTimer = setTimeout(() => {
@@ -911,13 +1077,30 @@
             document.getElementById('call-location').textContent =
                 (data.city || '') + ', ' + (data.state || '') + ' ' + (data.country || '');
         }).catch(() => {});
-        // Check duplicate
+        // Check duplicate (per band)
         if (currentSessionId) {
-            fetch('/api/duplicate-check?session_id=' + currentSessionId + '&call=' + call)
-                .then(r => r.json()).then(data => {
-                    document.getElementById('call-dup').style.display = data.duplicate ? 'inline' : 'none';
-                });
+            checkDuplicate(call);
         }
+    }
+
+    // Per-band duplicate badge. A station may be worked once per band, so the
+    // DUPE flag factors in the current band (same call on 40m is NOT a dupe of
+    // one on 20m). Shows the band already worked.
+    function checkDuplicate(call) {
+        updateMultPreview(call);   // CQ WW points / NEW ZONE / NEW COUNTRY
+        const band = document.getElementById('qso-band').value || '';
+        const badge = document.getElementById('call-dup');
+        fetch('/api/duplicate-check?session_id=' + currentSessionId +
+              '&call=' + encodeURIComponent(call) +
+              '&band=' + encodeURIComponent(band))
+            .then(r => r.json()).then(data => {
+                if (data.duplicate) {
+                    badge.textContent = 'DUPE' + (data.band ? ' ' + data.band : '');
+                    badge.style.display = 'inline';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
     }
 
     // Close dropdown when clicking anywhere or on blur
@@ -955,6 +1138,7 @@
         document.getElementById('call-dropdown').style.display = 'none';
         document.getElementById('call-info').style.display = 'none';
         document.getElementById('call-dup').style.display = 'none';
+        document.getElementById('mult-preview').style.display = 'none';
         renderSelectedCalls();
         field.focus();
     }
@@ -993,40 +1177,64 @@
             const rstRcvd = document.getElementById('qso-rst-rcvd-r').value +
                             document.getElementById('qso-rst-rcvd-s').value;
 
+            // Zero-pad a single-digit CQ zone before storing (4 -> 04). Write
+            // it back so the sticky field also shows the padded value.
+            padExchField(document.getElementById('qso-exch-rcvd'), currentContest);
+
+            // Build once so a forced re-send (operator clicks YES on a per-band
+            // duplicate) reuses the exact same values after the form resets.
+            const payload = {
+                session_id: currentSessionId,
+                calls: calls,
+                freq: parseFloat(document.getElementById('qso-freq').value) || null,
+                band: document.getElementById('qso-band').value,
+                mode: document.getElementById('qso-mode').value,
+                rst_sent: rstSent,
+                rst_rcvd: rstRcvd,
+                tx_pwr: parseFloat(document.getElementById('qso-power').value) || null,
+                comment: document.getElementById('qso-comment').value,
+                exch_rcvd: document.getElementById('qso-exch-rcvd').value,
+                sig: selectedP2PParks.length > 0 ? 'POTA' : '',
+                sig_info: selectedP2PParks.map(p => p.ref).join(','),
+            };
+
             fetch('/api/qso', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    session_id: currentSessionId,
-                    calls: calls,
-                    freq: parseFloat(document.getElementById('qso-freq').value) || null,
-                    band: document.getElementById('qso-band').value,
-                    mode: document.getElementById('qso-mode').value,
-                    rst_sent: rstSent,
-                    rst_rcvd: rstRcvd,
-                    tx_pwr: parseFloat(document.getElementById('qso-power').value) || null,
-                    comment: document.getElementById('qso-comment').value,
-                    sig: selectedP2PParks.length > 0 ? 'POTA' : '',
-                    sig_info: selectedP2PParks.map(p => p.ref).join(','),
-                })
+                body: JSON.stringify(payload)
             }).then(r => r.json()).then(data => {
                 if (data.success) {
-                    const nParks = Math.max(1, selectedP2PParks.length);
-                    const made = data.inserted || (calls.length * nParks);
+                    const dupes = data.dupes || [];
+                    const logged = calls.filter(c => dupes.indexOf(c) === -1);
+                    const made = (typeof data.inserted === 'number') ? data.inserted
+                               : logged.length * Math.max(1, selectedP2PParks.length);
                     const p2pMsg = selectedP2PParks.length > 0 ?
                         ' P2P: ' + selectedP2PParks.map(p => p.ref).join('+') : '';
-                    showToast('success', made + ' QSO' + (made > 1 ? 's' : '') +
-                        ' logged — ' + calls.join(', ') + p2pMsg);
+                    if (made > 0) {
+                        showToast('success', made + ' QSO' + (made > 1 ? 's' : '') +
+                            ' logged — ' + logged.join(', ') + p2pMsg);
+                    }
+                    // Per-band duplicate(s) detected — ask before logging them.
+                    // Default is NO; YES re-sends just those calls with force.
+                    if (dupes.length) {
+                        confirmDupLog(dupes, data.band, payload);
+                    }
                     updateQSOCounter(data.count);
                     loadSession(currentSessionId);
                     // Remember power for next QSO
                     lastPower = parseFloat(document.getElementById('qso-power').value) || 100;
                     // Reset form but keep P2P enabled if it was
                     field.value = '';
-                    resetRST();
+                    // Sticky RST: keep the last sent/received report for the
+                    // next QSO (usually 59/599 all run — reset per session, not
+                    // per QSO). Edit it only when a report actually differs.
                     document.getElementById('qso-comment').value = '';
+                    // Sticky exchange: keep the last zone (pile-ups + band
+                    // openings cluster in one CQ zone, so the next caller is
+                    // most likely the same). Edit it only when it changes.
                     document.getElementById('call-info').style.display = 'none';
                     document.getElementById('call-dup').style.display = 'none';
+                    document.getElementById('mult-preview').style.display = 'none';
                     document.getElementById('call-dropdown').innerHTML = '';
                     document.getElementById('call-dropdown').style.display = 'none';
                     // Clear queued calls + P2P parks for next entry
@@ -1052,6 +1260,24 @@
         fetch('/api/session/' + currentSessionId, {method: 'DELETE'}).then(() => {
             location.reload();
         });
+    }
+
+    function exportCabrillo() {
+        fetch('/api/export-cabrillo-save/' + currentSessionId, {method: 'POST'})
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('success', data.path + '/' + data.filename, 8000);
+                    fetch('/api/open-folder', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({path: data.path})
+                    });
+                } else {
+                    showToast('error', 'Cabrillo export failed: ' + (data.error || 'unknown'));
+                }
+            })
+            .catch(() => showToast('error', 'Cabrillo export failed'));
     }
 
     function exportADIF() {
@@ -1305,6 +1531,7 @@
         const current = document.getElementById('qso-' + type).value;
 
         document.getElementById('generic-picker-title').textContent = title;
+        document.getElementById('generic-picker').classList.remove('align-right');  // band/mode stay centered
         const grid = document.getElementById('generic-picker-grid');
         grid.className = 'rst-picker-grid' + (items.length > 5 ? ' cols-9' : '');
         grid.innerHTML = items.map(item =>
@@ -1318,11 +1545,104 @@
     function pickGeneric(type, value) {
         document.getElementById('qso-' + type).value = value;
         document.getElementById('qso-' + type + '-display').textContent = value;
+        // Band drives the per-band dup check — re-test the typed call on change.
+        if (type === 'band' && currentSessionId) {
+            const c = (document.getElementById('qso-call').value || '').toUpperCase().trim();
+            if (c.length >= 3) checkDuplicate(c);
+            else document.getElementById('call-dup').style.display = 'none';
+        }
         setTimeout(closeGenericPicker, 200);
     }
 
     function closeGenericPicker() {
-        document.getElementById('generic-picker').classList.remove('show');
+        document.getElementById('generic-picker').classList.remove('show', 'align-right');
+    }
+
+    // === CQ-WW zone picker (01-39) ===
+    const ZONES = Array.from({length: 39}, (_, i) => String(i + 1).padStart(2, '0'));
+
+    function openZonePicker() {
+        const current = document.getElementById('qso-exch-rcvd').value;
+        document.getElementById('generic-picker-title').textContent = T['cq_zone_rcvd'];
+        const grid = document.getElementById('generic-picker-grid');
+        grid.className = 'rst-picker-grid zone-grid';   // 5 cols × 8 rows
+        // Zones 01-39 plus a trailing "??" = couldn't copy the zone; log it
+        // and look the station up on QRZ after the event.
+        const items = ZONES.concat(['??']);
+        grid.innerHTML = items.map(z =>
+            '<div class="rst-pick-btn' + (z === current ? ' active' : '') +
+            (z === '??' ? ' zone-unknown' : '') +
+            '" onclick="pickZone(\'' + z + '\')">' + z + '</div>'
+        ).join('');
+        // Right-align the popup — the zone button lives on the right of the
+        // entry row, so it pops up under the operator's thumb (touch screen).
+        document.getElementById('generic-picker').classList.add('show', 'align-right');
+    }
+    function pickZone(z) {
+        document.getElementById('qso-exch-rcvd').value = z;   // shared field
+        document.getElementById('qso-zone-display').textContent = z;
+        // Zone change can flip NEW ZONE in the preview.
+        updateMultPreview(document.getElementById('qso-call').value);
+        setTimeout(closeGenericPicker, 150);
+    }
+    // Reflect the (sticky) received-zone value in the picker button.
+    function syncZoneDisplay() {
+        const v = document.getElementById('qso-exch-rcvd').value;
+        document.getElementById('qso-zone-display').textContent = v || '--';
+    }
+
+    // === Live CQ WW score ===
+    function setScoreNum(id, val) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const prev = parseInt(el.textContent, 10) || 0;
+        el.textContent = val;
+        if (val > prev) {   // brief flash when a figure climbs
+            el.classList.remove('bump');
+            void el.offsetWidth;        // restart the animation
+            el.classList.add('bump');
+        }
+    }
+    function refreshScore() {
+        if (!currentSessionId) { document.getElementById('score-bar').style.display = 'none'; return; }
+        fetch('/api/score/' + currentSessionId).then(r => r.json()).then(d => {
+            const bar = document.getElementById('score-bar');
+            if (!d.scoring) { bar.style.display = 'none'; return; }
+            bar.style.display = 'flex';
+            setScoreNum('score-qsos', d.qsos);
+            setScoreNum('score-points', d.points);
+            setScoreNum('score-zones', d.zones);
+            setScoreNum('score-countries', d.countries);
+            setScoreNum('score-total', d.score);
+        }).catch(() => {});
+    }
+
+    // Pre-log preview: points + NEW ZONE / NEW COUNTRY for the typed entry.
+    function updateMultPreview(call) {
+        const box = document.getElementById('mult-preview');
+        call = (call || '').toUpperCase().trim();
+        if (!currentSessionId || !isCqWw(currentContest) || call.length < 3) {
+            box.style.display = 'none'; box.innerHTML = ''; return;
+        }
+        const band = document.getElementById('qso-band').value || '';
+        const freq = document.getElementById('qso-freq').value || '';
+        const zone = document.getElementById('qso-exch-rcvd').value || '';
+        fetch('/api/score-preview?session_id=' + currentSessionId +
+              '&call=' + encodeURIComponent(call) +
+              '&band=' + encodeURIComponent(band) +
+              '&freq=' + encodeURIComponent(freq) +
+              '&zone=' + encodeURIComponent(zone))
+            .then(r => r.json()).then(d => {
+                if (!d.scoring) { box.style.display = 'none'; return; }
+                let html = '';
+                if (d.country) html += '<span class="mult-flag pts">' + d.country +
+                                       ' · ' + d.points + ' ' + T['sb_pts_short'] + '</span>';
+                else html += '<span class="mult-flag pts">' + d.points + ' ' + T['sb_pts_short'] + '</span>';
+                if (d.new_zone) html += '<span class="mult-flag zone">' + T['new_zone'] + '</span>';
+                if (d.new_country) html += '<span class="mult-flag ctry">' + T['new_country'] + '</span>';
+                box.innerHTML = html;
+                box.style.display = 'block';
+            }).catch(() => { box.style.display = 'none'; });
     }
 
     // === Auto-detect band from frequency ===
@@ -1375,6 +1695,11 @@
             document.getElementById('edit-qso-name').value = q.name || '';
             document.getElementById('edit-qso-state').value = q.state || '';
             document.getElementById('edit-qso-comment').value = q.comment || '';
+            document.getElementById('edit-qso-exch-rcvd').value = q.exch_rcvd || '';
+            document.getElementById('edit-qso-exch-row').style.display =
+                currentContest ? '' : 'none';
+            document.getElementById('edit-qso-exch-label').textContent =
+                isCqWw(currentContest) ? T['cq_zone_rcvd'] : T['exch_rcvd'];
 
             // Load P2P parks
             editP2PParks = [];
@@ -1466,6 +1791,7 @@
                 name: document.getElementById('edit-qso-name').value,
                 state: document.getElementById('edit-qso-state').value,
                 comment: document.getElementById('edit-qso-comment').value,
+                exch_rcvd: padZoneStr(document.getElementById('edit-qso-exch-rcvd').value, currentContest),
                 sig: editP2PParks.length > 0 ? 'POTA' : '',
                 sig_info: editP2PParks.map(p => p.ref).join(','),
             })

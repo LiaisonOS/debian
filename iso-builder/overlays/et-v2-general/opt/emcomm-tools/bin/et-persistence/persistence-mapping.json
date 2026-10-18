@@ -181,6 +181,19 @@
           "required": false
         }
       ]
+    },
+    "x11vnc": {
+      "name": "x11vnc (VNC server)",
+      "persistence_subdir": "configs/x11vnc",
+      "configs": [
+        {
+          "source": "passwd",
+          "target": "${HOME}/.vnc/passwd",
+          "type": "file",
+          "required": false,
+          "description": "x11vnc VNC server password (set with 'x11vnc -storepasswd'); persisted across USB reboots and saved configs"
+        }
+      ]
     }
   }
 }

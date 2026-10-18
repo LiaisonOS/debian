@@ -66,7 +66,8 @@ if not (ET_BASE / "conf" / "radios.d").exists():
             break
         cwd = cwd.parent
 
-USER_CONF = Path.home() / ".config" / "emcomm-tools" / "user.json"
+USER_CONF = Path.home() / ".config" / "emcomm-tools" / "user.json"        # legacy path (pre-rebrand)
+USER_CONF_NEW = Path.home() / ".config" / "liaisonos" / "user.json"       # current path — refactored apps (QtDashboard, et-user, pat) read this
 RADIOS_DIR = ET_BASE / "conf" / "radios.d"
 ACTIVE_RADIO_LINK = RADIOS_DIR / "active-radio.json"
 TILESET_DIR = Path.home() / ".local/share/emcomm-tools/mbtileserver/tilesets"
@@ -509,21 +510,27 @@ def seed_navit_from_skel():
     return results
 
 def load_user_config():
-    if USER_CONF.exists():
-        try:
-            with open(USER_CONF) as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"[load_user_config] Failed to read {USER_CONF}: {e}")
+    # Prefer the current liaisonos path; fall back to the legacy emcomm-tools one.
+    for src in (USER_CONF_NEW, USER_CONF):
+        if src.exists():
+            try:
+                with open(src) as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"[load_user_config] Failed to read {src}: {e}")
     return {'callsign': 'N0CALL', 'grid': '', 'latitude': '', 'longitude': '', 'winlinkPasswd': ''}
 
 def save_user_config(config):
-    try:
-        USER_CONF.parent.mkdir(parents=True, exist_ok=True)
-        with open(USER_CONF, 'w') as f:
-            json.dump(config, f, indent=2)
-    except Exception as e:
-        print(f"[SAVE_CONFIG] ERROR: {e}")
+    # Write BOTH the current (liaisonos) and legacy (emcomm-tools) user.json so
+    # refactored apps (QtDashboard, et-user, pat) AND not-yet-migrated tools all
+    # see the same config. Drop the legacy write once every tool reads liaisonos.
+    for dest in (USER_CONF_NEW, USER_CONF):
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            with open(dest, 'w') as f:
+                json.dump(config, f, indent=2)
+        except Exception as e:
+            print(f"[SAVE_CONFIG] ERROR writing {dest}: {e}")
 
 def set_active_radio(radio_id):
     if not radio_id or radio_id == 'none':
@@ -1510,8 +1517,8 @@ def user_setup():
                 config['longitude'] = float(lon_str)
             except ValueError:
                 pass
-        if request.form.get('winlink_password'):
-            config['winlinkPasswd'] = request.form.get('winlink_password')
+        if request.form.get('password'):
+            config['winlinkPasswd'] = request.form.get('password')
         save_user_config(config)
         # Also save to session for persistence
         session['callsign'] = config['callsign']
