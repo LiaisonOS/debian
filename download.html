@@ -10,10 +10,10 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://liaisonos.com/download.html">
   <meta property="og:title" content="Download LiaisonOS — Ham Radio Linux ISO">
-  <meta property="og:description" content="Download LiaisonOS v2.4.6 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
+  <meta property="og:description" content="Download LiaisonOS v2.4.7 — Debian 13 live and installable ISO for ham radio emergency digital communications. Boot from USB, connect your radio, and you are on the air.">
   <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Download LiaisonOS v2.4.6">
+  <meta name="twitter:title" content="Download LiaisonOS v2.4.7">
   <meta name="twitter:description" content="Debian 13 live ISO for ham radio EMCOMM. QtDashboard, Touch Mode, JS8Call, Pat-Winlink, VARA, VarAC, fldigi — ready to go.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -214,39 +214,36 @@
         <strong>Continuous development notice —</strong> LiaisonOS uses an agile, continuous-release model. Each version is fully functional. <strong>Always boot and test from USB first</strong> before committing to a permanent install.
       </div>
       <div class="whats-new">
-        <p class="whats-new-title">What's new in v2.4.6</p>
+        <p class="whats-new-title">What's new in v2.4.7</p>
+        <ul>
+          <li><strong>Chromium browser — for the sites Firefox struggles with.</strong> LiaisonOS now includes Chromium alongside Firefox, for services that don't behave well in Firefox such as Microsoft Teams. As with Firefox, your Chromium profile — logins, cookies and bookmarks — is saved and restored with your persistence data, so you stay signed in across reboots.</li>
+          <li><strong>Field Logger — QRZ.com lookup and a growing callsign database.</strong> When you're online, the logger can look up a callsign on QRZ.com (after a one-time credentials setup) to fill in the name, location and CQ zone — and those stations now appear on the map. Every QSO you log also builds a local callsign database, so repeat contacts fill in instantly even offline, and a refresh tool can backfill locations for your existing log.</li>
+          <li><strong>Wider radio-interface support — SignaLink, Kenwood IF-232C and the TS-850.</strong> LiaisonOS now auto-detects the Tigertronics SignaLink USB (audio) and the Kenwood IF-232C USB CAT interface, and ships a ready-made <strong>Kenwood TS-850</strong> profile — so a classic rig with a SignaLink for audio and a serial CAT link works out of the box.</li>
+          <li><strong>Custom radio profiles survive a reboot.</strong> Radio profiles you create in the Radio Configuration editor are now saved with your persistence data and restored on the next boot, instead of being lost.</li>
+          <li><strong>VARA HF and VARA FM updated to 4.9.1 and 4.4.1.</strong> The bundled VARA HF and VARA FM soundcard modems are refreshed to the latest releases.</li>
+        </ul>
+        <p class="whats-new-title" style="margin-top: 1rem;">Previously in v2.4.6</p>
         <ul>
           <li><strong>Field Logger — contest logging with a live score.</strong> An optional contest layer sits on top of POTA: pick a contest when you start a session (CQ WW SSB/CW/RTTY, ARRL Field Day, or a custom one). For CQ WW you get a fast CQ-zone picker (01–39, plus “??” to flag one for QRZ look-up later), sticky RST and zone between QSOs, and a per-band duplicate guard that asks before you log a dupe. A live scoreboard — QSOs, points, zones, countries, score — climbs as you log, computed to the CQ WW rules from a bundled offline country file. Finish with a one-click <strong>Cabrillo 3.0</strong> export. A session can be POTA, contest, or both; ADIF export is unchanged.</li>
           <li><strong>BBS (LinBPQ) stops and restarts cleanly.</strong> Stopping the BBS mode now fully shuts LinBPQ down with no leftover process, and a restart waits for its Telnet and web-admin ports to free before relaunching — so the node comes back on the first try instead of needing several attempts.</li>
           <li><strong>First-run wizard fixes.</strong> The initial setup now reliably saves your Winlink password, and your callsign and grid are picked up by the dashboard immediately.</li>
         </ul>
-        <p class="whats-new-title" style="margin-top: 1rem;">Previously in v2.4.5</p>
-        <ul>
-          <li><strong>Radio Configuration — set up and test your rig without a terminal.</strong> Four new in-editor tools: <strong>Find…</strong> fills the Hamlib Rig ID by searching vendor/model; <strong>Test CAT</strong> reads your live frequency to confirm the CAT link; <strong>PTT</strong> keys the rig to test transmit (turns green “ON AIR”, auto-releases after 10&nbsp;s); and <strong>Detect COM</strong> finds the correct Wine COM port for VARA FM automatically. Every radio profile now defaults to the right port, so VARA FM reaches the rig without guesswork.</li>
-          <li><strong>Field Logger — your map follows the park you're activating.</strong> Activate a POTA park and your position on the map (and the distance/bearing math) reflects the park instead of your home grid; non-POTA sessions fall back to your profile grid, and existing sessions can be retrofitted.</li>
-          <li><strong>VarAC updated to v16.8.1.</strong> The bundled VarAC HF digital chat and messaging application (over VARA HF) is refreshed to v16.8.1.</li>
-        </ul>
-        <p class="whats-new-title" style="margin-top: 1rem;">Previously in v2.4.4</p>
-        <ul>
-          <li><strong>QtAprsBeacon goes online — APRS-IS + full i-gate.</strong> Beacon and send APRS messages over the internet (APRS-IS) as well as RF — both at once — and bridge them as an i-gate: packets heard on RF are forwarded up to APRS-IS, and messages for stations recently heard on RF are gated back down. New fixed-station tools too: a time-based beacon interval, a saved home position that survives restarts, a live traffic Monitor, and extra map symbols (House/VHF, Digipeater, I-gate, EOC).</li>
-          <li><strong>Field Logger — log a pile-up in one entry.</strong> Enter several callsigns (and several parks) at once; each callsign × park becomes its own QSO and ADIF record — ideal for park-to-park and busy activations.</li>
-        </ul>
       </div>
 
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.6.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.7.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label"><span class="il il-en">Latest release</span><span class="il il-fr">Dernière version</span></p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.4.6.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.4.7.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; <span class="il il-en">Released</span> <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.6</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.7</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">License</p><p class="stat-val">Ms-PL</p></div>
@@ -257,8 +254,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.4.6</span>
-      <span class="checksum-val" id="hashval">cf2e23bb52c44d3e847fd289378a6cffad3e6b243355f4c31f827ef37187b4c6</span>
+      <span class="checksum-label">SHA256 - v2.4.7</span>
+      <span class="checksum-val" id="hashval">ecd2368b08c369978e8526658bce5f3f4043e174c513f695d1e7c759ea700540</span>
       <button class="copy-btn" onclick="copyHash('hashval')"><span class="il il-en">Copy</span><span class="il il-fr">Copier</span></button>
     </div>
 
@@ -274,10 +271,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.4.6.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.4.7.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.6.iso">⬇ Download</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.7.iso">⬇ Download</a></td>
         </tr>
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span></td>
