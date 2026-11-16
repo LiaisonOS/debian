@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mesh25 — Messagerie maillée signée sur les ondes · LiaisonOS</title>
+  <meta name="description" content="Mesh25 — une station de messagerie maillée radioamateur native en C++/Qt pour LiaisonOS : clavardage, courriel différé, mise en attente, balises, routage par relais et carte réseau sur radio par paquet AX.25/KISS, avec signature Ed25519.">
+  <link rel="canonical" href="https://liaisonos.com/mesh25_fr.html">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://liaisonos.com/mesh25_fr.html">
+  <meta property="og:title" content="Mesh25 — Messagerie maillée signée sur les ondes">
+  <meta property="og:description" content="Station de messagerie maillée native C++/Qt pour LiaisonOS — clavardage, courriel, mise en attente, balises, routage par relais et carte réseau sur AX.25/KISS, avec signature Ed25519.">
+  <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    /* NAV */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none; font-family: 'IBM Plex Sans', sans-serif;
+    }
+    .lang-link:hover { background: #1f4432; color: #7de8b0; }
+
+    /* HERO */
+    .hero-section { max-width: 760px; margin: 0 auto; padding: 4rem 2rem 2rem; text-align: center; }
+    .hero-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: #5ab887; margin-bottom: 1rem; }
+    .hero-title { font-size: 46px; font-weight: 500; line-height: 1.1; margin-bottom: 0.5rem; }
+    .hero-title span { color: #7de8b0; }
+    .hero-tagline { font-size: 14px; color: #6a9a7a; font-style: italic; letter-spacing: 0.04em; margin-bottom: 1.5rem; }
+    .hero-sub { font-size: 15px; color: #9dbfad; line-height: 1.7; margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+    /* BADGES */
+    .badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-family: 'IBM Plex Mono', monospace;
+      background: #16231a; border: 1px solid rgba(125,232,176,0.15);
+      border-radius: 4px; padding: 4px 10px; color: #9dbfad;
+    }
+    .badge span { color: #7de8b0; font-weight: 500; }
+
+    /* CONTENT */
+    .content { max-width: 760px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+    .section { margin-bottom: 2.5rem; }
+    .section-title {
+      font-size: 18px; font-weight: 500; color: #e8f5ee;
+      margin-bottom: 1rem; padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(125,232,176,0.12);
+    }
+    .section-title span { color: #7de8b0; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.7; margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+
+    /* FEATURE GRID */
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px; margin-top: 1rem;
+    }
+    .feature-card { background: #16231a; border: 1px solid rgba(125,232,176,0.1); border-radius: 8px; padding: 12px 14px; }
+    .feature-card-icon { font-size: 16px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 3px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    .callout {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.15);
+      border-left: 3px solid #7de8b0; border-radius: 6px;
+      padding: 14px 16px; margin-top: 1rem;
+    }
+    .callout p { margin-bottom: 0.5rem; }
+    .callout p:last-child { margin-bottom: 0; }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #5ab887; }
+    footer a:hover { color: #7de8b0; }
+    code { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #a8f0cc; background: #16231a; padding: 1px 5px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index_fr.html">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="index_fr.html">Accueil</a>
+    <a href="download_fr.html">Télécharger</a>
+    <a href="blog/index_fr.html">Blog</a>
+    <a href="https://github.com/LiaisonOS/Mesh25" target="_blank" rel="noopener">GitHub</a>
+    <a href="mesh25.html" class="lang-link">🇨🇦 EN</a>
+  </div>
+</nav>
+
+<div class="hero-section">
+  <div class="hero-eyebrow">LiaisonOS · Messagerie maillée</div>
+  <h1 class="hero-title">Mesh<span>25</span></h1>
+  <p class="hero-tagline">Du texte authentifié sur les ondes amateurs — sans Internet, sans infrastructure.</p>
+  <p class="hero-sub">Une station de messagerie native en C++/Qt pour LiaisonOS : clavardage, courriel, balises et une carte réseau en direct qui circulent sur la radio par paquet ordinaire, signés avec des clés Ed25519 modernes.</p>
+  <div class="badges">
+    <span class="badge">🔑 signé <span>Ed25519</span></span>
+    <span class="badge">📻 <span>AX.25 / KISS</span></span>
+    <span class="badge">⚙ <span>C++ / Qt</span></span>
+    <span class="badge">📄 libre <span>MIT</span></span>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="section">
+    <h2 class="section-title">Qu'est-ce que <span>Mesh25</span>?</h2>
+    <p><strong>Mesh25</strong> est une station de messagerie pour la radio amateur. Elle permet à un groupe d'opérateurs de <strong>clavarder, s'échanger du courriel et voir qui est joignable</strong> — entièrement sur les ondes, en radio par paquet ordinaire, <strong>sans Internet et sans répéteur ni serveur au milieu</strong>. Si vous entendez une autre station, vous pouvez lui écrire; sinon, Mesh25 peut acheminer votre message <em>à travers</em> les stations intermédiaires.</p>
+    <p>Elle est conçue pour les <strong>communications d'urgence (EMCOMM)</strong> : quand le réseau cellulaire et Internet sont hors service, quelques radios sous Mesh25 forment par elles-mêmes un petit réseau texte robuste.</p>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Ce qu'elle <span>fait</span></h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-card-icon">💬</div>
+        <div class="feature-card-title">Clavardage</div>
+        <div class="feature-card-desc">Un salon ouvert « CQ » plus des conversations directes, de personne à personne, avec toute station entendue.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">✉️</div>
+        <div class="feature-card-title">Courriel différé</div>
+        <div class="feature-card-desc">Rédigez des messages avec objet et corps; ils sont livrés dès que le destinataire est sur les ondes.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">📦</div>
+        <div class="feature-card-title">Mise en attente</div>
+        <div class="feature-card-desc">Laissez du courriel chez une station qui sert de boîte aux lettres; il est remis quand le destinataire se présente.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">📶</div>
+        <div class="feature-card-title">Balises</div>
+        <div class="feature-card-desc">Chaque station annonce périodiquement son locator et les stations qu'elle entend.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">🛰️</div>
+        <div class="feature-card-title">Routage par relais</div>
+        <div class="feature-card-desc">Les messages sautent de station en station pour atteindre un correspondant hors de portée directe (le Pathfinder).</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">🕸️</div>
+        <div class="feature-card-title">Carte réseau</div>
+        <div class="feature-card-desc">Un graphe « qui-entend-qui » en direct, placé par locator, avec la distance de chaque station.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Comment ça <span>marche</span></h2>
+    <p>Mesh25 parle le même langage radio que toutes les autres applications paquet — des <strong>trames AX.25 via un TNC KISS</strong> — elle fonctionne donc avec un TNC à carte son (Direwolf), un TNC KISS USB ou une radio KISS Bluetooth. C'est un seul programme autonome : aucun service additionnel, aucune dépendance à Internet.</p>
+    <p>Chaque message peut être <strong>signé cryptographiquement</strong> avec la clé de l'expéditeur, pour garantir qu'un message provient bien de l'indicatif qu'il annonce. Mesh25 utilise <strong>Ed25519</strong>, un schéma de signature moderne et rapide. Les clés sont <em>publiques</em> — elles prouvent l'identité, elles ne cachent pas le texte (la radio amateur doit rester en clair). À la première écoute d'une station, sa clé est apprise automatiquement; si cette clé change un jour, vous recevez une alerte.</p>
+    <div class="callout">
+      <p><strong>Pourquoi « 25 »?</strong> C'est un clin d'œil à <strong>AX.25</strong> — le protocole radio par paquet sur lequel Mesh25 circule — et, heureux hasard, un écho des signatures <strong>Ed25519</strong> en son cœur.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Origine et <span>crédits</span></h2>
+    <p>Mesh25 est né de <strong>QtChattervox</strong>, une interface Qt pour <strong>ChatterVox</strong> de <strong>Brannon Dorsey</strong> — un protocole libre de messagerie texte signée pour la radio amateur par paquet. ChatterVox a fait la preuve du concept et son format clair et bien documenté a rendu ce travail possible.</p>
+    <p>Mesh25 est une <strong>réécriture complète en C++</strong> : il ne contient aucun code source de ChatterVox, utilise son propre format de paquet et remplace la cryptographie ECDSA P-192 de ChatterVox par Ed25519. Il conserve l'esprit — du texte authentifié sur les ondes amateurs — et nous remercions chaleureusement ChatterVox pour la fondation et l'inspiration. Merci, Brannon Dorsey.</p>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Logiciel <span>libre</span></h2>
+    <p>Mesh25 est publié sous <strong>licence MIT</strong> et développé ouvertement sur <a href="https://github.com/LiaisonOS/Mesh25" target="_blank" rel="noopener">github.com/LiaisonOS/Mesh25</a>. Il est intégré à <a href="index_fr.html">LiaisonOS</a>, la distribution bilingue basée sur Debian pour les communications d'urgence en radio amateur. Réalisé avec Qt, OpenSSL (Ed25519) et zlib.</p>
+  </div>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Québec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>

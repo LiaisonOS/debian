@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mesh25 — Signed mesh messaging over ham radio · LiaisonOS</title>
+  <meta name="description" content="Mesh25 — a native C++/Qt ham-radio mesh messaging station for LiaisonOS: chat, store-and-forward mail, parking, beacons, relay routing and a network map over AX.25/KISS packet radio, with Ed25519 message signing.">
+  <link rel="canonical" href="https://liaisonos.com/mesh25.html">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://liaisonos.com/mesh25.html">
+  <meta property="og:title" content="Mesh25 — Signed mesh messaging over ham radio">
+  <meta property="og:description" content="Native C++/Qt mesh messaging station for LiaisonOS — chat, mail, parking, beacons, relay routing and a network map over AX.25/KISS, with Ed25519 signing.">
+  <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #0f1a13; color: #e8f5ee; min-height: 100vh; }
+
+    /* NAV */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid rgba(125,232,176,0.12);
+      position: sticky; top: 0; background: rgba(15,26,19,0.96);
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #e8f5ee; }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: #1a3a2a; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(125,232,176,0.25);
+    }
+    .nav-logo-text { font-size: 15px; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { font-size: 13px; color: #9dbfad; text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: #7de8b0; }
+    .lang-link {
+      font-size: 12px; padding: 3px 10px; border-radius: 4px;
+      border: 1px solid rgba(125,232,176,0.22); background: #1a3a2a;
+      color: #7de8b0; text-decoration: none; font-family: 'IBM Plex Sans', sans-serif;
+    }
+    .lang-link:hover { background: #1f4432; color: #7de8b0; }
+
+    /* HERO */
+    .hero-section { max-width: 760px; margin: 0 auto; padding: 4rem 2rem 2rem; text-align: center; }
+    .hero-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: #5ab887; margin-bottom: 1rem; }
+    .hero-title { font-size: 46px; font-weight: 500; line-height: 1.1; margin-bottom: 0.5rem; }
+    .hero-title span { color: #7de8b0; }
+    .hero-tagline { font-size: 14px; color: #6a9a7a; font-style: italic; letter-spacing: 0.04em; margin-bottom: 1.5rem; }
+    .hero-sub { font-size: 15px; color: #9dbfad; line-height: 1.7; margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+    /* BADGES */
+    .badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-family: 'IBM Plex Mono', monospace;
+      background: #16231a; border: 1px solid rgba(125,232,176,0.15);
+      border-radius: 4px; padding: 4px 10px; color: #9dbfad;
+    }
+    .badge span { color: #7de8b0; font-weight: 500; }
+
+    /* CONTENT */
+    .content { max-width: 760px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+    .section { margin-bottom: 2.5rem; }
+    .section-title {
+      font-size: 18px; font-weight: 500; color: #e8f5ee;
+      margin-bottom: 1rem; padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(125,232,176,0.12);
+    }
+    .section-title span { color: #7de8b0; }
+    p { font-size: 14px; color: #9dbfad; line-height: 1.7; margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #5ab887; text-decoration: none; }
+    a:hover { color: #7de8b0; }
+    strong { color: #e8f5ee; font-weight: 500; }
+
+    /* FEATURE GRID */
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px; margin-top: 1rem;
+    }
+    .feature-card { background: #16231a; border: 1px solid rgba(125,232,176,0.1); border-radius: 8px; padding: 12px 14px; }
+    .feature-card-icon { font-size: 16px; margin-bottom: 6px; }
+    .feature-card-title { font-size: 13px; font-weight: 500; color: #e8f5ee; margin-bottom: 3px; }
+    .feature-card-desc { font-size: 12px; color: #6a9a7a; line-height: 1.5; }
+
+    .callout {
+      background: #16231a; border: 1px solid rgba(125,232,176,0.15);
+      border-left: 3px solid #7de8b0; border-radius: 6px;
+      padding: 14px 16px; margin-top: 1rem;
+    }
+    .callout p { margin-bottom: 0.5rem; }
+    .callout p:last-child { margin-bottom: 0; }
+
+    footer { border-top: 1px solid rgba(125,232,176,0.1); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: #6a9a7a; }
+    footer a { color: #5ab887; }
+    footer a:hover { color: #7de8b0; }
+    code { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #a8f0cc; background: #16231a; padding: 1px 5px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">
+    <div class="nav-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#7de8b0" stroke-width="1.5"/>
+        <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="#7de8b0" opacity="0.7"/>
+        <circle cx="14" cy="14" r="2.5" fill="#7de8b0"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">LiaisonOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="download.html">Download</a>
+    <a href="blog/index.html">Blog</a>
+    <a href="https://github.com/LiaisonOS/Mesh25" target="_blank" rel="noopener">GitHub</a>
+    <a href="mesh25_fr.html" class="lang-link">🇫🇷 FR</a>
+  </div>
+</nav>
+
+<div class="hero-section">
+  <div class="hero-eyebrow">LiaisonOS · Mesh messaging</div>
+  <h1 class="hero-title">Mesh<span>25</span></h1>
+  <p class="hero-tagline">Authenticated text over amateur radio — no internet, no infrastructure.</p>
+  <p class="hero-sub">A native C++/Qt messaging station for LiaisonOS: chat, mail, beacons and a live network map that ride plain packet radio, signed with modern Ed25519 keys.</p>
+  <div class="badges">
+    <span class="badge">🔑 <span>Ed25519</span> signed</span>
+    <span class="badge">📻 <span>AX.25 / KISS</span></span>
+    <span class="badge">⚙ <span>C++ / Qt</span></span>
+    <span class="badge">📄 <span>MIT</span> open source</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="section">
+    <h2 class="section-title">What is <span>Mesh25</span>?</h2>
+    <p><strong>Mesh25</strong> is a messaging station for amateur radio. It lets a group of operators <strong>chat, send mail, and see who is reachable</strong> — entirely over the air on ordinary packet radio, with <strong>no internet and no repeater or server in the middle</strong>. If you can hear another station, you can message it; if you can't, Mesh25 can route your message <em>through</em> the stations in between.</p>
+    <p>It is built for <strong>emergency communications (EMCOMM)</strong>: when the cell network and internet are down, a handful of radios running Mesh25 form a small, resilient text network on their own.</p>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">What it <span>does</span></h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-card-icon">💬</div>
+        <div class="feature-card-title">Chat</div>
+        <div class="feature-card-desc">An open "CQ" room plus direct one-to-one conversations with any station you hear.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">✉️</div>
+        <div class="feature-card-title">Store-and-forward mail</div>
+        <div class="feature-card-desc">Compose messages with a subject and body; they are delivered when the recipient is on the air.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">📦</div>
+        <div class="feature-card-title">Parking (mailbox)</div>
+        <div class="feature-card-desc">Leave mail at a station that acts as a mailbox; it is handed over when the recipient shows up.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">📶</div>
+        <div class="feature-card-title">Beacons</div>
+        <div class="feature-card-desc">Each station periodically announces its grid location and who it can hear.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">🛰️</div>
+        <div class="feature-card-title">Relay routing</div>
+        <div class="feature-card-desc">Messages hop through intermediate stations to reach someone out of direct range (the Pathfinder).</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">🕸️</div>
+        <div class="feature-card-title">Network map</div>
+        <div class="feature-card-desc">A live "who-hears-whom" graph of the net, placed by grid, with per-station distance.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">How it <span>works</span></h2>
+    <p>Mesh25 speaks the same radio language as every other packet application — <strong>AX.25 frames over a KISS TNC</strong> — so it runs with a sound-card TNC (Direwolf), a USB KISS TNC, or a Bluetooth KISS radio. It is a single self-contained program: no extra services, no internet dependency.</p>
+    <p>Every message can be <strong>cryptographically signed</strong> with the sender's key, so you can trust that a message really came from the callsign it claims. Mesh25 uses <strong>Ed25519</strong>, a fast, modern signature scheme. Keys are <em>public</em> — they prove identity, they don't hide the text (amateur radio must stay in the clear). The first time you hear a station, its key is learned automatically; if that key ever changes, you get an alert.</p>
+    <div class="callout">
+      <p><strong>Why "25"?</strong> It is a nod to <strong>AX.25</strong> — the packet-radio protocol Mesh25 rides on — and it happily echoes the <strong>Ed25519</strong> signatures at its core.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Origin &amp; <span>credit</span></h2>
+    <p>Mesh25 grew out of <strong>QtChattervox</strong>, a Qt front-end to <strong>ChatterVox</strong> by <strong>Brannon Dorsey</strong> — an open-source signed text-messaging protocol for amateur packet radio. ChatterVox proved the concept and its clean, well-documented format is what made this work possible.</p>
+    <p>Mesh25 is a <strong>clean-sheet, all-C++ reimplementation</strong>: it contains no ChatterVox source code, uses its own packet format, and upgrades the cryptography from ChatterVox's ECDSA P-192 to Ed25519. It keeps the spirit — authenticated text over amateur radio — and we gratefully acknowledge ChatterVox as the foundation and the inspiration. Thank you, Brannon Dorsey.</p>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Open <span>source</span></h2>
+    <p>Mesh25 is released under the <strong>MIT License</strong> and developed in the open at <a href="https://github.com/LiaisonOS/Mesh25" target="_blank" rel="noopener">github.com/LiaisonOS/Mesh25</a>. It ships as part of <a href="index.html">LiaisonOS</a>, the bilingual Debian-based distribution for ham-radio emergency communications. Built with Qt, OpenSSL (Ed25519) and zlib.</p>
+  </div>
+
+</div>
+
+<footer>
+  <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
+</footer>
+
+</body>
+</html>
