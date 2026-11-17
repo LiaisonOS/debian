@@ -240,6 +240,7 @@
   <div class="nav-links">
     <a href="index.html" class="active"><span class="il il-en">Home</span><span class="il il-fr">Accueil</span></a>
     <a href="download.html"><span class="il il-en">Download</span><span class="il il-fr">Télécharger</span></a>
+    <a href="mesh25.html">Mesh25</a>
     <a href="blog/index.html">Blog</a>
     <a href="https://va2ops.ca">VA2OPS</a>
     <a href="index_fr.html" class="lang-link">🇫🇷 FR</a>
@@ -264,7 +265,7 @@
   </div>
 
   <div class="badges">
-    <span class="badge"><span>v2.4.7.1</span></span>
+    <span class="badge"><span>v2.4.8</span></span>
     <span class="badge">Debian <span>13</span></span>
     <span class="badge">x86_64</span>
     <span class="badge">Ms-PL <span>License</span></span>
@@ -364,7 +365,7 @@
       <div class="feature-card">
         <div class="feature-card-icon">🖥️</div>
         <div class="feature-card-title"><span class="il il-en">Web Dashboard</span><span class="il il-fr">Tableau de bord</span></div>
-        <div class="feature-card-desc"><span class="il il-en">16 one-click operational modes</span><span class="il il-fr">16 modes opérationnels en un clic</span></div>
+        <div class="feature-card-desc"><span class="il il-en">17 one-click operational modes</span><span class="il il-fr">17 modes opérationnels en un clic</span></div>
       </div>
       <div class="feature-card">
         <div class="feature-card-icon">🔌</div>
@@ -397,7 +398,13 @@
   <!-- WHATS NEW -->
   <div class="section">
     <div class="lang-en">
-      <h2 class="section-title">What's new <span class="new-badge">v2.4.7 / v2.4.7.1</span></h2>
+      <h2 class="section-title">What's new <span class="new-badge">v2.4.8</span></h2>
+
+      <div class="card" style="border-color: rgba(125,232,176,0.35); background: rgba(125,232,176,0.05);">
+        <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.8</span> &nbsp; <strong>Mesh25 — a new native mesh messaging station, and two new radios.</strong> <strong>Mesh25</strong> is a self-contained chat-and-mail station that runs over ordinary packet radio with no internet in the middle: an open "CQ" room and direct messages, store-and-forward mail with a parking mailbox for off-air stations, position beacons, relay routing to reach stations out of direct range, and a live "who-hears-whom" network map. Every message can be signed with a modern <strong>Ed25519</strong> key so you can trust who sent it, and your identity is kept across reboots. It replaces the older ChatterVox chat. LiaisonOS also adds two radios as packet modems: the <strong>Kenwood TH-D72</strong> (USB KISS TNC) and the <strong>Kenwood TM-D750</strong> (Bluetooth). <a href="mesh25.html" style="color:#5ab887; font-weight:600;">Learn more about Mesh25 →</a></p>
+        <p style="margin: 0 0 12px 0;"><strong>POTACAT — Parks-on-the-Air spotting &amp; logging.</strong> The POTACAT desktop app is now bundled: live POTA spot aggregation, CAT control of your radio, QSO logging, and a built-in panadapter — launched from the applications menu, with its log and settings kept across reboots.</p>
+        <p style="margin: 0;"><strong>In development — a modern BBS reader (BBS 2.0) in QtTermTCP.</strong> A graphical layer over the classic packet terminal: browse and read BBS bulletins and messages in a clean list, post a bulletin over your live connection, and a cache that remembers each node's messages. An early preview, in active development.</p>
+      </div>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
         <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.7</span> &nbsp; <strong>Chromium browser, wider radio support, and radio profiles that survive a reboot.</strong> A second browser — <strong>Chromium</strong> — joins Firefox for the sites that misbehave in Firefox (Microsoft Teams and similar), with its logins, cookies and bookmarks saved and restored like Firefox. LiaisonOS now auto-detects the <strong>Tigertronics SignaLink</strong> (audio) and <strong>Kenwood IF-232C</strong> (CAT) and ships a ready-made <strong>Kenwood TS-850</strong> profile — a classic rig works out of the box. And custom radio profiles you create in the Radio Configuration editor now <strong>survive a reboot</strong>. The <strong>Field Logger</strong> adds <strong>QRZ.com lookup</strong>, map pins for resolved stations, and a growing offline callsign database. Plus <strong>VARA HF and VARA FM are updated to 4.9.1 and 4.4.1</strong>. And in <strong>v2.4.7.1</strong>, the <strong>Mercury HF modem</strong> now starts up reliably across more radios — including the Xiegu G90 and QRP Labs QMX — with its companion controls working again.</p>
@@ -405,7 +412,13 @@
 
     </div>
     <div class="lang-fr">
-      <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.7 / v2.4.7.1</span></h2>
+      <h2 class="section-title">Nouveautés <span class="new-badge">v2.4.8</span></h2>
+
+      <div class="card" style="border-color: rgba(125,232,176,0.35); background: rgba(125,232,176,0.05);">
+        <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.8</span> &nbsp; <strong>Mesh25 — une nouvelle station de messagerie maillée native, et deux nouvelles radios.</strong> <strong>Mesh25</strong> est une station de clavardage et de courriel autonome qui fonctionne sur la radio par paquet ordinaire, sans Internet au milieu : un salon ouvert « CQ » et des messages directs, du courriel en stockage-et-retransmission avec une boîte aux lettres de mise en attente pour les stations hors des ondes, des balises de position, du routage par relais pour atteindre les stations hors de portée directe, et une carte réseau « qui-entend-qui » en direct. Chaque message peut être signé avec une clé <strong>Ed25519</strong> moderne pour faire confiance à l'expéditeur, et votre identité est conservée d'un redémarrage à l'autre. Elle remplace l'ancien clavardage ChatterVox. LiaisonOS ajoute aussi deux radios comme modems paquet : le <strong>Kenwood TH-D72</strong> (TNC KISS USB) et le <strong>Kenwood TM-D750</strong> (Bluetooth). <a href="mesh25_fr.html" style="color:#5ab887; font-weight:600;">En savoir plus sur Mesh25 →</a></p>
+        <p style="margin: 0 0 12px 0;"><strong>POTACAT — repérage et journal Parks on the Air.</strong> L'application POTACAT est maintenant incluse : agrégation de spots POTA en direct, contrôle CAT de votre radio, journal de QSO et panadapteur intégré — à lancer depuis le menu des applications, avec journal et réglages conservés d'un redémarrage à l'autre.</p>
+        <p style="margin: 0;"><strong>En développement — un lecteur BBS moderne (BBS 2.0) dans QtTermTCP.</strong> Une couche graphique par-dessus le terminal paquet classique : parcourir et lire les bulletins et messages du BBS dans une liste claire, publier un bulletin sur votre connexion active, et un cache qui mémorise les messages de chaque nœud. Un aperçu en développement actif.</p>
+      </div>
 
       <div class="card" style="border-color: rgba(255,165,0,0.35); background: rgba(255,165,0,0.04);">
         <p style="margin: 0 0 12px 0;"><span class="new-badge">v2.4.7</span> &nbsp; <strong>Navigateur Chromium, support radio élargi, et des profils radio qui survivent à un redémarrage.</strong> Un deuxième navigateur — <strong>Chromium</strong> — rejoint Firefox pour les sites qui fonctionnent mal dans Firefox (Microsoft Teams et autres), avec ses connexions, témoins et signets sauvegardés et restaurés comme Firefox. LiaisonOS détecte maintenant automatiquement le <strong>SignaLink de Tigertronics</strong> (audio) et le <strong>Kenwood IF-232C</strong> (CAT), et inclut un profil <strong>Kenwood TS-850</strong> prêt à l'emploi — une radio classique fonctionne dès le départ. Et les profils radio personnalisés que vous créez dans l'éditeur de Configuration Radio <strong>survivent maintenant à un redémarrage</strong>. Le <strong>Journal de Terrain</strong> ajoute la <strong>recherche QRZ.com</strong>, des épingles sur la carte pour les stations trouvées, et une base de données d'indicatifs hors ligne qui s'enrichit. De plus, <strong>VARA HF et VARA FM passent aux versions 4.9.1 et 4.4.1</strong>. Et dans la <strong>v2.4.7.1</strong>, le <strong>modem HF Mercury</strong> démarre maintenant de façon fiable sur plus de radios — dont le Xiegu G90 et le QRP Labs QMX — avec ses contrôles compagnons qui refonctionnent.</p>
@@ -420,7 +433,7 @@
     <a class="card" href="blog/et-logger-contest.html" style="display:block; border-color: rgba(90,184,135,0.35); background: rgba(90,184,135,0.05); text-decoration:none; color:inherit;">
       <p style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5ab887; margin:0 0 6px 0;">2026-10-18 &middot; Latest article</p>
       <h3 style="margin:0 0 8px 0;">Contest logging in the Field Logger — CQ WW scoring, live</h3>
-      <p style="margin:0 0 12px 0;">New in v2.4.6: an optional contest layer on top of POTA. A CQ-zone picker, per-band dupe guard, a <strong>live scoreboard</strong> (points, zones, countries, score) scored fully offline, and one-click <strong>Cabrillo 3.0</strong> export — a session can be POTA, contest, or both.</p>
+      <p style="margin:0 0 12px 0;">An optional contest layer on top of POTA. A CQ-zone picker, per-band dupe guard, a <strong>live scoreboard</strong> (points, zones, countries, score) scored fully offline, and one-click <strong>Cabrillo 3.0</strong> export — a session can be POTA, contest, or both.</p>
       <span style="color:#5ab887; font-weight:600;">Read the article →</span>
     </a>
   </div>
@@ -453,19 +466,19 @@
 
   <!-- OPERATIONAL MODES -->
   <div class="section">
-    <div class="lang-en"><h2 class="section-title">16 operational modes</h2></div>
-    <div class="lang-fr"><h2 class="section-title">16 modes opérationnels</h2></div>
+    <div class="lang-en"><h2 class="section-title">17 operational modes</h2></div>
+    <div class="lang-fr"><h2 class="section-title">17 modes opérationnels</h2></div>
     <div class="modes-grid">
       <div class="mode-group">
         <p class="mode-group-title">Winlink</p>
         <ul>
-          <li>VARA HF</li><li>VARA FM</li><li>Packet</li><li>ARDOP</li>
+          <li>VARA HF</li><li>VARA FM</li><li>Packet</li><li>ARDOP</li><li>Mercury</li>
         </ul>
       </div>
       <div class="mode-group">
-        <p class="mode-group-title">Chat</p>
+        <p class="mode-group-title">Communications</p>
         <ul>
-          <li>JS8Call</li><li>VarAC</li><li>Fldigi</li><li>Chattervox</li>
+          <li>JS8Call</li><li>VarAC</li><li>Fldigi</li><li>Mesh25</li>
         </ul>
       </div>
 
@@ -476,9 +489,9 @@
         </ul>
       </div>
       <div class="mode-group">
-        <p class="mode-group-title">APRS</p>
+        <p class="mode-group-title">AX.25</p>
         <ul>
-          <li>YAAC Client</li><li>YAAC BT</li><li>APRS Digipeater</li>
+          <li>Mesh25</li><li>YAAC</li><li>Beacon</li><li>Digipeater</li>
         </ul>
       </div>
       <div class="mode-group">
@@ -517,7 +530,8 @@
         <tr><td>Elecraft</td><td>KX-2</td><td>DigiRig Mobile</td></tr>
         <tr><td>QRP Labs</td><td>QMX</td><td>USB CAT</td></tr>
         <tr><td>BG2FX</td><td>FX-4CR</td><td>USB CAT + audio</td></tr>
-        <tr><td>Kenwood</td><td>TH-D74, TH-D75</td><td>Bluetooth KISS TNC</td></tr>
+        <tr><td>Lab599</td><td>TX-500</td><td>USB CAT + audio</td></tr>
+        <tr><td>Kenwood</td><td>TH-D72, TH-D74, TH-D75, TM-D750</td><td>USB / Bluetooth KISS TNC</td></tr>
         <tr><td>BTECH</td><td>UV-PRO</td><td>Bluetooth KISS TNC</td></tr>
         <tr><td>VGC</td><td>VR-N76</td><td>Bluetooth KISS TNC</td></tr>
       </tbody>
