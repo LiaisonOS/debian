@@ -1,19 +1,24 @@
 #!/bin/bash
 set -e
 
-# Qt6 WebEngine — required by QtPatWinlink to render Pat Forms (HTML
-# templates) inside the app via embedded QWebEngineView.
+# Qt6 runtime libraries for the native Qt6 apps.
 #
-# These packages currently also arrive transitively through gpsbabel-gui,
-# but pinning them explicitly here guarantees QtPatWinlink keeps working
-# even if the gpsbabel-gui dependency graph ever changes.
+# WebEngine — required by QtPatWinlink to render Pat Forms (HTML templates)
+# inside the app via embedded QWebEngineView. These currently also arrive
+# transitively through gpsbabel-gui, but pinning them explicitly here
+# guarantees QtPatWinlink keeps working even if that dependency graph changes.
+#
+# SerialPort — required by Mesh25 (links libQt6SerialPort for USB/Bluetooth
+# KISS TNC access). Nothing else pulls it transitively, so Mesh25 would fail
+# to launch on a fresh ISO without this line.
 
-echo "=== Installing Qt6 WebEngine (for QtPatWinlink Pat Forms) ==="
+echo "=== Installing Qt6 runtime libraries (WebEngine for QtPatWinlink, SerialPort for Mesh25) ==="
 
 apt-get install -y \
   libqt6webenginecore6 \
   libqt6webenginewidgets6 \
   libqt6webengine6-data \
-  libqt6webchannel6
+  libqt6webchannel6 \
+  libqt6serialport6
 
-echo "Qt6 WebEngine installation complete"
+echo "Qt6 runtime library installation complete"

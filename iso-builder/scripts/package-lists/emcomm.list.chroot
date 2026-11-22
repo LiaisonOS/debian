@@ -54,6 +54,7 @@ python3-webview
 python3-serial
 python3-pip
 chirp
+qdmr
 qasmixer
 
 # Runtime audio libraries (dev packages installed by hooks when compiling)
@@ -85,6 +86,8 @@ qgis
 
 # Web browser
 firefox-esr
+# Chromium — for sites that misbehave on Firefox (Teams, some enterprise/MS apps)
+chromium
 
 # Wikipedia offline reader
 kiwix
