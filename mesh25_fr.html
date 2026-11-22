@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mesh25 — Messagerie maillée signée sur les ondes · LiaisonOS</title>
-  <meta name="description" content="Mesh25 — une station de messagerie maillée radioamateur native en C++/Qt pour LiaisonOS : clavardage, courriel différé, mise en attente, balises, routage par relais et carte réseau sur radio par paquet AX.25/KISS, avec signature Ed25519.">
+  <meta name="description" content="Mesh25 — une station de messagerie maillée radioamateur native en C++/Qt pour LiaisonOS : clavardage, courriel différé, mise en attente, balises, routage par relais et carte réseau géographique hors ligne sur radio par paquet AX.25/KISS, avec signature Ed25519.">
   <link rel="canonical" href="https://liaisonos.com/mesh25_fr.html">
   <meta name="robots" content="index, follow">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://liaisonos.com/mesh25_fr.html">
   <meta property="og:title" content="Mesh25 — Messagerie maillée signée sur les ondes">
-  <meta property="og:description" content="Station de messagerie maillée native C++/Qt pour LiaisonOS — clavardage, courriel, mise en attente, balises, routage par relais et carte réseau sur AX.25/KISS, avec signature Ed25519.">
+  <meta property="og:description" content="Station de messagerie maillée native C++/Qt pour LiaisonOS — clavardage, courriel, mise en attente, balises, routage par relais et carte réseau géographique hors ligne sur AX.25/KISS, avec signature Ed25519.">
   <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -97,6 +97,15 @@
     footer a { color: #5ab887; }
     footer a:hover { color: #7de8b0; }
     code { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #a8f0cc; background: #16231a; padding: 1px 5px; border-radius: 3px; }
+    .video-grid { margin-top: 1rem; max-width: 860px; }
+    .video-card p { margin: 0 0 0.5rem 0; font-weight: 600; }
+    .video-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; border: 1px solid rgba(125,232,176,0.35); background: #000; }
+    .video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .video-thumb { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; cursor: pointer; background: #000; }
+    .video-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .video-play { position: absolute; left: 50%; top: 50%; width: 76px; height: 54px; transform: translate(-50%, -50%); border-radius: 14px; background: rgba(0,0,0,0.72); transition: background 0.2s; }
+    .video-play::after { content: ""; position: absolute; left: 31px; top: 15px; border-style: solid; border-width: 12px 0 12px 20px; border-color: transparent transparent transparent #fff; }
+    .video-thumb:hover .video-play, .video-thumb:focus .video-play { background: #e00; }
   </style>
 </head>
 <body>
@@ -144,6 +153,14 @@
   </div>
 
   <div class="section">
+    <h2 class="section-title">Voyez-la <span>en ondes</span></h2>
+    <p>Un réseau Mesh25 filmé sur quatre portables, chacun avec sa propre radio : les stations envoient leur balise de position, s'enregistrent et clavardent dans les salons WX et CQ. La conversation a été scénarisée pour la caméra, mais chaque message que vous voyez est réellement passé sur les ondes en radio par paquet.</p>
+    <div class="video-grid">
+      <div class="video-card"><div class="video-frame"><button type="button" class="video-thumb" data-id="pwq7HHYdvE8" aria-label="Démo Mesh25 (français)"><img src="https://i.ytimg.com/vi/pwq7HHYdvE8/maxresdefault.jpg" alt="Démo Mesh25 (français)" loading="lazy"><span class="video-play"></span></button></div></div>
+    </div>
+  </div>
+
+  <div class="section">
     <h2 class="section-title">Ce qu'elle <span>fait</span></h2>
     <div class="feature-grid">
       <div class="feature-card">
@@ -174,7 +191,12 @@
       <div class="feature-card">
         <div class="feature-card-icon">🕸️</div>
         <div class="feature-card-title">Carte réseau</div>
-        <div class="feature-card-desc">Un graphe « qui-entend-qui » en direct, placé par locator, avec la distance de chaque station.</div>
+        <div class="feature-card-desc">Un graphe « qui-entend-qui » en direct, placé par locator, avec la distance de chaque station &mdash; ou une vraie carte géographique tirée des jeux de tuiles hors ligne, sans Internet.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">🗺️</div>
+        <div class="feature-card-title">Fond de carte et indicatifs hors ligne</div>
+        <div class="feature-card-desc">Basculez la carte vers un vrai fond de carte lu directement dans les jeux de tuiles hors ligne de LiaisonOS &mdash; sans serveur de cartes ni Internet. Cliquez sur une station pour le nom et la localité de l'opérateur selon la base d'indicatifs embarquée. Le bouton Tuiles montre les régions installées et vous laisse en choisir une.</div>
       </div>
     </div>
   </div>
@@ -205,5 +227,18 @@
   <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Québec, Canada &middot; 73</p>
 </footer>
 
+<script>
+  document.querySelectorAll('.video-thumb').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var f = document.createElement('iframe');
+      f.src = 'https://www.youtube-nocookie.com/embed/' + b.dataset.id + '?autoplay=1';
+      f.title = b.getAttribute('aria-label');
+      f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      f.referrerPolicy = 'strict-origin-when-cross-origin';
+      f.allowFullscreen = true;
+      b.replaceWith(f);
+    });
+  });
+</script>
 </body>
 </html>

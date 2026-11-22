@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mesh25 — Signed mesh messaging over ham radio · LiaisonOS</title>
-  <meta name="description" content="Mesh25 — a native C++/Qt ham-radio mesh messaging station for LiaisonOS: chat, store-and-forward mail, parking, beacons, relay routing and a network map over AX.25/KISS packet radio, with Ed25519 message signing.">
+  <meta name="description" content="Mesh25 — a native C++/Qt ham-radio mesh messaging station for LiaisonOS: chat, store-and-forward mail, parking, beacons, relay routing and an offline geographic network map over AX.25/KISS packet radio, with Ed25519 message signing.">
   <link rel="canonical" href="https://liaisonos.com/mesh25.html">
   <meta name="robots" content="index, follow">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://liaisonos.com/mesh25.html">
   <meta property="og:title" content="Mesh25 — Signed mesh messaging over ham radio">
-  <meta property="og:description" content="Native C++/Qt mesh messaging station for LiaisonOS — chat, mail, parking, beacons, relay routing and a network map over AX.25/KISS, with Ed25519 signing.">
+  <meta property="og:description" content="Native C++/Qt mesh messaging station for LiaisonOS — chat, mail, parking, beacons, relay routing and an offline geographic network map over AX.25/KISS, with Ed25519 signing.">
   <meta property="og:image" content="https://liaisonos.com/imgs/og-preview.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -97,6 +97,15 @@
     footer a { color: #5ab887; }
     footer a:hover { color: #7de8b0; }
     code { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #a8f0cc; background: #16231a; padding: 1px 5px; border-radius: 3px; }
+    .video-grid { margin-top: 1rem; max-width: 860px; }
+    .video-card p { margin: 0 0 0.5rem 0; font-weight: 600; }
+    .video-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; border: 1px solid rgba(125,232,176,0.35); background: #000; }
+    .video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .video-thumb { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; cursor: pointer; background: #000; }
+    .video-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .video-play { position: absolute; left: 50%; top: 50%; width: 76px; height: 54px; transform: translate(-50%, -50%); border-radius: 14px; background: rgba(0,0,0,0.72); transition: background 0.2s; }
+    .video-play::after { content: ""; position: absolute; left: 31px; top: 15px; border-style: solid; border-width: 12px 0 12px 20px; border-color: transparent transparent transparent #fff; }
+    .video-thumb:hover .video-play, .video-thumb:focus .video-play { background: #e00; }
   </style>
 </head>
 <body>
@@ -144,6 +153,14 @@
   </div>
 
   <div class="section">
+    <h2 class="section-title">See it <span>on the air</span></h2>
+    <p>A Mesh25 net filmed on four laptops, each with its own radio: stations beacon their positions, check in and chat in the WX and CQ rooms. The conversation was scripted for the camera, but every message you see went over the air on packet radio.</p>
+    <div class="video-grid">
+      <div class="video-card"><div class="video-frame"><button type="button" class="video-thumb" data-id="vn7OVAQRR_4" aria-label="Mesh25 demo (English)"><img src="https://i.ytimg.com/vi/vn7OVAQRR_4/maxresdefault.jpg" alt="Mesh25 demo (English)" loading="lazy"><span class="video-play"></span></button></div></div>
+    </div>
+  </div>
+
+  <div class="section">
     <h2 class="section-title">What it <span>does</span></h2>
     <div class="feature-grid">
       <div class="feature-card">
@@ -174,7 +191,12 @@
       <div class="feature-card">
         <div class="feature-card-icon">🕸️</div>
         <div class="feature-card-title">Network map</div>
-        <div class="feature-card-desc">A live "who-hears-whom" graph of the net, placed by grid, with per-station distance.</div>
+        <div class="feature-card-desc">A live "who-hears-whom" graph of the net, placed by grid, with per-station distance &mdash; or a real geographic map drawn from offline tilesets, no internet needed.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">🗺️</div>
+        <div class="feature-card-title">Offline basemap &amp; callsign lookup</div>
+        <div class="feature-card-desc">Switch the map to a real basemap read straight from LiaisonOS's offline map tilesets &mdash; no map server, no internet. Click a station for the operator's name and location from the on-board callsign database. The Tiles button shows which regions are installed and lets you choose one.</div>
       </div>
     </div>
   </div>
@@ -205,5 +227,18 @@
   <p>LiaisonOS &middot; <a href="https://va2ops.ca">Sylvain Deguire (VA2OPS)</a> &middot; Quebec, Canada &middot; 73</p>
 </footer>
 
+<script>
+  document.querySelectorAll('.video-thumb').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var f = document.createElement('iframe');
+      f.src = 'https://www.youtube-nocookie.com/embed/' + b.dataset.id + '?autoplay=1';
+      f.title = b.getAttribute('aria-label');
+      f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      f.referrerPolicy = 'strict-origin-when-cross-origin';
+      f.allowFullscreen = true;
+      b.replaceWith(f);
+    });
+  });
+</script>
 </body>
 </html>

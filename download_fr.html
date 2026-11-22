@@ -135,9 +135,16 @@
     </div>
 
     <div class="whats-new">
-      <p class="whats-new-title">Nouveautés de la v2.4.8</p>
+      <p class="whats-new-title">Nouveautés de la v2.4.8.5</p>
       <ul>
-          <li><strong>Mesh25 — une nouvelle station de messagerie maillée native (remplace ChatterVox).</strong> Mesh25 est une station de clavardage et de courriel autonome qui fonctionne sur la radio par paquet ordinaire, sans Internet au milieu : un salon ouvert « CQ » et des messages directs de personne à personne, du courriel en stockage-et-retransmission avec une boîte aux lettres de mise en attente qui retient le courriel des stations hors des ondes, des balises de position périodiques, du routage par relais pour atteindre les stations hors de portée directe, et une carte réseau « qui-entend-qui » en direct avec un clic droit pour clavarder, écrire, chercher sur QRZ ou cartographier une station. Chaque message peut être signé avec une clé <strong>Ed25519</strong> moderne, pour faire confiance à l'indicatif qu'un message annonce. Mesh25 remplace l'ancien mode de clavardage ChatterVox et conserve votre identité d'un redémarrage à l'autre avec vos données de persistance. <a href="mesh25_fr.html" style="color:#5ab887; font-weight:600;">En savoir plus sur Mesh25 →</a></li>
+          <li><strong>Mesh25 — la carte réseau passe entièrement hors ligne.</strong> La carte « qui-entend-qui » affiche maintenant un vrai fond de carte géographique tiré des mêmes jeux de tuiles hors ligne que le reste de LiaisonOS &mdash; lus directement sur le disque, sans serveur de cartes et sans Internet. Cliquez sur une station pour voir le nom et la localité de l'opérateur selon la base d'indicatifs embarquée. Un nouveau bouton <strong>Tuiles</strong> liste les régions installées sur votre système, montre ce qui est disponible, et vous laisse choisir laquelle afficher. Les anciens éléments QRZ.com et Google&nbsp;Maps sont retirés : tout ce dont la carte a besoin se trouve maintenant sur la machine, ce qui est le but d'une station de terrain. <a href="mesh25_fr.html" style="color:#5ab887; font-weight:600;">En savoir plus sur Mesh25 &rarr;</a></li>
+          <li><strong>TNC KISS Direwolf — la fenêtre du moniteur fonctionne de nouveau.</strong> Le moniteur Direwolf lisait le mauvais fichier journal et s'ouvrait vide; il affiche maintenant la sortie du décodeur en direct &mdash; niveaux audio, PTT et trames décodées &mdash; dans le terminal natif de LiaisonOS. Une vérification interne qui sondait le TNC chaque seconde, inondait ce journal de lignes « Attached to KISS TCP client » et le faisait grossir sans limite, a aussi été désactivée. Même correctif pour le mode Digipeater paquet.</li>
+          <li><strong>qdmr — programmation de codeplugs DMR, maintenant incluse.</strong> LiaisonOS inclut maintenant <strong>qdmr</strong>, l'éditeur et programmeur libre de codeplugs pour radios DMR (Anytone, Radioddity, TYT, Baofeng DMR et plus), avec son outil en ligne de commande <code>dmrconf</code> et les permissions USB dont votre radio a besoin &mdash; branchez le câble de programmation et c'est parti. <em>À noter : enregistrez vos fichiers de codeplug (<code>.yaml</code>) dans votre dossier <strong>Documents</strong> &mdash; c'est ce qui les conserve avec vos données de persistance d'un redémarrage à l'autre.</em></li>
+          <li><strong>POTACAT — votre journal et vos réglages au complet survivent à un redémarrage.</strong> POTACAT garde tout dans son propre dossier, et la sauvegarde de persistance l'oubliait. Le dossier POTACAT au complet est maintenant sauvegardé sur votre clé USB de persistance et restauré au démarrage suivant, en mode Live comme sur un système installé.</li>
+      </ul>
+      <p class="whats-new-title" style="margin-top: 1rem;">Précédemment dans la v2.4.8</p>
+      <ul>
+          <li><strong>Mesh25 — une nouvelle station de messagerie maillée native (remplace ChatterVox).</strong> Mesh25 est une station de clavardage et de courriel autonome qui fonctionne sur la radio par paquet ordinaire, sans Internet au milieu : un salon ouvert « CQ » et des messages directs de personne à personne, du courriel en stockage-et-retransmission avec une boîte aux lettres de mise en attente qui retient le courriel des stations hors des ondes, des balises de position périodiques, du routage par relais pour atteindre les stations hors de portée directe, et une carte réseau « qui-entend-qui » en direct avec un clic droit pour clavarder, écrire ou localiser une station. Chaque message peut être signé avec une clé <strong>Ed25519</strong> moderne, pour faire confiance à l'indicatif qu'un message annonce. Mesh25 remplace l'ancien mode de clavardage ChatterVox et conserve votre identité d'un redémarrage à l'autre avec vos données de persistance. <a href="mesh25_fr.html" style="color:#5ab887; font-weight:600;">En savoir plus sur Mesh25 →</a></li>
           <li><strong>Deux nouvelles radios — Kenwood TH-D72 (TNC KISS USB) et TM-D750 (Bluetooth).</strong> LiaisonOS pilote maintenant le <strong>Kenwood TH-D72</strong> comme TNC KISS USB et se connecte au <strong>Kenwood TM-D750</strong> par Bluetooth; les deux servent de modems paquet pour Mesh25, APRS et les autres modes paquet — sans TNC externe.</li>
           <li><strong>POTACAT — repérage et journal Parks on the Air.</strong> L'application POTACAT est maintenant incluse : agrégation de spots POTA en direct, contrôle CAT de votre radio, journal de QSO et panadapteur intégré. Lancez-la depuis le menu des applications; votre journal et vos réglages sont sauvegardés avec vos données de persistance.</li>
           <li><strong>En développement — un lecteur BBS moderne (BBS 2.0) dans QtTermTCP.</strong> Une couche graphique par-dessus le terminal paquet classique : parcourir et lire les bulletins et messages du BBS dans une liste claire, publier un bulletin sur votre connexion active, et un cache qui mémorise les messages de chaque nœud. Un aperçu en développement actif.</li>
@@ -153,18 +160,18 @@
       </ul>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.8.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.8.5.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label">Dernière version</p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.4.8.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.4.8.5.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; Publiée <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.8</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.8.5</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">Licence</p><p class="stat-val">Ms-PL</p></div>
@@ -172,8 +179,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.4.8</span>
-      <span class="checksum-val" id="hashval">78a13b5e1547dba2824ed17e855435a9dca8d08423281aef7c358677cb4601d6</span>
+      <span class="checksum-label">SHA256 - v2.4.8.5</span>
+      <span class="checksum-val" id="hashval">298a25330c78c80f7ab1113997617dc4f112b29500a019d1e26c2f20b42ff501</span>
       <button class="copy-btn" onclick="copyHash('hashval')">Copier</button>
     </div>
 
@@ -189,10 +196,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.4.8.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.4.8.5.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.8.iso">⬇ Télécharger</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.8.5.iso">⬇ Télécharger</a></td>
         </tr>
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span><span class="badge-latest">v1.5</span></td>

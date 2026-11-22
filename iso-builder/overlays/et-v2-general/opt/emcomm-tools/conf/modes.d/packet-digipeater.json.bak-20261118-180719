@@ -1,0 +1,50 @@
+{
+    "$schema": "et-mode-v2",
+    "id": "packet-digipeater",
+    "name": {
+        "en": "Packet Digipeater",
+        "fr": "Répéteur numérique Packet"
+    },
+    "category": "packet",
+    "requires": {
+        "devices": ["et-audio", "et-cat"],
+        "services": ["rigctld"]
+    },
+    "prechecks": [
+        {"type": "device-exists", "path": "/dev/et-audio"},
+        {"type": "audio-tagged", "tag": "ET_AUDIO"},
+        {"type": "service-active", "name": "rigctld"},
+        {"type": "callsign-set"}
+    ],
+    "config": [
+        {
+            "template": "conf/template.d/packet/direwolf.packet-digipeater.conf",
+            "target": "conf/packet/direwolf.conf",
+            "vars": {
+                "ET_CALLSIGN": {"source": "user.json", "key": "callsign"},
+                "ET_AUDIO_DEVICE": {"source": "detect-audio", "format": "plughw:{card},{device}"},
+                "ET_DIGI_COMMENT": {"source": "literal", "value": "https://liaisonos.com"}
+            }
+        }
+    ],
+    "pre_start": [
+        {"action": "kill-all"},
+        {"action": "audio-config"}
+    ],
+    "chain": [
+        {
+            "name": "direwolf",
+            "command": ["direwolf", "-c", "{direwolf_conf}", "-l", "{log_dir}", "-t", "0", "-p"],
+            "health": {"type": "tcp-port", "port": 8001, "timeout": 60},
+            "restart": "audio-retry"
+        },
+        {
+            "name": "direwolf-monitor",
+            "command": ["xfce4-terminal", "--disable-server", "--title=Direwolf Monitor", "--geometry=120x32", "-e", "tail -n 40 -F {log_dir}/direwolf.log"],
+            "restart": "never",
+            "depends_on": "direwolf"
+        }
+    ],
+    "post_start": [],
+    "kill_all_first": true
+}
