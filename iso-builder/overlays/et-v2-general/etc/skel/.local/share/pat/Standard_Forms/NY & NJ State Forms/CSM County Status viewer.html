@@ -1,0 +1,746 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<!-- Review fixes 2026-09-22: Removed dead compose Setup button and input-only hidden coordinate handlers from received viewer. -->
+<!-- 2026-09-15: Corrected verified form defects; see accompanying correction manifest for details. -->
+
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>CSM County Status</title>
+
+
+
+<style type="text/css">
+
+<!--
+
+
+.formtext {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    font-weight: normal;
+    margin: 10px;
+   
+}
+
+#TextHeader {
+background-color: #dddddd;
+font-size: 10px;
+font-family: Arial,Helvetica,sans-serif;
+}
+
+.upload-btn-wrapper {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.btn {
+  border: 2px solid gray;
+  color: gray;
+  background-color: white;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.upload-btn-wrapper input[type=file] {
+  font-size: 50px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;}
+  
+  <!--
+
+TD{ bgcolor="#ffffff" valign="top"
+    font-family: "Gill Sans", "Gill Sans MT", "Myriad Pro", "DejaVu Sans Condensed", Helvetica, Arial, sans-serif;
+    font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.SubmitBtn {font-size: 12px;
+
+font-family: Arial,Helvetica,sans-serif;
+
+font-weight: inherit;
+
+}
+
+.upload-btn-wrapper {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.btn {
+  border: 2px solid gray;
+  color: gray;
+  background-color: white;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.upload-btn-wrapper input[type=file] {
+  font-size: 50px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;}
+/*
+
+body {color:#000; background:#fff; font:100%/1.5 arial,sans-serif;}
+
+h2 {margin-top:0}
+
+*/
+
+/* Styling applied to classes only */
+
+/* Pop-up content shifted off-screen when not in view.
+
+Still readable by screen-reader software.
+
+When targeted it fills the browser window.
+
+*/
+.pop-up {
+	position:absolute;
+	top:0;
+	left:-500em;
+	visibility: visible;
+}
+
+.pop-up:target {position:static; left:0;}
+
+/* The pop-up itself */
+
+.popBox {
+	background:#ffffff;
+	position:absolute;
+	left:20%;
+	right:20%;
+	top:10%;
+	bottom:20%;
+	z-index:10;
+	border:1px solid #3a3a3a;
+
+/* CSS3 where available: rounded corners, drop-shadow, and fade in. */
+
+border-radius:.25rem;
+
+box-shadow:0 .5rem .5rem rgba(0,0,0,.5);
+	opacity:0;
+	transition: opacity 0.8s ease-out;
+	visibility: visible;
+}
+
+:target .popBox {position:fixed; opacity:1;}
+
+/* Light box properties */
+
+.lightbox {
+
+display:none;
+
+text-indent:-200em;
+
+background-color:rgba(0,0,0,.4);
+
+width:100%;
+
+height:100%;
+
+position:fixed;
+
+top:0;
+
+left:0;
+
+bottom:0;
+
+right:0;
+
+z-index:5;
+
+}
+
+:target .lightbox {display:block;}
+
+/* The pop-ups close link, moved via CSS to the top right of the pop-up */
+
+.close:link,
+
+.close:visited {
+	position: absolute;
+	top: -0.75em;
+	right: -0.75em;
+	display: block;
+	width: 2em;
+	height: 2em;
+	line-height: 1.8;
+	padding: 0;
+	text-align: center;
+	text-decoration: none;
+	background-color: #000;
+	border: 2px solid #fff;
+	color: #fff;
+	border-radius: 50%;
+
+box-shadow: 0 0 .5rem .5rem rba(0,0,0,.5);
+	visibility: visible;
+}
+
+.close:before {content:"X";}
+
+.close:hover,
+
+.close:active,
+
+.close:focus {
+
+box-shadow: 0 0 .5rem .5rem rba(255,0,0,.5);
+
+background-color: #c00;
+
+color: #fff;
+
+}
+
+.close span {
+
+text-indent: -200em;
+
+display: block;
+
+}
+
+/* The pop-up content div will scroll if it has too much content */
+
+.popScroll {
+	position:absolute;
+	top: 1rem;
+	left: 1rem;
+	right: 1rem;
+	bottom: 1rem;
+	overflow-y: auto;
+
+*overflow-y: scroll;
+	padding-right: 0.5em;
+}
+
+.popScroll h2 {margin-top:0}
+}
+
+.style7 {font-size: 12px}
+
+.style11 {
+
+	font-size: 9pt;
+
+	color: #000000;
+
+}
+
+.style14 {font-size: 20pt}
+.style16 {font-size: 18px}
+.style17 {color: #FF0000}
+
+  input[type=button] {
+    border: 2px solid #0f88f2;
+    ;
+    border-radius: .25rem;
+    color: black;
+    padding: 2px 2px;
+    text-decoration: none;
+    margin: 2px 2px;
+    cursor: pointer;
+    text-align: center;
+}
+input[type=submit] {
+ border: 2px solid green;
+  border-radius:.25rem;
+  background-color: white;
+  color: black;
+  padding: 2px 2px;
+  font-size: 14px;
+   cursor: pointer;
+}
+input[type=reset] {
+ border: 2px solid red;
+ border-radius:.25rem;
+  background-color: white;
+  color: black;
+  padding: 2px 2px;
+  font-size: 14px;
+   cursor: pointer;
+}
+input[type=black1] {
+ border: 2px solid #999999;
+   width:225px;
+  border-radius:.25rem;
+
+  background-color: white;
+  color: black;
+  padding: 2px 2px;
+  font-size: 14px;
+   cursor: pointer;
+}
+
+.style18 {color: #FF0000;
+	font-size: 10px;
+}
+.style18 {font-size: 10px}
+.style8 {font-size: 10px}
+.Header {font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	color: #000;
+	text-align: center;
+	background-color: #EFEFEF;
+}
+.style12 {color: #FF0000;
+	font-style: italic;
+}
+.style23 {color: #FF0000}
+.style45 {font-size: 12px}
+.style45 {color: #2A5F00}
+.style48 {color: #2A5F00; font-size: 12px; font-style: italic; }
+.formtext1 {font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    font-weight: normal;
+    margin: 10px;
+}
+    
+    
+    
+</style>
+
+
+
+
+
+</head>
+<body >
+<b>
+<!-- 2026-09-22: Removed compose-only Setup button after Greg removed the viewer editing scripts. -->
+</b>&nbsp; <span class="style18">&nbsp;Click to add an agency or group name </span><span class="style8">&nbsp;</span> <span style="font-size: 12px;"></span>&nbsp;
+
+<div id="pop1" class="pop-up"><!-- The pop-up block -->
+
+<div class="popBox"><!-- If the content becomes larger than the pop-up this div will scroll the content -->
+
+<div class="popScroll"><!-- Test for help starts here -->
+
+<p> </p>
+
+<h2>ICS213 General Message</h2>
+
+<p align="left"><strong>Introduction. </strong><br />
+
+<br />
+
+This is a radio delivery based ICS213 template. It is as close to a
+
+FEMA ICS213 as possible within the constraints of Winlink Express.
+
+<br />
+
+<br />
+<strong>READ:</strong><br /> <br />
+This initial 213 HTML can be used outside of Winlink Express. So a non Express user can create an initial ICS213, SAVE the data, and then pass that SAVED data to the radio operator, The radio operator can LOAD that data file into their ICS213 to send on via Winlink. 
+Any reply that comes to the radio operator, will have to be returned to the originator as a PDF, saved HTML, or just plain text. 
+Outside of Express the ICS213 reply and view HTML features do not function, so the reply info below is not applicable. 
+<br />
+<br />
+<strong> NOTE on printing. </strong><br /><br />
+
+
+Printing this form is dependent upon your selected
+
+printer and its settings. Various Web Browsers and and their viewing
+
+sizes are not all the same. Printing from a browsers print function
+
+may be different from the operating systems default print mode.
+
+Select what works for you, for both printing and viewing.
+
+You may print direct to the printer or save as a
+
+PDF, then print the PDF. For this form LANDSCAPE mode may print
+
+better than Portrait. <br />
+
+</p>
+
+<p align="left"><strong>Purpose. </strong><br />
+
+<br />
+
+The General Message (ICS213) is used by incident dispatchers or others
+
+to record
+
+incoming
+
+messages that cannot or should not be orally transmitted to the
+
+intended recipients. The ICS213 may be used by the Incident Command
+
+Post or other
+
+incident personnel to transmit messages (e.g., resource orders,
+
+incident name change, other coordination / information issues, to the
+
+Incident
+
+Communications Center for transmission via radio or telephone to the
+
+addressee. The form is used to send any message or notification to
+
+incident personnel that requires hard-copy delivery. A digital delivery
+
+is best for complex requests or instructions.
+
+This sent ICS213 has the message information in plain text
+
+within the
+
+message body so non-Express users can read, as they do not have the
+
+rendered HTML. <br />
+
+</p>
+
+<p align="left"> <strong>Preparation.<br />
+
+</strong><br />
+
+The ICS213 may be initiated by incident dispatchers or any other
+
+personnel on an incident. Amateur Radio communicators make use of the
+
+213 for messages beyond the incident and for wider purposes than
+
+designed. This is a good use of this versatile form.<br />
+
+<br />
+
+To Reply you may type in the message as given or copy and paste the
+
+information
+
+from the sender, (if not you), by use of a USB Thumb Drive if so
+
+equipped. 
+
+<br />
+
+<br />
+
+If you receive an ICS213 and need to REPLY, the message CANNOT be
+
+replied to from the viewed HTML as the entry boxes are locked.
+
+If needed you may print the inbound ICS 213 for
+
+delivery to obtain a response that can be typed in by you. Or obtain a
+
+plain text Reply from a USB Thumb Drive.
+
+<br />
+
+<br />
+
+To create the Reply 213 go to the message, double click the 213 in
+
+question and use the REPLY tab at the top.
+
+Now you may enter the response into the Reply box or copy and paste the
+
+response in. Then SUBMIT the completed ICS213 for Outbox posting.
+
+</p>
+
+<p align="left"><strong>Notes:</strong><br />
+
+<br />
+
+A copy of the ICS213 should be sent to and maintained within the
+
+Documentation Unit. A copy of all your Express traffic is in your
+
+Sent Items folder. You may wish to create
+
+a Personal Folder for the event and move your desired traffic into it.
+
+Winlink Express has an Export/Import feature so you can
+
+save this folder on your desktop or elsewhere if desired. You can even
+
+send the folder to another Express user for them to import.
+ </p>
+<strong>More Information</strong><br /><br />
+You can save your completed form data to a text file. This will allow you to reload the ICS213
+with ALL entered form data. You do this prior to submitting the form. Then you can open a new 213 and load the saved HTML form data. 
+NOTE: Date and Times will be the previous entered, so change if needed. This is much like using FireFox and the addon Formlet. It will save the info
+as a text file with the Date and Time as a file name. Now you can use any browser, save your form (as many versions as you like), and then re-populate.
+<br /><br />
+Remember this template has two parts, the "INITIAL" template and the "REPLY" template. You can save either HTML and the saved file names will be different.
+Just load the correct saved data file or the repopulated information may not be correct.</p>
+</div>
+
+<!-- The close pop-up link correctly positioned at the end of the content block -->
+
+<a href="#links" class="close"><span>Back
+
+to links</span></a> </div>
+
+</div>
+
+<span class="style7">
+<input name="ShowDR" type="hidden" id="ShowDR" />
+</span>
+<table style="width: 895px; height: 453px;" border="1" cellpadding="3" cellspacing="0">
+
+<colgroup><col width="657" /></colgroup> <tbody>
+
+<tr valign="top" bgcolor="#f5f5f5">
+
+<td height="72" colspan="3" bgcolor="#f8f8ff">
+
+<div  align="center">
+  <p><span class="style6">&nbsp;<span class="style16">CSM County Status&nbsp;</span></span></p>
+  <p><var FormTitle></var></p>
+  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tbody>
+      <tr>
+        <td width="25%">{var IsExercise}</td>
+        <td width="50%"><span class="style16"><span class="formtext">
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span></td>
+        <td width="25%"><span class="style16"><span class="formtext">
+        <input name="FormTitle" type="hidden" id="FormTitle" />
+&nbsp;&nbsp;&nbsp;</span></span></td>
+      </tr>
+    </tbody>
+  </table>
+ 
+</div>
+
+</td>
+
+</tr>
+
+<tr valign="middle">
+
+  <td height="28"  colspan="3" class="formtext">
+    <table width="900" border="0" align="left" cellpadding="0" cellspacing="0">
+      <tr valign="top">
+        <td width="428" nowrap="nowrap">1.<span style="text-align: left"></span> Incident Name:&nbsp;{var inc_name}</td>
+       
+      </tr>
+    </table>
+    </td>
+</tr>
+
+<tr valign="middle">
+
+<td height="28" colspan="3" class="formtext" style="text-align: left">2.
+
+To (Name/Position):<span class="style17">&nbsp;</span>
+{var to_name}
+<input name="txtStr" type="hidden" id="txtStr" /></td>
+
+</tr>
+
+<tr valign="middle">
+
+<td height="28" colspan="3" nowrap="nowrap" class="formtext" style="text-align: left">3.
+
+From (Name/Position):&nbsp; {var fm_name}</td>
+
+</tr>
+
+<tr class="formtext">
+
+<td width="594" height="34" nowrap="nowrap" >4.
+
+Subject:&nbsp;  {var Subjectline} <span class="style14"><span style="font-size: 14px;">
+<input name="timestamp" type="hidden" id="timestamp" size="30" />
+<input name="timestamp2" type="hidden" id="timestamp2" size="40" />
+</span>
+<input name="attached_file" type="hidden" id="attached_file" value="FormData.txt" />
+<input name="mapfilename" type="hidden" id="mapfilename" value="ICS-213" />
+</span><br />
+  <div align="left"></div></td>
+<td  valign="top" nowrap="nowrap" >5. Date:&nbsp; {var Mdate}
+</td>
+<td  valign="top" nowrap="nowrap" >6. Time:&nbsp; {var Mtime}
+</td>
+</tr>
+
+<tr valign="top" class="formtext">
+
+<td colspan="3" style="text-align: left">7. Message:<span class="style14">&nbsp;</span></p>
+  <table width="100%" border="1" cellspacing="00" cellpadding="1">
+    <tbody>
+      <tr>
+        <td>MESSAGE NUMBER:</td>
+        <td><span class="formtext" style="text-align: left">{var MSG_NUM}
+        </span></td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffe6">PRIORITY:</td>
+        <td bgcolor="#ffffe6">&nbsp;{var Priority}</td>
+      </tr>
+      <tr>
+        <td width="24%"><span style="background-color: gold">&nbsp;LINE 1&nbsp;</span> STATE:</td>
+        <td width="76%"><span class="formtext" style="text-align: left">
+            {var LINE1}</span></td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffe6"><span style="background-color: gold">&nbsp;LINE 2&nbsp;</span> COUNTY:</td>
+        <td bgcolor="#ffffe6"><span class="formtext" style="text-align: left">{var LINE2}</span></td>
+      </tr>
+      <tr>
+        <td><span style="background-color: gold">&nbsp;LINE 3&nbsp;</span> TOWN:</td>
+        <td><span class="formtext" style="text-align: left">{var LINE3}</span></td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffe6"><span style="background-color: gold">&nbsp;LINE 4&nbsp;</span> DTG(Z):</td>
+        <td bgcolor="#ffffe6"><span class="formtext" style="text-align: left">{var LINE4}</span></td>
+      </tr>
+      <tr>
+        <td><span style="background-color: gold">&nbsp;LINE 5&nbsp;</span> POWER:</td>
+        <td> &nbsp;<span class="formtext" style="text-align: left">{var LINE5}</span></td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffe6"><span style="background-color: gold">&nbsp;LINE 6&nbsp;</span> WATER:</td>
+        <td bgcolor="#ffffe6">&nbsp;<span class="formtext" style="text-align: left">{var LINE6}</span></td>
+      </tr>
+      <tr>
+        <td><span style="background-color: gold">&nbsp;LINE 7&nbsp;</span> SEWER:</td>
+        <td>&nbsp;<span class="formtext" style="text-align: left">{var LINE7}</span></td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffe6"><span style="background-color: gold">&nbsp;LINE 8&nbsp;</span> SANITATION:</td>
+        <td bgcolor="#ffffe6">&nbsp;<span class="formtext" style="text-align: left">{var LINE8}</span></td>
+      </tr>
+      <tr>
+        <td><span style="background-color: gold">&nbsp;LINE 9</span> TRANSPORTATION:</td>
+        <td>&nbsp;<span class="formtext" style="text-align: left">{var LINE9}</span></td>
+      </tr>
+      <tr>
+        <td nowrap="nowrap" bgcolor="#ffffe6"><span style="background-color: gold">&nbsp;LINE 10</span> MEDICAL FACILITIES:</td>
+        <td bgcolor="#ffffe6">&nbsp;<span class="formtext" style="text-align: left">{var LINE10}</span></td>
+      </tr>
+      <tr>
+        <td><span style="background-color: gold">&nbsp;LINE 11&nbsp;</span> COMMUNICATIONS:</td>
+        <td>&nbsp;<span class="formtext" style="text-align: left">{var LINE11}</span></td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffe6"><span style="background-color: gold">&nbsp;LINE 12&nbsp;</span>CELLULAR:</td>
+        <td bgcolor="#ffffe6">&nbsp;<span class="formtext" style="text-align: left">{var LINE12}</span></td>
+      </tr>
+      <tr>
+        <td><span style="background-color: gold">&nbsp;LINE 13&nbsp;</span> 911:</td>
+        <td>&nbsp;<span class="formtext" style="text-align: left">{var LINE13}</span></td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffe6"><span style="background-color: gold">&nbsp;LINE 14&nbsp;</span> POLICE:</td>
+        <td bgcolor="#ffffe6">&nbsp;<span class="formtext" style="text-align: left">{var LINE14}</span></td>
+      </tr>
+      <tr>
+        <td><span style="background-color: gold">&nbsp;LINE 15&nbsp;</span> FIRE:</td>
+        <td>&nbsp;<span class="formtext" style="text-align: left">{var LINE15}</span></td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffe6"><span style="background-color: gold">&nbsp;LINE 16&nbsp;</span> EMS:</td>
+        <td bgcolor="#ffffe6">&nbsp;<span class="formtext" style="text-align: left">{var LINE16}</span></td>
+      </tr>
+      <tr>
+        <td nowrap="nowrap"><span style="background-color: gold">&nbsp;LINE 1<strong>7.</strong>&nbsp;</span> SAFETY HAZARDS:</td>
+        <td>&nbsp;<span class="formtext" style="text-align: left">{var LINE17}</span></td>
+      </tr>
+      <tr>
+        <td height="26" bgcolor="#ffffe6"><span style="background-color: gold">&nbsp;LINE 18&nbsp;</span> SOURCE:</td>
+        <td bgcolor="#ffffe6">&nbsp;<span class="formtext" style="text-align: left">{var LINE18}</span></td>
+      </tr>
+      <tr>
+        <td valign="top"><span style="background-color: gold">&nbsp;LINE 19.&nbsp;</span> REMARKS:</td>
+        <td> &nbsp;{var LINE19}</td>
+      </tr>
+    </tbody>
+  </table></td>
+
+</tr>
+
+<tr valign="middle">
+
+<td colspan="3" style="text-align: left"><span class="formtext">&nbsp;8.
+
+Approved by:&nbsp; </span>
+
+  {var Approved_Name}
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="formtext">&nbsp;8b. Position
+
+/ Title: </span>&nbsp;
+{var Approved_PosTitle}
+
+<em><span class="style12">
+<input name="GPS2" type="hidden" id="GPS2" size="40"  maxlength="40" title= "If entering manually use format: 38.5567,-121.7932" placeholder="Ex: 38.5567,-121.7932" />
+<span class="style45"><span style="color: black;"><span style="font-family:  Arial, Helvetica, sans-serif;; color: black;">
+<input name="GPS2" type="hidden" id="GPS2a" value="{GPS_SIGNED_DECIMAL}" />
+</span></span></span></span></em>
+<input name="ExtGPS" type="hidden" id="ExtGPS" value="{GPS_SIGNED_DECIMAL}" />
+<input name="WithSpaces" type="hidden" id="WithSpaces" />
+<input name="NoSpaces" type="hidden" id="NoSpaces" />
+<input name="addformat" type="hidden" id="addformat" />
+<input name="locationSource" type="hidden" id="locationSource" placeholder=""  style="color:blue" value=""   />
+<input name="location_source" type="hidden" id="location_source" placeholder=""  style="color:blue" value="{Location_Source}" />
+<br />
+
+</td>
+
+</tr>
+
+<tr class="formtext">
+  
+  <td height="15" colspan="2">
+    
+  <div align="left"><span class="formtext">
+    <input name="testCall" type="hidden" id="testCall" value="{MsgSender}" size="14" maxlength="13" />
+  </span> <span class="style11"> </span>
+    
+  <textarea name="parseme" cols="80" rows="3" id="parseme" placeholder="Paste spreadsheet data here" style="display: none;"></textarea> 
+  
+    <span class="formtext1">
+      <input name="theMsgSender" type="hidden" id="theMsgSender" value="{var MsgSender}" size="14" maxlength="13" />
+      </span></div>
+    
+    
+    
+  </td>
+  
+  <td width="121" style="width: 120px;">
+    
+  <div align="right">Ver 1.4
+    
+  </div>
+  <input name="Templateversion" type="hidden" id="templateversion" value="CSM County Status  v.1.2" />
+    
+  </td>
+  
+</tr>
+
+</tbody>
+
+</table>
+
+
+</body>
+</html>

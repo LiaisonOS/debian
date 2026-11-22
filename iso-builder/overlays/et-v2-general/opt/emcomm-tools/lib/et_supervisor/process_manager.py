@@ -16,6 +16,9 @@ import logging
 
 log = logging.getLogger("et-supervisor.process")
 
+# Rotate a per-process stdout log once it passes this size.
+MAX_LOG_BYTES = 2 * 1024 * 1024
+
 
 class ProcessInfo:
     """Tracks state of a single managed process."""
@@ -112,6 +115,16 @@ class ProcessManager:
                 "~/.local/share/emcomm-tools/logs")
             os.makedirs(log_dir, exist_ok=True)
             log_path = os.path.join(log_dir, f"{name}.log")
+            # Cap per-process logs. These are opened in append mode and were
+            # never reclaimed, so a chatty process (Direwolf prints an
+            # audio-level line per frame) grows one without bound. Keep the
+            # current file plus a single previous generation. `tail -F`
+            # follows by name, so a monitor window survives the rotation.
+            try:
+                if os.path.getsize(log_path) > MAX_LOG_BYTES:
+                    os.replace(log_path, log_path + ".1")
+            except OSError:
+                pass
             log_file = open(log_path, "a")
             log_file.write(f"\n--- {time.strftime('%Y-%m-%d %H:%M:%S')} "
                            f"Starting: {' '.join(cmd)} ---\n")

@@ -1,0 +1,9 @@
+Form:PH_SMS_Message_Initial.html
+
+
+To: <var address>
+Subject: <var Alladdresses>
+Msg:
+From <var From_Name>
+Sent on <var time>
+<var Message>

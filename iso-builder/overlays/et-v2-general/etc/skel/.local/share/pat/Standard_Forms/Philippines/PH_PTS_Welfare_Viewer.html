@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PH PTS Welfare Radiogram — Viewer</title>
+<style>
+  :root {
+    --navy: #0f2044;
+    --blue: #1a4fa8;
+    --accent: #e8a020;
+    --green: #10b981;
+    --red: #dc2626;
+    --bg: #f0f4fb;
+    --card: #ffffff;
+    --border: #cbd5e1;
+    --text: #1e293b;
+    --muted: #64748b;
+    --mono: 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 14px;
+  }
+
+  .header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+    color: white;
+    padding: 14px 20px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 4px 16px rgba(15,32,68,0.3);
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .header-flag { font-size: 2.2em; }
+  .header-text .title { font-size: 1.15em; font-weight: 700; }
+  .header-text .subtitle { font-size: 0.72em; opacity: 0.75; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+  .badge { margin-left: auto; background: var(--accent); color: var(--navy); font-size: 0.7em; font-weight: 800; padding: 4px 12px; border-radius: 20px; letter-spacing: 1px; }
+
+  .viewer-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 20px;
+    max-width: 700px;
+    margin: 0 auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+
+  /* Precedence badge */
+  .prec-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .prec-W { background: #dbeafe; color: #1d4ed8; }
+  .prec-R { background: #f1f5f9; color: #475569; }
+  .prec-P { background: #fef3c7; color: #b45309; }
+  .prec-E { background: #fee2e2; color: #b91c1c; animation: pulse-prec 1s ease-in-out infinite alternate; }
+  @keyframes pulse-prec { from { box-shadow: 0 0 0 0 rgba(220,38,38,0.3); } to { box-shadow: 0 0 0 6px rgba(220,38,38,0); } }
+
+  .section-label {
+    font-size: 0.67em;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--blue);
+    border-bottom: 2px solid var(--blue);
+    padding-bottom: 3px;
+    margin: 16px 0 10px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .info-item { display: flex; flex-direction: column; }
+  .info-item .lbl { font-size: 0.67em; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .info-item .val { font-size: 0.9em; font-weight: 600; color: var(--text); }
+  .info-item .val.mono { font-family: var(--mono); font-size: 0.82em; }
+
+  .message-box {
+    background: #f8fafc;
+    border: 1.5px solid var(--border);
+    border-left: 4px solid var(--blue);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 0.83em;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
+    margin: 8px 0;
+  }
+
+  .copy-btn {
+    background: var(--green);
+    color: white;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: 0.85em;
+    cursor: pointer;
+    margin-top: 14px;
+    transition: opacity 0.15s;
+  }
+  .copy-btn:hover { opacity: 0.85; }
+
+  .copy-flash {
+    display: none;
+    background: var(--green);
+    color: white;
+    text-align: center;
+    padding: 8px;
+    border-radius: 7px;
+    font-size: 0.82em;
+    font-weight: 700;
+    margin-top: 8px;
+  }
+
+  .footer-note {
+    font-size: 0.7em;
+    color: var(--muted);
+    margin-top: 16px;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-flag">🇵🇭</div>
+  <div class="header-text">
+    <div class="title">Philippine Traffic System</div>
+    <div class="subtitle">PAREDN Welfare Radiogram — Message Viewer</div>
+  </div>
+  <div class="badge" id="precBadge">WELFARE</div>
+</div>
+
+<div class="viewer-card">
+
+  <!-- Precedence Banner -->
+  <div id="precBanner" class="prec-banner prec-W">📡 WELFARE MESSAGE</div>
+
+  <!-- Routing -->
+  <div class="section-label">Message Routing</div>
+  <div class="info-grid">
+    <div class="info-item">
+      <span class="lbl">BBS Address</span>
+      <span class="val mono" id="vTo">{var MsgTo}</span>
+    </div>
+    <div class="info-item">
+      <span class="lbl">Winlink Gateway</span>
+      <span class="val mono" id="vGateway">—</span>
+    </div>
+    <div class="info-item">
+      <span class="lbl">Subject / Preamble</span>
+      <span class="val mono" id="vSubject">{var Newsubject}</span>
+    </div>
+  </div>
+
+  <!-- Recipient -->
+  <div class="section-label">Recipient</div>
+  <div class="info-grid">
+    <div class="info-item">
+      <span class="lbl">Name</span>
+      <span class="val" id="vRecipient">{var RecipientName}</span>
+    </div>
+    <div class="info-item">
+      <span class="lbl">Street / House No.</span>
+      <span class="val" id="vStreet">{var StreetAddress}</span>
+    </div>
+    <div class="info-item">
+      <span class="lbl">Barangay</span>
+      <span class="val" id="vBarangay">{var Barangay}</span>
+    </div>
+    <div class="info-item">
+      <span class="lbl">City / Municipality</span>
+      <span class="val" id="vCity">{var CityTown}</span>
+    </div>
+    <div class="info-item">
+      <span class="lbl">Province</span>
+      <span class="val" id="vProvince">{var Province}</span>
+    </div>
+    <div class="info-item">
+      <span class="lbl">Zip / Region</span>
+      <span class="val" id="vZip">{var ZipCode} / PTS{var Region}</span>
+    </div>
+    <div class="info-item">
+      <span class="lbl">Phone / Email</span>
+      <span class="val" id="vContact">{var ContactInfo}</span>
+    </div>
+  </div>
+
+  <!-- Message -->
+  <div class="section-label">Message</div>
+  <div class="message-box" id="vMessage">{var MessageBody}</div>
+
+  <div class="info-item" style="margin-top: 8px;">
+    <span class="lbl">Sender</span>
+    <span class="val" id="vSender">{var SenderName}</span>
+  </div>
+
+  <!-- Full formatted message -->
+  <div class="section-label" style="margin-top: 16px;">Full PTS Message (Copy / Paste to Winlink)</div>
+  <pre class="message-box" id="vFullMsg" style="white-space:pre-wrap;font-family:'Courier New',monospace;font-size:0.82em;line-height:1.6;"></pre>
+
+  <button class="copy-btn" onclick="copyFull()">📋 Copy Full Message</button>
+  <div class="copy-flash" id="copyFlash">✅ Message copied to clipboard!</div>
+
+  <div class="footer-note">
+    PAREDN · Philippine Amateur Radio Emergency Data Network · Philippine Traffic System<br>
+    Template: PH PTS Welfare Radiogram v2026.03.08
+  </div>
+
+</div>
+
+<script>
+// Read Winlink-substituted values and style the viewer
+
+function getField(id) {
+  const el = document.getElementById(id);
+  return el ? el.textContent.trim() : '';
+}
+
+function styleByPrecedence() {
+  const subj = getField('vSubject');
+  const fullMsg = getField('vFullMsg');
+  const content = subj + ' ' + fullMsg;
+
+  let prec = 'W';
+  if (/^EMERGENCY\b|^E,/i.test(subj.trim())) prec = 'E';
+  else if (/^PRIORITY\b|^P,/i.test(subj.trim())) prec = 'P';
+  else if (/^ROUTINE\b|^R,/i.test(subj.trim())) prec = 'R';
+  else if (/^WELFARE\b|^W,/i.test(subj.trim())) prec = 'W';
+
+  const labels = { W: '📡 WELFARE MESSAGE', R: '📻 ROUTINE MESSAGE', P: '⚡ PRIORITY MESSAGE', E: '🚨 EMERGENCY MESSAGE' };
+  const banner = document.getElementById('precBanner');
+  banner.className = `prec-banner prec-${prec}`;
+  banner.textContent = labels[prec] || labels['W'];
+
+  const badge = document.getElementById('precBadge');
+  badge.textContent = prec === 'E' ? 'EMERGENCY' : prec === 'P' ? 'PRIORITY' : prec === 'R' ? 'ROUTINE' : 'WELFARE';
+}
+
+function deriveGateway() {
+  const to = getField('vTo');
+  const m = to.match(/@PTS([A-Z]+)/i);
+  if (m) {
+    document.getElementById('vGateway').textContent = `PTS${m[1]}@WINLINK.ORG`;
+  }
+}
+
+function copyFull() {
+  const txt = document.getElementById('vFullMsg').textContent;
+  navigator.clipboard.writeText(txt).then(() => {
+    const flash = document.getElementById('copyFlash');
+    flash.style.display = 'block';
+    setTimeout(() => flash.style.display = 'none', 3000);
+  });
+}
+
+function buildFullMessage() {
+  var to      = document.getElementById('vTo')      ? document.getElementById('vTo').textContent.trim()      : '';
+  var gw      = document.getElementById('vGateway') ? document.getElementById('vGateway').textContent.trim() : '';
+  var subj    = document.getElementById('vSubject') ? document.getElementById('vSubject').textContent.trim() : '';
+  var recip   = document.getElementById('vRecipient') ? document.getElementById('vRecipient').textContent.trim() : '';
+  var street  = document.getElementById('vStreet')  ? document.getElementById('vStreet').textContent.trim()  : '';
+  var brgy    = document.getElementById('vBarangay') ? document.getElementById('vBarangay').textContent.trim() : '';
+  var city    = document.getElementById('vCity')    ? document.getElementById('vCity').textContent.trim()    : '';
+  var prov    = document.getElementById('vProvince') ? document.getElementById('vProvince').textContent.trim() : '';
+  var zip     = document.getElementById('vZip')     ? document.getElementById('vZip').textContent.trim()     : '';
+  var contact = document.getElementById('vContact') ? document.getElementById('vContact').textContent.trim() : '';
+  var msg     = document.getElementById('vMessage') ? document.getElementById('vMessage').textContent.trim() : '';
+  var sender  = document.getElementById('vSender')  ? document.getElementById('vSender').textContent.trim()  : '';
+
+  var lines = [
+    'VIA BBS TO: ' + to,
+    'VIA WINLINK: ' + gw,
+    'SUBJECT: ' + subj,
+    '',
+    'MSG TO: ' + recip,
+    'ADDRESS:',
+    street,
+    'BRGY. ' + brgy + ', ' + city + ', ' + prov + ', ' + zip,
+    'PHONE / EMAIL: ' + contact,
+    'MESSAGE: ' + msg,
+    'SENDER: ' + sender,
+    '',
+    '----------',
+    'Template: PH PTS Welfare Radiogram v2026.03.08 / PAREDN'
+  ];
+
+  document.getElementById('vFullMsg').textContent = lines.join('\n');
+}
+
+function copyFull() {
+  var txt = document.getElementById('vFullMsg').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt).then(function() {
+      var flash = document.getElementById('copyFlash');
+      flash.style.display = 'block';
+      setTimeout(function() { flash.style.display = 'none'; }, 3000);
+    });
+  } else {
+    // IE fallback
+    var ta = document.createElement('textarea');
+    ta.value = txt;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    var flash = document.getElementById('copyFlash');
+    flash.style.display = 'block';
+    setTimeout(function() { flash.style.display = 'none'; }, 3000);
+  }
+}
+
+styleByPrecedence();
+deriveGateway();
+buildFullMessage();
+</script>
+</body>
+</html>

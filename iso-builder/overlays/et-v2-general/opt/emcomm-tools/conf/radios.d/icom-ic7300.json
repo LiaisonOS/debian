@@ -10,6 +10,9 @@
     "baud": "19200",
     "ptt": "RIG"
   },
+  "audio": {
+    "script": "/opt/emcomm-tools/conf/radios.d/audio/icom-ic7300.sh"
+  },
   "notes": [
     "[MENU] > [SET] > [Connectors] > [CI-V] > CI-V USB Baud Rate = 19200"
   ]

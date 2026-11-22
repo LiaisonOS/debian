@@ -125,6 +125,21 @@ update-config () {
 
            et-log "Applied amixer settings for ${ET_DEVICE_NAME}"
          ;;
+         "FT-710")
+           # FT-710 built-in C-Media USB codec (0d8c:0013) — same controls as
+           # the FTX-1. Without this branch TX audio stays MUTED (Speaker
+           # playback off) while RX still works. Confirmed on VA2QR's FT-710.
+           # Unmute Speaker a set volume. Adjust if remote station can't decode you. Your TX controls.
+           amixer -q -c ${AUDIO_CARD} sset Speaker Playback Switch 42% unmute
+           # Unmute Mic
+           amixer -q -c ${AUDIO_CARD} sset Mic Playback Switch 52% unmute
+           # Set "L/R Capture" to 19. Adjust if you can't decode received audio. Your RX controls.
+           amixer -q -c ${AUDIO_CARD} sset Mic Capture Switch 31% unmute
+           # Disable Auto Gain Control
+           amixer -q -c ${AUDIO_CARD} sset 'Auto Gain Control' mute
+
+           et-log "Applied amixer settings for ${ET_DEVICE_NAME}"
+         ;;
          *)
            et-log "No ALSA configuration specified for this ET_DEVICE."
          ;;

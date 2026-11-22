@@ -1,0 +1,22 @@
+Form:PH_PTS_Welfare_Initial.html,PH_PTS_Welfare_Viewer.html
+To:<var MsgTo>
+Cc:<var MsgCc>
+Subject: <var Newsubject>
+Readonly:True
+Msg:
+-
+<var PTSAddress>
+<var WinlinkGW>
+SUBJECT: <var Newsubject>
+
+MSG TO: <var RecipientName>
+ADDRESS:
+<var StreetAddress>
+BRGY. <var Barangay>, <var CityTown>, <var GeoSuffix>
+PHONE / EMAIL: <var ContactInfo>
+MESSAGE: <var MessageBody>
+SENDER: <var SenderName>
+
+----------
+Template: PH PTS Welfare Radiogram v2026.03.08 / PAREDN
+[No changes or editing of this message are allowed]

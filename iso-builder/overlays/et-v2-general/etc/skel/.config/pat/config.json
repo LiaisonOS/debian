@@ -74,7 +74,7 @@
   },
   "gpsd": {
     "enable_http": false,
-    "allow_forms": false,
+    "allow_forms": true,
     "use_server_time": false,
     "addr": "localhost:2947"
   },

@@ -1,0 +1,30 @@
+{
+    "$schema": "et-mode-v2",
+    "id": "chat-mesh25-bt",
+    "name": {
+        "en": "Mesh25 (BT)",
+        "fr": "Mesh25 (BT)"
+    },
+    "category": "packet",
+    "requires": {
+        "devices": ["rfcomm0"]
+    },
+    "prechecks": [
+        {"type": "callsign-set"}
+    ],
+    "config": [],
+    "pre_start": [
+        {"action": "rfcomm-bind"},
+        {"action": "kill-all"}
+    ],
+    "chain": [
+        {
+            "name": "mesh25",
+            "command": ["Mesh25", "--kiss", "/dev/rfcomm0", "--baud", "1200"],
+            "health": {},
+            "restart": "never"
+        }
+    ],
+    "post_start": [],
+    "kill_all_first": true
+}

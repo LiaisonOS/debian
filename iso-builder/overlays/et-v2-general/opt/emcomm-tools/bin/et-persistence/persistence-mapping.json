@@ -14,6 +14,41 @@
         }
       ]
     },
+    "automation": {
+      "name": "LiaisonOS Automation",
+      "persistence_subdir": "configs/liaisonos",
+      "configs": [
+        {
+          "source": "automation.json",
+          "target": "${HOME}/.config/liaisonos/automation.json",
+          "type": "file",
+          "required": false,
+          "description": "Scheduled automation — missions and presence windows"
+        }
+      ],
+      "data": [
+        {
+          "source": "bulletins/pending",
+          "target": "${HOME}/.config/liaisonos/bulletins/pending",
+          "type": "directory",
+          "required": false,
+          "description": "Bulletin bodies (.txt + .json) referenced by bbs_publish missions"
+        }
+      ]
+    },
+    "et-logger": {
+      "name": "Field Logger (et-logger)",
+      "persistence_subdir": "configs/liaisonos",
+      "configs": [
+        {
+          "source": "qrz.json",
+          "target": "${HOME}/.config/liaisonos/logger/qrz.json",
+          "type": "file",
+          "required": false,
+          "description": "QRZ.com XML-API credentials for online callsign lookup"
+        }
+      ]
+    },
     "pat": {
       "name": "Pat Winlink",
       "persistence_subdir": "configs/pat",
@@ -150,23 +185,50 @@
         }
       ]
     },
-    "chattervox": {
-      "name": "Chattervox",
-      "persistence_subdir": "configs/chattervox",
+    "mesh25": {
+      "name": "Mesh25",
+      "persistence_subdir": "configs/mesh25",
       "configs": [
         {
-          "source": "config.json",
-          "target": "${HOME}/.chattervox/config.json",
+          "source": "keystore.txt",
+          "target": "${HOME}/.config/liaisonos/mesh25/keystore.txt",
           "type": "file",
           "required": false,
-          "description": "Chattervox configuration (KISS port, callsign)"
+          "description": "Mesh25 keystore — Ed25519 identity + learned peer public keys + trust (critical: losing it re-generates identity every reboot)"
         },
         {
-          "source": "keystore.json",
-          "target": "${HOME}/.chattervox/keystore.json",
+          "source": "history.json",
+          "target": "${HOME}/.local/share/liaisonos/qtchattervox/history.json",
           "type": "file",
           "required": false,
-          "description": "Chattervox keystore (own + other operators' public keys)"
+          "description": "Mesh25 chat history"
+        },
+        {
+          "source": "mail.json",
+          "target": "${HOME}/.local/share/liaisonos/qtchattervox/mail.json",
+          "type": "file",
+          "required": false,
+          "description": "Mesh25 mailbox (inbox/sent)"
+        },
+        {
+          "source": "parked",
+          "target": "${HOME}/.local/share/liaisonos/mesh25",
+          "type": "dir",
+          "required": false,
+          "description": "Mesh25 parked mail held for other stations"
+        }
+      ]
+    },
+    "potacat": {
+      "name": "POTACAT",
+      "persistence_subdir": "configs/potacat",
+      "configs": [
+        {
+          "source": "potacat",
+          "target": "${HOME}/.config/POTACAT",
+          "type": "dir",
+          "required": false,
+          "description": "POTACAT (POTA spot aggregator / logger) Electron user data — QSO log + settings"
         }
       ]
     },

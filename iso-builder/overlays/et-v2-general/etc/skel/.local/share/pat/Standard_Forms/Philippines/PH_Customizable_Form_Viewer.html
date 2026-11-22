@@ -1,0 +1,900 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>PAREDN Comm Frequency Form - {var Incident_Name}</title>
+<style type="text/css">
+@media print {
+  #exportcsv { display: none; }
+  input { outline: none !important; box-shadow: none; border: none; }
+}
+body, td, th  { font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+input, select { padding: 1px; font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+
+/* title area */
+#formTitleWrap { text-align: center; padding: 8px 4px 4px 4px; }
+#vwFormTitle    { font-size:16px; font-weight:bold; font-family:Arial,Helvetica,sans-serif;
+                  border:none; background:transparent; text-align:center; width:500px; color:#000; }
+#vwFormSubtitle { font-size:13px; font-weight:normal; font-family:Arial,Helvetica,sans-serif;
+                  border:none; background:transparent; text-align:center; width:400px; color:#333; }
+
+/* header fields */
+.hdr-left  { width:50%; vertical-align:top; text-align:center; padding:6px; }
+.hdr-right { width:50%; text-align:center; vertical-align:middle; padding:6px; }
+.hdr-left label { font-size:11px; color:#555; }
+.hdr-left input[type=text] {
+  border:1px solid #ccc; border-radius:3px; padding:2px 4px;
+  background:#f8f8f8; font-size:12px; width:90%; max-width:420px;
+}
+
+/* data table */
+#dataTable { border-collapse:collapse; table-layout:fixed; width:100%; }
+#dataTable td { border:1px solid #999; padding:2px 3px; overflow:hidden; white-space:nowrap; }
+#dataTable .num-cell {
+  width:24px; min-width:24px; max-width:24px;
+  text-align:center; font-weight:bold; background:#f0f0f0;
+}
+#dataTable .hdr-cell {
+  background-color:#fff8dc;
+  position:relative; overflow:visible;
+}
+#dataTable .hdr-cell input {
+  background:transparent; border:none; outline:none;
+  font-weight:bold; color:#804000; font-size:11px;
+  width:calc(100% - 8px); box-sizing:border-box;
+  text-transform:uppercase;
+}
+#dataTable .sep-row td { background:#cccccc; height:3px; padding:0; border:none; }
+#dataTable .data-cell {
+  overflow:hidden; white-space:nowrap;
+}
+#dataTable .data-cell input {
+  width:100%; box-sizing:border-box;
+  border:none; outline:none; background:transparent; font-size:12px;
+  text-transform: uppercase;
+}
+#dataTable tr:nth-child(even) .data-cell { background:#f9f9f9; }
+/* resize handle */
+.col-resize-handle {
+  position:absolute; top:0; right:0;
+  width:6px; height:100%;
+  cursor:col-resize; background:transparent; z-index:10;
+  user-select:none;
+}
+.col-resize-handle:hover, .col-resize-handle.dragging {
+  background:rgba(15,136,242,0.35);
+}
+
+input[type=button] {
+  border:2px solid #0f88f2; border-radius:.25rem;
+  font-size:12px; padding:2px 6px; background-color:white; margin:2px; cursor:pointer;
+}
+.offscreen {
+  border:0; clip:rect(-3 1 1 1); height:1px; margin:-1px;
+  overflow:hidden; padding:0; position:absolute; width:1px;
+}
+</style>
+
+<script>
+var COLS = ['ColA','ColB','ColC','ColD','ColE','ColF','ColG','ColH'];
+var NROWS = 50;
+var DEFAULT_WIDTHS = [175,130,90,80,100,80,120,180];
+var colWidths = DEFAULT_WIDTHS.slice();
+
+function applyColWidths() {
+  for (var c=0; c<COLS.length; c++) {
+    var el=document.getElementById('vcol_'+COLS[c]);
+    if (el) el.style.width=colWidths[c]+'px';
+  }
+}
+function resetColWidths() { colWidths=DEFAULT_WIDTHS.slice(); applyColWidths(); }
+
+function initResize() {
+  var handles=document.querySelectorAll('.col-resize-handle');
+  for (var i=0; i<handles.length; i++) {
+    (function(handle) {
+      var colIdx=parseInt(handle.getAttribute('data-col')), startX, startW;
+      handle.addEventListener('mousedown', function(e) {
+        e.preventDefault(); startX=e.pageX; startW=colWidths[colIdx];
+        handle.className=handle.className+' dragging';
+        document.addEventListener('mousemove',onMove);
+        document.addEventListener('mouseup',onUp);
+      });
+      function onMove(e) { colWidths[colIdx]=Math.max(40,startW+(e.pageX-startX)); applyColWidths(); }
+      function onUp()    { handle.className=handle.className.replace(' dragging','');
+                           document.removeEventListener('mousemove',onMove);
+                           document.removeEventListener('mouseup',onUp); }
+    })(handles[i]);
+  }
+}
+
+function sanitize(s) {
+  if (!s) return '';
+  var out='', c;
+  for (var i=0; i<s.length; i++) {
+    c=s.charCodeAt(i);
+    if      (c===0x2013||c===0x2014) out+='-';
+    else if (c===0x2018||c===0x2019) out+="'";
+    else if (c===0x201c||c===0x201d) out+='"';
+    else if (c<128) out+=s.charAt(i);
+  }
+  return out;
+}
+
+function gv(id) {
+  var el=document.getElementById(id);
+  return el ? sanitize(el.value).toUpperCase() : '';
+}
+
+function DateforFile() {
+  var d=new Date(), y=d.getFullYear(), mo=d.getMonth()+1, dy=d.getDate();
+  if(mo<10)mo='0'+mo; if(dy<10)dy='0'+dy;
+  var h=(d.getHours()<10?'0':'')+d.getHours(), m=(d.getMinutes()<10?'0':'')+d.getMinutes();
+  return y+'-'+mo+'-'+dy+' '+h+'_'+m;
+}
+
+function RWS(s) { return s.replace(/\s+$/,'').trim(); }
+
+function AutoGrowTextArea(t) {
+  if (t && t.clientHeight < t.scrollHeight) {
+    t.style.height=t.scrollHeight+'px';
+    if (t.clientHeight < t.scrollHeight)
+      t.style.height=(t.scrollHeight*2-t.clientHeight)+'px';
+  }
+}
+
+function forceUpperCase() {
+  var inputs=document.querySelectorAll('#dataTable .data-cell input, #dataTable .hdr-cell input');
+  for (var i=0; i<inputs.length; i++) {
+    inputs[i].addEventListener('keyup', function() {
+      var s=this.selectionStart, e=this.selectionEnd;
+      this.value=this.value.toUpperCase();
+      if (this.setSelectionRange) this.setSelectionRange(s,e);
+    });
+  }
+}
+
+function handleEnterKey(e) {
+  var tag=(e.target||e.srcElement).tagName.toUpperCase();
+  var type=((e.target||e.srcElement).type||'').toUpperCase();
+  if (tag==='INPUT' && type!=='SUBMIT' && type!=='RESET' && type!=='BUTTON') {
+    if ((e.keyCode||e.which)===13) { e.preventDefault(); return false; }
+  }
+}
+
+/* Save form data to JSON .txt file */
+function SaveData() {
+  var form=document.getElementById('vwForm')||document.forms[0];
+  if (!form) { alert('Cannot find form.'); return; }
+  var fields=form.querySelectorAll('input,select,textarea');
+  var o={};
+  for (var i=0; i<fields.length; i++) {
+    var f=fields[i], k=f.name||f.id;
+    if (!k) continue;
+    if (f.type==='button'||f.type==='image'||f.type==='submit'||
+        f.type==='reset' ||f.type==='file') continue;
+    o[k]=f.value;
+  }
+  o['__colWidths__']=colWidths.slice();
+  var json=JSON.stringify(o,null,2);
+  var fname='PH_CF_Data_'+DateforFile()+'.txt';
+  fname=prompt('Save form data as:',fname);
+  if (fname===null) return;
+  downloadText(json, fname, 'text/plain');
+}
+
+/* Load saved .txt data file back into form */
+function populateForm() {
+  var raw=document.getElementById('parseme').value;
+  if (!raw||raw==='') { alert('No data to load.'); return; }
+  var o;
+  try { o=JSON.parse(raw); } catch(e) { alert('Could not read saved file.'); return; }
+  if (typeof o!=='object'||o===null) return;
+  if (o['__colWidths__']&&o['__colWidths__'].length===COLS.length) {
+    colWidths=o['__colWidths__'].slice(); applyColWidths();
+  }
+  for (var k in o) {
+    if (k==='__colWidths__') continue;
+    var el=document.getElementById(k)||document.querySelector('[name="'+k+'"]');
+    if (!el) continue;
+    el.value=o[k];
+  }
+  var ta=document.getElementById('Comments');
+  if (ta) AutoGrowTextArea(ta);
+}
+
+/* Export to CSV */
+function ExporttoCSV() {
+  var NL='\r\n';
+  var csv='';
+  csv+=gv('vwFormTitle')+NL;
+  csv+=gv('vwFormSubtitle')+NL;
+  csv+=gv('Incident_Name')+','+gv('Desc')+','+gv('ActivityDateTime1')+NL+NL;
+  csv+='#,';
+  for (var c=0; c<COLS.length; c++) {
+    var h=gv('Name'+COLS[c]);
+    if (h.indexOf(',')>-1) h='"'+h+'"';
+    csv+=h+(c<COLS.length-1?',':NL);
+  }
+  for (var x=1; x<=NROWS; x++) {
+    var hasData=false;
+    for (var c=0; c<COLS.length; c++) { if (gv(COLS[c]+x)!=='') { hasData=true; break; } }
+    if (hasData) {
+      csv+=x+',';
+      for (var c=0; c<COLS.length; c++) {
+        var v=gv(COLS[c]+x);
+        if (v.indexOf(',')>-1) v='"'+v.replace(/"/g,'""')+'"';
+        csv+=v+(c<COLS.length-1?',':NL);
+      }
+    }
+  }
+  var fname='CommFreq_'+DateforFile()+'.csv';
+  fname=prompt('Save CSV as:',fname);
+  if (fname===null) return;
+  downloadText(csv, fname, 'text/plain');
+}
+
+/* Shared file download helper */
+function downloadText(content, filename, mime) {
+  var blob=new Blob([content],{type:mime||'text/plain'});
+  var a=document.createElement('a');
+  a.download=filename;
+  a.href=window.URL.createObjectURL(blob);
+  a.onclick=function(e){document.body.removeChild(e.target);};
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+}
+
+window.onload = function() {
+  applyColWidths();
+  initResize();
+  forceUpperCase();
+  var frm=document.getElementById('vwForm');
+  if (frm) frm.addEventListener('keydown', handleEnterKey, false);
+  /* File load listener */
+  if (window.File && window.FileReader && window.FileList && window.Blob) {
+    var fs=document.getElementById('txtfiletoread');
+    if (fs) {
+      fs.addEventListener('change', function() {
+        var f=fs.files[0]; if (!f) return;
+        if (f.type.match(/text.*/) || f.name.match(/\.txt$/i)) {
+          var r=new FileReader();
+          r.onload=function(ev){
+            document.getElementById('parseme').value=ev.target.result;
+            populateForm();
+          };
+          r.readAsText(f);
+        } else { alert('Please select a .txt data file.'); }
+      },false);
+    }
+  }
+};
+</script>
+</head>
+<body>
+<div style="text-align:center;">
+<form action="http://{FormServer}:{FormPort}" enctype="multipart/form-data" id="vwForm" method="post">
+
+<table align="center" border="0" style="width:100%; max-width:1200px;">
+<tbody><tr><td>
+<table border="1" cellpadding="0" cellspacing="0" bordercolor="#999999"
+       style="background-color:rgb(250,250,255); width:100%;">
+<tbody>
+
+<!-- TITLE -->
+<tr bgcolor="#dee9f9">
+<td colspan="2" style="text-align:center; padding:8px 4px 4px 4px;">
+  <div id="formTitleWrap">
+    <div><input type="text" id="vwFormTitle" name="formTitle"
+         value="{var formTitle}" /></div>
+    <div style="margin-top:3px;">
+      <input type="text" id="vwFormSubtitle" name="formSubtitle"
+           value="{var formSubtitle}" />
+    </div>
+    <div style="font-size:10px; color:#666; margin-top:2px;">Ver 1.1 | PH Customizable Form | PAREDN DX1PRD</div>
+  </div>
+</td>
+</tr>
+
+<!-- HEADER FIELDS -->
+<tr>
+<td class="hdr-left">
+  <p><label>Event or Operation Name</label><br/>
+  <input type="text" id="Incident_Name" name="Incident_Name"
+         maxlength="60" value="{var Incident_Name}" /></p>
+  <label>Description / Form Information</label><br/>
+  <input type="text" id="Desc" name="Desc"
+         maxlength="60" value="{var Desc}" /><br/><br/>
+  <label>Prepared by (Callsign / Name)</label><br/>
+  <input type="text" id="PreparedBy" name="PreparedBy"
+         maxlength="40" value="{var PreparedBy}" />
+</td>
+<td class="hdr-right">
+  <span style="font-size:11px; color:#555;">Form Creation Date/Time</span>&nbsp;
+  <input type="text" maxlength="23" size="20"
+         name="ActivityDateTime1" id="ActivityDateTime1"
+         value="{var ActivityDateTime1}" /><br/><br/>
+  <span style="color:#006600; font-weight:bold; font-size:12px;">Winlink Express Sender</span>&nbsp;&nbsp;
+  <input type="text" maxlength="14" size="14"
+         readonly="readonly" name="MsgSender" value="{var MsgSender}" /><br/><br/>
+  <input type="file" id="txtfiletoread" accept=".txt" style="display:none;" />
+  <input type="button" value=" Load Form Data "
+         onclick="document.getElementById('txtfiletoread').click();"
+         title="Load a previously saved data file" />
+  &nbsp;
+  <input type="button" value="Reset Col Widths" onclick="resetColWidths()" title="Restore default column widths" />
+</td>
+</tr>
+
+<!-- DATA TABLE -->
+<tr>
+<td colspan="2" style="padding:4px;">
+<div style="overflow-x:auto;">
+<div id="tableScroll" style="max-height:480px; overflow-y:auto; overflow-x:visible;">
+<table id="dataTable" border="1" cellpadding="2" cellspacing="0">
+  <colgroup>
+    <col style="width:24px;" />
+    <col id="vcol_ColA" /><col id="vcol_ColB" /><col id="vcol_ColC" /><col id="vcol_ColD" />
+    <col id="vcol_ColE" /><col id="vcol_ColF" /><col id="vcol_ColG" /><col id="vcol_ColH" />
+  </colgroup>
+
+  <!-- HEADER ROW -->
+  <tr style="position:sticky; top:0; z-index:5;">
+    <td class="num-cell"><b>#</b></td>
+    <td class="hdr-cell"><input id="NameColA" name="NameColA" value="{var NameColA}" maxlength="30" /><div class="col-resize-handle" data-col="0" title="Drag to resize"></div></td>
+    <td class="hdr-cell"><input id="NameColB" name="NameColB" value="{var NameColB}" maxlength="30" /><div class="col-resize-handle" data-col="1" title="Drag to resize"></div></td>
+    <td class="hdr-cell"><input id="NameColC" name="NameColC" value="{var NameColC}" maxlength="20" /><div class="col-resize-handle" data-col="2" title="Drag to resize"></div></td>
+    <td class="hdr-cell"><input id="NameColD" name="NameColD" value="{var NameColD}" maxlength="20" /><div class="col-resize-handle" data-col="3" title="Drag to resize"></div></td>
+    <td class="hdr-cell"><input id="NameColE" name="NameColE" value="{var NameColE}" maxlength="20" /><div class="col-resize-handle" data-col="4" title="Drag to resize"></div></td>
+    <td class="hdr-cell"><input id="NameColF" name="NameColF" value="{var NameColF}" maxlength="20" /><div class="col-resize-handle" data-col="5" title="Drag to resize"></div></td>
+    <td class="hdr-cell"><input id="NameColG" name="NameColG" value="{var NameColG}" maxlength="25" /><div class="col-resize-handle" data-col="6" title="Drag to resize"></div></td>
+    <td class="hdr-cell"><input id="NameColH" name="NameColH" value="{var NameColH}" maxlength="30" /></td>
+  </tr>
+  <tr class="sep-row"><td colspan="9"></td></tr>
+
+  <!-- DATA ROWS 1-20 -->
+<tr><td class="num-cell">1</td>
+<td class="data-cell"><input id="ColA1"  name="ColA1"  value="{var ColA1}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColB1"  name="ColB1"  value="{var ColB1}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColC1"  name="ColC1"  value="{var ColC1}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColD1"  name="ColD1"  value="{var ColD1}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColE1"  name="ColE1"  value="{var ColE1}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColF1"  name="ColF1"  value="{var ColF1}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColG1"  name="ColG1"  value="{var ColG1}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColH1"  name="ColH1"  value="{var ColH1}"  maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">2</td>
+<td class="data-cell"><input id="ColA2"  name="ColA2"  value="{var ColA2}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColB2"  name="ColB2"  value="{var ColB2}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColC2"  name="ColC2"  value="{var ColC2}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColD2"  name="ColD2"  value="{var ColD2}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColE2"  name="ColE2"  value="{var ColE2}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColF2"  name="ColF2"  value="{var ColF2}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColG2"  name="ColG2"  value="{var ColG2}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColH2"  name="ColH2"  value="{var ColH2}"  maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">3</td>
+<td class="data-cell"><input id="ColA3"  name="ColA3"  value="{var ColA3}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColB3"  name="ColB3"  value="{var ColB3}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColC3"  name="ColC3"  value="{var ColC3}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColD3"  name="ColD3"  value="{var ColD3}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColE3"  name="ColE3"  value="{var ColE3}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColF3"  name="ColF3"  value="{var ColF3}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColG3"  name="ColG3"  value="{var ColG3}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColH3"  name="ColH3"  value="{var ColH3}"  maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">4</td>
+<td class="data-cell"><input id="ColA4"  name="ColA4"  value="{var ColA4}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColB4"  name="ColB4"  value="{var ColB4}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColC4"  name="ColC4"  value="{var ColC4}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColD4"  name="ColD4"  value="{var ColD4}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColE4"  name="ColE4"  value="{var ColE4}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColF4"  name="ColF4"  value="{var ColF4}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColG4"  name="ColG4"  value="{var ColG4}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColH4"  name="ColH4"  value="{var ColH4}"  maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">5</td>
+<td class="data-cell"><input id="ColA5"  name="ColA5"  value="{var ColA5}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColB5"  name="ColB5"  value="{var ColB5}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColC5"  name="ColC5"  value="{var ColC5}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColD5"  name="ColD5"  value="{var ColD5}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColE5"  name="ColE5"  value="{var ColE5}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColF5"  name="ColF5"  value="{var ColF5}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColG5"  name="ColG5"  value="{var ColG5}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColH5"  name="ColH5"  value="{var ColH5}"  maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">6</td>
+<td class="data-cell"><input id="ColA6"  name="ColA6"  value="{var ColA6}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColB6"  name="ColB6"  value="{var ColB6}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColC6"  name="ColC6"  value="{var ColC6}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColD6"  name="ColD6"  value="{var ColD6}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColE6"  name="ColE6"  value="{var ColE6}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColF6"  name="ColF6"  value="{var ColF6}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColG6"  name="ColG6"  value="{var ColG6}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColH6"  name="ColH6"  value="{var ColH6}"  maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">7</td>
+<td class="data-cell"><input id="ColA7"  name="ColA7"  value="{var ColA7}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColB7"  name="ColB7"  value="{var ColB7}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColC7"  name="ColC7"  value="{var ColC7}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColD7"  name="ColD7"  value="{var ColD7}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColE7"  name="ColE7"  value="{var ColE7}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColF7"  name="ColF7"  value="{var ColF7}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColG7"  name="ColG7"  value="{var ColG7}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColH7"  name="ColH7"  value="{var ColH7}"  maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">8</td>
+<td class="data-cell"><input id="ColA8"  name="ColA8"  value="{var ColA8}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColB8"  name="ColB8"  value="{var ColB8}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColC8"  name="ColC8"  value="{var ColC8}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColD8"  name="ColD8"  value="{var ColD8}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColE8"  name="ColE8"  value="{var ColE8}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColF8"  name="ColF8"  value="{var ColF8}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColG8"  name="ColG8"  value="{var ColG8}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColH8"  name="ColH8"  value="{var ColH8}"  maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">9</td>
+<td class="data-cell"><input id="ColA9"  name="ColA9"  value="{var ColA9}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColB9"  name="ColB9"  value="{var ColB9}"  maxlength="100" /></td>
+<td class="data-cell"><input id="ColC9"  name="ColC9"  value="{var ColC9}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColD9"  name="ColD9"  value="{var ColD9}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColE9"  name="ColE9"  value="{var ColE9}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColF9"  name="ColF9"  value="{var ColF9}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColG9"  name="ColG9"  value="{var ColG9}"  maxlength="50" /></td>
+<td class="data-cell"><input id="ColH9"  name="ColH9"  value="{var ColH9}"  maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">10</td>
+<td class="data-cell"><input id="ColA10" name="ColA10" value="{var ColA10}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB10" name="ColB10" value="{var ColB10}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC10" name="ColC10" value="{var ColC10}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD10" name="ColD10" value="{var ColD10}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE10" name="ColE10" value="{var ColE10}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF10" name="ColF10" value="{var ColF10}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG10" name="ColG10" value="{var ColG10}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH10" name="ColH10" value="{var ColH10}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">11</td>
+<td class="data-cell"><input id="ColA11" name="ColA11" value="{var ColA11}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB11" name="ColB11" value="{var ColB11}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC11" name="ColC11" value="{var ColC11}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD11" name="ColD11" value="{var ColD11}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE11" name="ColE11" value="{var ColE11}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF11" name="ColF11" value="{var ColF11}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG11" name="ColG11" value="{var ColG11}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH11" name="ColH11" value="{var ColH11}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">12</td>
+<td class="data-cell"><input id="ColA12" name="ColA12" value="{var ColA12}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB12" name="ColB12" value="{var ColB12}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC12" name="ColC12" value="{var ColC12}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD12" name="ColD12" value="{var ColD12}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE12" name="ColE12" value="{var ColE12}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF12" name="ColF12" value="{var ColF12}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG12" name="ColG12" value="{var ColG12}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH12" name="ColH12" value="{var ColH12}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">13</td>
+<td class="data-cell"><input id="ColA13" name="ColA13" value="{var ColA13}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB13" name="ColB13" value="{var ColB13}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC13" name="ColC13" value="{var ColC13}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD13" name="ColD13" value="{var ColD13}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE13" name="ColE13" value="{var ColE13}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF13" name="ColF13" value="{var ColF13}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG13" name="ColG13" value="{var ColG13}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH13" name="ColH13" value="{var ColH13}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">14</td>
+<td class="data-cell"><input id="ColA14" name="ColA14" value="{var ColA14}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB14" name="ColB14" value="{var ColB14}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC14" name="ColC14" value="{var ColC14}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD14" name="ColD14" value="{var ColD14}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE14" name="ColE14" value="{var ColE14}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF14" name="ColF14" value="{var ColF14}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG14" name="ColG14" value="{var ColG14}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH14" name="ColH14" value="{var ColH14}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">15</td>
+<td class="data-cell"><input id="ColA15" name="ColA15" value="{var ColA15}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB15" name="ColB15" value="{var ColB15}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC15" name="ColC15" value="{var ColC15}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD15" name="ColD15" value="{var ColD15}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE15" name="ColE15" value="{var ColE15}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF15" name="ColF15" value="{var ColF15}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG15" name="ColG15" value="{var ColG15}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH15" name="ColH15" value="{var ColH15}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">16</td>
+<td class="data-cell"><input id="ColA16" name="ColA16" value="{var ColA16}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB16" name="ColB16" value="{var ColB16}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC16" name="ColC16" value="{var ColC16}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD16" name="ColD16" value="{var ColD16}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE16" name="ColE16" value="{var ColE16}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF16" name="ColF16" value="{var ColF16}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG16" name="ColG16" value="{var ColG16}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH16" name="ColH16" value="{var ColH16}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">17</td>
+<td class="data-cell"><input id="ColA17" name="ColA17" value="{var ColA17}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB17" name="ColB17" value="{var ColB17}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC17" name="ColC17" value="{var ColC17}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD17" name="ColD17" value="{var ColD17}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE17" name="ColE17" value="{var ColE17}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF17" name="ColF17" value="{var ColF17}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG17" name="ColG17" value="{var ColG17}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH17" name="ColH17" value="{var ColH17}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">18</td>
+<td class="data-cell"><input id="ColA18" name="ColA18" value="{var ColA18}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB18" name="ColB18" value="{var ColB18}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC18" name="ColC18" value="{var ColC18}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD18" name="ColD18" value="{var ColD18}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE18" name="ColE18" value="{var ColE18}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF18" name="ColF18" value="{var ColF18}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG18" name="ColG18" value="{var ColG18}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH18" name="ColH18" value="{var ColH18}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">19</td>
+<td class="data-cell"><input id="ColA19" name="ColA19" value="{var ColA19}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB19" name="ColB19" value="{var ColB19}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC19" name="ColC19" value="{var ColC19}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD19" name="ColD19" value="{var ColD19}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE19" name="ColE19" value="{var ColE19}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF19" name="ColF19" value="{var ColF19}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG19" name="ColG19" value="{var ColG19}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH19" name="ColH19" value="{var ColH19}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">20</td>
+<td class="data-cell"><input id="ColA20" name="ColA20" value="{var ColA20}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB20" name="ColB20" value="{var ColB20}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC20" name="ColC20" value="{var ColC20}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD20" name="ColD20" value="{var ColD20}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE20" name="ColE20" value="{var ColE20}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF20" name="ColF20" value="{var ColF20}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG20" name="ColG20" value="{var ColG20}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH20" name="ColH20" value="{var ColH20}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">21</td>
+<td class="data-cell"><input id="ColA21" name="ColA21" value="{var ColA21}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB21" name="ColB21" value="{var ColB21}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC21" name="ColC21" value="{var ColC21}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD21" name="ColD21" value="{var ColD21}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE21" name="ColE21" value="{var ColE21}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF21" name="ColF21" value="{var ColF21}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG21" name="ColG21" value="{var ColG21}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH21" name="ColH21" value="{var ColH21}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">22</td>
+<td class="data-cell"><input id="ColA22" name="ColA22" value="{var ColA22}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB22" name="ColB22" value="{var ColB22}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC22" name="ColC22" value="{var ColC22}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD22" name="ColD22" value="{var ColD22}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE22" name="ColE22" value="{var ColE22}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF22" name="ColF22" value="{var ColF22}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG22" name="ColG22" value="{var ColG22}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH22" name="ColH22" value="{var ColH22}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">23</td>
+<td class="data-cell"><input id="ColA23" name="ColA23" value="{var ColA23}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB23" name="ColB23" value="{var ColB23}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC23" name="ColC23" value="{var ColC23}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD23" name="ColD23" value="{var ColD23}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE23" name="ColE23" value="{var ColE23}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF23" name="ColF23" value="{var ColF23}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG23" name="ColG23" value="{var ColG23}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH23" name="ColH23" value="{var ColH23}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">24</td>
+<td class="data-cell"><input id="ColA24" name="ColA24" value="{var ColA24}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB24" name="ColB24" value="{var ColB24}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC24" name="ColC24" value="{var ColC24}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD24" name="ColD24" value="{var ColD24}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE24" name="ColE24" value="{var ColE24}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF24" name="ColF24" value="{var ColF24}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG24" name="ColG24" value="{var ColG24}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH24" name="ColH24" value="{var ColH24}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">25</td>
+<td class="data-cell"><input id="ColA25" name="ColA25" value="{var ColA25}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB25" name="ColB25" value="{var ColB25}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC25" name="ColC25" value="{var ColC25}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD25" name="ColD25" value="{var ColD25}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE25" name="ColE25" value="{var ColE25}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF25" name="ColF25" value="{var ColF25}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG25" name="ColG25" value="{var ColG25}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH25" name="ColH25" value="{var ColH25}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">26</td>
+<td class="data-cell"><input id="ColA26" name="ColA26" value="{var ColA26}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB26" name="ColB26" value="{var ColB26}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC26" name="ColC26" value="{var ColC26}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD26" name="ColD26" value="{var ColD26}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE26" name="ColE26" value="{var ColE26}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF26" name="ColF26" value="{var ColF26}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG26" name="ColG26" value="{var ColG26}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH26" name="ColH26" value="{var ColH26}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">27</td>
+<td class="data-cell"><input id="ColA27" name="ColA27" value="{var ColA27}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB27" name="ColB27" value="{var ColB27}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC27" name="ColC27" value="{var ColC27}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD27" name="ColD27" value="{var ColD27}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE27" name="ColE27" value="{var ColE27}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF27" name="ColF27" value="{var ColF27}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG27" name="ColG27" value="{var ColG27}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH27" name="ColH27" value="{var ColH27}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">28</td>
+<td class="data-cell"><input id="ColA28" name="ColA28" value="{var ColA28}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB28" name="ColB28" value="{var ColB28}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC28" name="ColC28" value="{var ColC28}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD28" name="ColD28" value="{var ColD28}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE28" name="ColE28" value="{var ColE28}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF28" name="ColF28" value="{var ColF28}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG28" name="ColG28" value="{var ColG28}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH28" name="ColH28" value="{var ColH28}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">29</td>
+<td class="data-cell"><input id="ColA29" name="ColA29" value="{var ColA29}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB29" name="ColB29" value="{var ColB29}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC29" name="ColC29" value="{var ColC29}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD29" name="ColD29" value="{var ColD29}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE29" name="ColE29" value="{var ColE29}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF29" name="ColF29" value="{var ColF29}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG29" name="ColG29" value="{var ColG29}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH29" name="ColH29" value="{var ColH29}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">30</td>
+<td class="data-cell"><input id="ColA30" name="ColA30" value="{var ColA30}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB30" name="ColB30" value="{var ColB30}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC30" name="ColC30" value="{var ColC30}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD30" name="ColD30" value="{var ColD30}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE30" name="ColE30" value="{var ColE30}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF30" name="ColF30" value="{var ColF30}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG30" name="ColG30" value="{var ColG30}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH30" name="ColH30" value="{var ColH30}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">31</td>
+<td class="data-cell"><input id="ColA31" name="ColA31" value="{var ColA31}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB31" name="ColB31" value="{var ColB31}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC31" name="ColC31" value="{var ColC31}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD31" name="ColD31" value="{var ColD31}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE31" name="ColE31" value="{var ColE31}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF31" name="ColF31" value="{var ColF31}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG31" name="ColG31" value="{var ColG31}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH31" name="ColH31" value="{var ColH31}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">32</td>
+<td class="data-cell"><input id="ColA32" name="ColA32" value="{var ColA32}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB32" name="ColB32" value="{var ColB32}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC32" name="ColC32" value="{var ColC32}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD32" name="ColD32" value="{var ColD32}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE32" name="ColE32" value="{var ColE32}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF32" name="ColF32" value="{var ColF32}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG32" name="ColG32" value="{var ColG32}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH32" name="ColH32" value="{var ColH32}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">33</td>
+<td class="data-cell"><input id="ColA33" name="ColA33" value="{var ColA33}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB33" name="ColB33" value="{var ColB33}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC33" name="ColC33" value="{var ColC33}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD33" name="ColD33" value="{var ColD33}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE33" name="ColE33" value="{var ColE33}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF33" name="ColF33" value="{var ColF33}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG33" name="ColG33" value="{var ColG33}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH33" name="ColH33" value="{var ColH33}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">34</td>
+<td class="data-cell"><input id="ColA34" name="ColA34" value="{var ColA34}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB34" name="ColB34" value="{var ColB34}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC34" name="ColC34" value="{var ColC34}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD34" name="ColD34" value="{var ColD34}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE34" name="ColE34" value="{var ColE34}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF34" name="ColF34" value="{var ColF34}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG34" name="ColG34" value="{var ColG34}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH34" name="ColH34" value="{var ColH34}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">35</td>
+<td class="data-cell"><input id="ColA35" name="ColA35" value="{var ColA35}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB35" name="ColB35" value="{var ColB35}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC35" name="ColC35" value="{var ColC35}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD35" name="ColD35" value="{var ColD35}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE35" name="ColE35" value="{var ColE35}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF35" name="ColF35" value="{var ColF35}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG35" name="ColG35" value="{var ColG35}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH35" name="ColH35" value="{var ColH35}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">36</td>
+<td class="data-cell"><input id="ColA36" name="ColA36" value="{var ColA36}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB36" name="ColB36" value="{var ColB36}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC36" name="ColC36" value="{var ColC36}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD36" name="ColD36" value="{var ColD36}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE36" name="ColE36" value="{var ColE36}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF36" name="ColF36" value="{var ColF36}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG36" name="ColG36" value="{var ColG36}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH36" name="ColH36" value="{var ColH36}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">37</td>
+<td class="data-cell"><input id="ColA37" name="ColA37" value="{var ColA37}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB37" name="ColB37" value="{var ColB37}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC37" name="ColC37" value="{var ColC37}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD37" name="ColD37" value="{var ColD37}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE37" name="ColE37" value="{var ColE37}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF37" name="ColF37" value="{var ColF37}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG37" name="ColG37" value="{var ColG37}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH37" name="ColH37" value="{var ColH37}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">38</td>
+<td class="data-cell"><input id="ColA38" name="ColA38" value="{var ColA38}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB38" name="ColB38" value="{var ColB38}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC38" name="ColC38" value="{var ColC38}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD38" name="ColD38" value="{var ColD38}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE38" name="ColE38" value="{var ColE38}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF38" name="ColF38" value="{var ColF38}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG38" name="ColG38" value="{var ColG38}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH38" name="ColH38" value="{var ColH38}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">39</td>
+<td class="data-cell"><input id="ColA39" name="ColA39" value="{var ColA39}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB39" name="ColB39" value="{var ColB39}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC39" name="ColC39" value="{var ColC39}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD39" name="ColD39" value="{var ColD39}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE39" name="ColE39" value="{var ColE39}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF39" name="ColF39" value="{var ColF39}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG39" name="ColG39" value="{var ColG39}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH39" name="ColH39" value="{var ColH39}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">40</td>
+<td class="data-cell"><input id="ColA40" name="ColA40" value="{var ColA40}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB40" name="ColB40" value="{var ColB40}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC40" name="ColC40" value="{var ColC40}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD40" name="ColD40" value="{var ColD40}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE40" name="ColE40" value="{var ColE40}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF40" name="ColF40" value="{var ColF40}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG40" name="ColG40" value="{var ColG40}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH40" name="ColH40" value="{var ColH40}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">41</td>
+<td class="data-cell"><input id="ColA41" name="ColA41" value="{var ColA41}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB41" name="ColB41" value="{var ColB41}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC41" name="ColC41" value="{var ColC41}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD41" name="ColD41" value="{var ColD41}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE41" name="ColE41" value="{var ColE41}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF41" name="ColF41" value="{var ColF41}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG41" name="ColG41" value="{var ColG41}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH41" name="ColH41" value="{var ColH41}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">42</td>
+<td class="data-cell"><input id="ColA42" name="ColA42" value="{var ColA42}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB42" name="ColB42" value="{var ColB42}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC42" name="ColC42" value="{var ColC42}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD42" name="ColD42" value="{var ColD42}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE42" name="ColE42" value="{var ColE42}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF42" name="ColF42" value="{var ColF42}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG42" name="ColG42" value="{var ColG42}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH42" name="ColH42" value="{var ColH42}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">43</td>
+<td class="data-cell"><input id="ColA43" name="ColA43" value="{var ColA43}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB43" name="ColB43" value="{var ColB43}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC43" name="ColC43" value="{var ColC43}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD43" name="ColD43" value="{var ColD43}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE43" name="ColE43" value="{var ColE43}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF43" name="ColF43" value="{var ColF43}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG43" name="ColG43" value="{var ColG43}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH43" name="ColH43" value="{var ColH43}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">44</td>
+<td class="data-cell"><input id="ColA44" name="ColA44" value="{var ColA44}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB44" name="ColB44" value="{var ColB44}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC44" name="ColC44" value="{var ColC44}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD44" name="ColD44" value="{var ColD44}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE44" name="ColE44" value="{var ColE44}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF44" name="ColF44" value="{var ColF44}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG44" name="ColG44" value="{var ColG44}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH44" name="ColH44" value="{var ColH44}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">45</td>
+<td class="data-cell"><input id="ColA45" name="ColA45" value="{var ColA45}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB45" name="ColB45" value="{var ColB45}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC45" name="ColC45" value="{var ColC45}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD45" name="ColD45" value="{var ColD45}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE45" name="ColE45" value="{var ColE45}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF45" name="ColF45" value="{var ColF45}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG45" name="ColG45" value="{var ColG45}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH45" name="ColH45" value="{var ColH45}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">46</td>
+<td class="data-cell"><input id="ColA46" name="ColA46" value="{var ColA46}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB46" name="ColB46" value="{var ColB46}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC46" name="ColC46" value="{var ColC46}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD46" name="ColD46" value="{var ColD46}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE46" name="ColE46" value="{var ColE46}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF46" name="ColF46" value="{var ColF46}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG46" name="ColG46" value="{var ColG46}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH46" name="ColH46" value="{var ColH46}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">47</td>
+<td class="data-cell"><input id="ColA47" name="ColA47" value="{var ColA47}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB47" name="ColB47" value="{var ColB47}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC47" name="ColC47" value="{var ColC47}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD47" name="ColD47" value="{var ColD47}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE47" name="ColE47" value="{var ColE47}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF47" name="ColF47" value="{var ColF47}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG47" name="ColG47" value="{var ColG47}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH47" name="ColH47" value="{var ColH47}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">48</td>
+<td class="data-cell"><input id="ColA48" name="ColA48" value="{var ColA48}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB48" name="ColB48" value="{var ColB48}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC48" name="ColC48" value="{var ColC48}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD48" name="ColD48" value="{var ColD48}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE48" name="ColE48" value="{var ColE48}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF48" name="ColF48" value="{var ColF48}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG48" name="ColG48" value="{var ColG48}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH48" name="ColH48" value="{var ColH48}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">49</td>
+<td class="data-cell"><input id="ColA49" name="ColA49" value="{var ColA49}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB49" name="ColB49" value="{var ColB49}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC49" name="ColC49" value="{var ColC49}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD49" name="ColD49" value="{var ColD49}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE49" name="ColE49" value="{var ColE49}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF49" name="ColF49" value="{var ColF49}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG49" name="ColG49" value="{var ColG49}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH49" name="ColH49" value="{var ColH49}" maxlength="100" /></td>
+</tr>
+<tr><td class="num-cell">50</td>
+<td class="data-cell"><input id="ColA50" name="ColA50" value="{var ColA50}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColB50" name="ColB50" value="{var ColB50}" maxlength="100" /></td>
+<td class="data-cell"><input id="ColC50" name="ColC50" value="{var ColC50}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColD50" name="ColD50" value="{var ColD50}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColE50" name="ColE50" value="{var ColE50}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColF50" name="ColF50" value="{var ColF50}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColG50" name="ColG50" value="{var ColG50}" maxlength="50" /></td>
+<td class="data-cell"><input id="ColH50" name="ColH50" value="{var ColH50}" maxlength="100" /></td>
+</tr>
+
+</table>
+</div><!-- end tableScroll -->
+</div><!-- end overflow-x -->
+</td>
+</tr>
+
+<!-- COMMENTS - now editable -->
+<tr valign="top">
+<td colspan="2" style="text-align:left; padding:8px;">
+  <b style="text-decoration:underline;">Comments or Additional Information</b><br/>
+  <textarea cols="130" rows="2" name="Comments" id="Comments"
+    onkeypress="if(event.keyCode==34){return false}"
+    onkeyup="AutoGrowTextArea(this)"
+    onchange="this.value=RWS(this.value)"
+    style="width:98%; text-transform:uppercase;">{var Comments}</textarea>
+</td>
+</tr>
+
+<!-- BUTTON BAR -->
+<tr>
+<td colspan="2" style="padding:6px 8px; text-align:left; border-top:2px solid #0f88f2;">
+  <input type="button" value="Save Form Data" onclick="SaveData()"
+         title="Save all data to a .txt file that can be reloaded into this form" />
+  &nbsp;
+  <input type="button" value="Export to CSV" onclick="ExporttoCSV()"
+         title="Export table data to a spreadsheet-compatible CSV file" />
+  &nbsp;
+  <input type="reset" value="Reset Form"
+         style="border:2px solid red; border-radius:.25rem; background:white; padding:2px 6px; font-size:13px; cursor:pointer;" />
+  <input name="testCall" type="hidden" id="testCall" value="{MsgSender}" />
+  <textarea name="parseme" cols="1" rows="0" id="parseme" style="display:none;"></textarea>
+  &nbsp;&nbsp;<small style="color:#666;">PH Customizable Form Ver 1.1 | PAREDN DX1PRD</small>
+</td>
+</tr>
+
+</tbody>
+</table>
+</td></tr></tbody>
+</table>
+
+<p>&nbsp;</p>
+</form>
+</div>
+</body></html>

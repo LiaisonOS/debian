@@ -265,6 +265,12 @@ body {
 .form-group input:focus { outline: none; border-color: var(--accent); }
 .form-group input[readonly] { color: var(--text-muted); }
 .form-group input::placeholder { color: #444; }
+/* Checkboxes must NOT inherit the full-width text-input styling above —
+   render them as a clean native box, exactly like the P2P toggle. */
+.form-group input[type="checkbox"] {
+    width: 18px; height: 18px; min-width: 0; padding: 0; margin: 0;
+    flex: 0 0 auto; background: none; border: none; cursor: pointer;
+}
 
 /* Callsign dropdown */
 .callsign-dropdown {
@@ -295,6 +301,28 @@ body {
     border-radius: 4px; font-weight: 700; font-size: 0.8rem;
 }
 
+/* Callsign lookup source tag (DB / Log / QRZ) */
+.call-source {
+    padding: 1px 7px; border-radius: 10px; font-size: 0.72rem; font-weight: 600;
+    background: var(--bg-input); color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+.call-source.src-qrz {
+    background: rgba(90,184,135,0.15); color: var(--success, #5ab887);
+    border-color: rgba(90,184,135,0.4);
+}
+
+/* Callsign validation verdict */
+.call-validate { padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 0.8rem; }
+.call-validate.val-invalid {
+    background: var(--danger, #f87171); color: #fff;
+    animation: dupflash 0.9s ease-in-out 2;
+}
+.call-validate.val-unverified {
+    background: rgba(251,191,36,0.18); color: var(--warning, #fbbf24);
+    border: 1px solid rgba(251,191,36,0.45);
+}
+
 /* QSO table */
 .qso-table {
     width: 100%; border-collapse: collapse; font-size: 0.85rem;
@@ -309,6 +337,21 @@ body {
 }
 .qso-table .call-col { color: var(--accent); font-weight: 600; }
 .qso-table tbody tr:hover { background: var(--bg-hover); }
+
+/* Already-worked row: when the typed call is a per-band dupe, the list scrolls
+   to it and this row lights up so the operator spots it instantly. */
+.qso-table tbody tr.dup-row {
+    background: rgba(248,113,113,0.22);
+    outline: 2px solid var(--danger, #f87171);
+    outline-offset: -2px;
+    animation: dupflash 0.9s ease-in-out 2;
+}
+.qso-table tbody tr.dup-row td { color: #ffd9d9; }
+.qso-table tbody tr.dup-row .call-col { color: #ff8a8a; }
+@keyframes dupflash {
+    0%, 100% { background: rgba(248,113,113,0.22); }
+    50%      { background: rgba(248,113,113,0.45); }
+}
 
 /* Export bar */
 .export-bar {

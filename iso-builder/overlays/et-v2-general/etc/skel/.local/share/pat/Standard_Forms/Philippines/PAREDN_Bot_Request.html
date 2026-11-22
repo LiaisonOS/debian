@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<title>PAREDN Bot Request</title>
+<style type="text/css">
+body, td, th { font-family:Arial,Helvetica,sans-serif; font-size:12px; }
+input, select { padding:2px; font-family:Arial,Helvetica,sans-serif; font-size:12px; }
+textarea { padding:2px; font-family:Arial,Helvetica,sans-serif; font-size:12px; }
+.version  { color:#666666; font-size:11px; }
+.lbl      { font-size:12px; font-weight:bold; }
+.note     { color:#333333; font-size:11px; font-style:italic; }
+.cmddesc  { background-color:#fff8e6; border:1px solid #f0d070; border-radius:3px;
+            padding:5px 8px; font-size:11px; color:#6b4f00; margin-top:4px;
+            line-height:1.5; display:none; }
+.preview  { background-color:#f0f4ff; border:1px solid #c0cfee; border-radius:3px;
+            padding:6px 10px; font-family:'Courier New',monospace; font-size:13px;
+            font-weight:bold; color:#003087; margin-top:4px; word-break:break-all; }
+.topreview { background-color:#eafbf0; border:1px solid #a8dfc0; border-radius:3px;
+             padding:4px 8px; font-family:'Courier New',monospace; font-size:12px;
+             font-weight:bold; color:#004d20; margin-top:2px; display:inline-block; }
+.sec-wx   { background-color:#003087; }
+.sec-file { background-color:#1a5c1a; }
+input[type=submit] { border:1.75px solid green; border-radius:3px; background-color:white;
+                     padding:3px 10px; font-size:14px; cursor:pointer; height:28px; width:80px; }
+input[type=reset]  { border:1.75px solid red; border-radius:3px; background-color:white;
+                     padding:3px 10px; font-size:13px; cursor:pointer; }
+select#botSelect   { font-size:14px; font-weight:bold; width:380px; padding:4px; }
+</style>
+
+<script type="text/javascript">
+
+// ── Weather bot command metadata ──────────────────────────────────────────
+var WX_META = {
+  "WX":      { label:"Current Weather",        desc:"Current Weather &mdash; real-time conditions (temp, humidity, wind, pressure) for a city, region code, or coordinates.", needsLoc:true,  needsMode:true,  needsCount:false },
+  "FC":      { label:"Forecast (24h)",          desc:"24-Hour Forecast &mdash; probability of precipitation and conditions for the next 24h at a location.", needsLoc:true,  needsMode:true,  needsCount:false },
+  "WX?":     { label:"Find Location / Geocode", desc:"Find Location &mdash; shows top geocode matches for an ambiguous place name. Use this first if unsure of exact name.", needsLoc:true,  needsMode:false, needsCount:false },
+  "PAGASA":  { label:"PAGASA CAP Alerts",       desc:"PAGASA CAP Alerts &mdash; latest Common Alerting Protocol advisories. Normal to receive 'no active alerts'.", needsLoc:false, needsMode:false, needsCount:true  },
+  "TCB":     { label:"Typhoon Bulletin",        desc:"Typhoon Bulletin &mdash; latest PAGASA Tropical Cyclone Bulletin. Only issued when a typhoon is within the PAR.", needsLoc:false, needsMode:true,  needsCount:false },
+  "OUTLOOK": { label:"Weekly Weather Outlook",  desc:"Weekly Outlook &mdash; PAGASA day-range weather narrative for the coming week covering all island groups.", needsLoc:false, needsMode:true,  needsCount:false },
+  "GALE":    { label:"Gale Warning",            desc:"Gale Warning &mdash; PAGASA gale status, affected sea areas, wind speeds. Check before coastal or maritime operations.", needsLoc:false, needsMode:true,  needsCount:false },
+  "HF":      { label:"HF / Space Weather",      desc:"HF / Space Weather &mdash; Kp index, geomagnetic storm level (G1-G5), F10.7 solar flux, and HF propagation advisory.", needsLoc:false, needsMode:true,  needsCount:false }
+};
+
+// ── File bot command metadata ─────────────────────────────────────────────
+var FILE_META = {
+  "LIST":    { label:"List Available Files",  desc:"LIST &mdash; shows all files currently available for download from PAREDN-FILES.", needsFile:false },
+  "GET":     { label:"Download a File",       desc:"GET &mdash; downloads a specific file. Enter the exact filename below after selecting GET.", needsFile:true  },
+  "HELP":    { label:"Help / Command List",   desc:"HELP &mdash; returns a list of all PAREDN-FILES commands and usage instructions.", needsFile:false }
+};
+
+// ── Australia WX command metadata ─────────────────────────────────────────
+var AUS_META = {
+  "WX":  { label:"Current Weather (AUS)", desc:"WX &mdash; Current weather for any Australian city using BOM ACCESS-G model via Open-Meteo. No API key required.", needsLoc:true,  needsMode:true,  needsCount:false },
+  "FC":  { label:"Forecast 24h (AUS)",    desc:"FC &mdash; 24-hour forecast for any Australian location using BOM ACCESS-G model.", needsLoc:true,  needsMode:true,  needsCount:false },
+  "WX?": { label:"Find AU Location",      desc:"WX? &mdash; Geocode lookup for Australian place names. Use if unsure of the exact city name.", needsLoc:true,  needsMode:false, needsCount:false }
+};
+
+// ── US WX command metadata ────────────────────────────────────────────────
+var USA_META = {
+  "WX":  { label:"Current Weather (USA)", desc:"WX &mdash; Current weather from NOAA/NWS for any US location. Official US government source, no API key required.", needsLoc:true,  needsMode:true,  needsCount:false },
+  "FC":  { label:"Forecast 24h (USA)",    desc:"FC &mdash; 24-hour forecast from NOAA/NWS for any US location.", needsLoc:true,  needsMode:true,  needsCount:false },
+  "WX?": { label:"Find US Location",      desc:"WX? &mdash; Geocode lookup for US place names. Use if unsure of the exact city name.", needsLoc:true,  needsMode:false, needsCount:false }
+};
+
+// Location placeholder and examples per bot
+var LOC_HINTS = {
+  "PHL-WX":       { ph:"City, province, region code (NCR, R3, R7), or lat,lon",
+                    ex:"Examples: Navotas &nbsp;|&nbsp; Quezon City &nbsp;|&nbsp; NCR &nbsp;|&nbsp; R7 &nbsp;|&nbsp; 14.65,121.02" },
+  "AUS-WX":       { ph:"Australian city or town e.g. Sydney, Melbourne, Darwin",
+                    ex:"Examples: Sydney &nbsp;|&nbsp; Melbourne &nbsp;|&nbsp; Darwin &nbsp;|&nbsp; Townsville &nbsp;|&nbsp; Perth" },
+  "USA-WX":       { ph:"US city e.g. Los Angeles, San Francisco, Chicago",
+                    ex:"Examples: Los Angeles &nbsp;|&nbsp; San Francisco &nbsp;|&nbsp; Claremont &nbsp;|&nbsp; Chicago" }
+};
+
+// ── Bot switch ────────────────────────────────────────────────────────────
+function onBotChange() {
+  var bot = document.getElementById('botSelect').value;
+  var isWx   = (bot === 'PHL-WX' || bot === 'AUS-WX' || bot === 'USA-WX');
+  var isFile = (bot === 'PAREDN-FILES');
+  var isAi   = (bot === 'PHL-AI');
+
+  // Show/hide bot-specific sections
+  document.getElementById('wxSection').style.display   = isWx   ? '' : 'none';
+  document.getElementById('fileSection').style.display = isFile ? '' : 'none';
+  document.getElementById('aiSection').style.display    = isAi   ? '' : 'none';
+
+  // Populate WX command dropdown based on which bot is selected
+  var wxSel = document.getElementById('wxCmd');
+  wxSel.innerHTML = '<option value="">&#8212; Select a report type &#8212;</option>';
+  if (bot === 'PHL-WX') {
+    wxSel.innerHTML += '<option value="WX">WX &#8212; Current Weather</option>';
+    wxSel.innerHTML += '<option value="FC">FC &#8212; Forecast (24h)</option>';
+    wxSel.innerHTML += '<option value="WX?">WX? &#8212; Find Location / Geocode</option>';
+    wxSel.innerHTML += '<option value="PAGASA">PAGASA &#8212; CAP Weather Alerts</option>';
+    wxSel.innerHTML += '<option value="TCB">TCB &#8212; Typhoon Bulletin</option>';
+    wxSel.innerHTML += '<option value="OUTLOOK">OUTLOOK &#8212; Weekly Weather Outlook</option>';
+    wxSel.innerHTML += '<option value="GALE">GALE &#8212; Gale Warning</option>';
+    wxSel.innerHTML += '<option value="HF">HF &#8212; HF / Space Weather</option>';
+  } else if (bot === 'AUS-WX') {
+    wxSel.innerHTML += '<option value="WX">WX &#8212; Current Weather (Australia)</option>';
+    wxSel.innerHTML += '<option value="FC">FC &#8212; Forecast 24h (Australia)</option>';
+    wxSel.innerHTML += '<option value="WX?">WX? &#8212; Find Australian Location</option>';
+  } else if (bot === 'USA-WX') {
+    wxSel.innerHTML += '<option value="WX">WX &#8212; Current Weather (United States)</option>';
+    wxSel.innerHTML += '<option value="FC">FC &#8212; Forecast 24h (United States)</option>';
+    wxSel.innerHTML += '<option value="WX?">WX? &#8212; Find US Location</option>';
+  }
+
+  // Update location placeholder and note examples
+  if (LOC_HINTS[bot]) {
+    document.getElementById('location').placeholder = LOC_HINTS[bot].ph;
+    document.getElementById('locNote').innerHTML    = LOC_HINTS[bot].ex;
+  }
+
+  // Reset command selects and dependent rows
+  document.getElementById('wxCmd').value   = '';
+  document.getElementById('fileCmd').value = '';
+  document.getElementById('aiQuestion').value = '';
+
+  setDisplay('locationRow', false);
+  setDisplay('modeRow', false);
+  setDisplay('countRow', false);
+  setDisplay('filenameRow', false);
+
+  document.getElementById('cmdDesc').innerHTML    = '';
+  document.getElementById('cmdDesc').style.display = 'none';
+
+  // Update To: display and MsgTo hidden input
+  var toVal = bot || '';
+  document.getElementById('toDisplay').value = toVal;
+  document.getElementById('MsgTo').value     = toVal;
+
+  buildSubject();
+}
+
+function setDisplay(id, show) {
+  document.getElementById(id).style.display = show ? '' : 'none';
+}
+
+// ── WX form update ────────────────────────────────────────────────────────
+function onWxCmdChange() {
+  var bot  = document.getElementById('botSelect').value;
+  var cmd  = document.getElementById('wxCmd').value;
+  var meta = null;
+  if (bot === 'PHL-WX') meta = WX_META[cmd]  || null;
+  if (bot === 'AUS-WX') meta = AUS_META[cmd] || null;
+  if (bot === 'USA-WX') meta = USA_META[cmd] || null;
+
+  setDisplay('locationRow', !!(meta && meta.needsLoc));
+  setDisplay('modeRow',     !!(meta && meta.needsMode));
+  setDisplay('countRow',    !!(meta && meta.needsCount));
+
+  if (!meta || !meta.needsLoc) { document.getElementById('location').value = ''; }
+
+  showDesc(meta ? meta.desc : null);
+  buildSubject();
+}
+
+// ── File form update ──────────────────────────────────────────────────────
+function onFileCmdChange() {
+  var cmd  = document.getElementById('fileCmd').value;
+  var meta = FILE_META[cmd] || null;
+
+  setDisplay('filenameRow', meta && meta.needsFile);
+  if (!meta || !meta.needsFile) { document.getElementById('filename').value = ''; }
+
+  showDesc(meta ? meta.desc : null);
+  buildSubject();
+}
+
+function showDesc(html) {
+  var el = document.getElementById('cmdDesc');
+  if (html) { el.innerHTML = html; el.style.display = ''; }
+  else       { el.innerHTML = ''; el.style.display = 'none'; }
+}
+
+// ── Subject builder ───────────────────────────────────────────────────────
+function buildSubject() {
+  var bot  = document.getElementById('botSelect').value;
+  var subj = '';
+  var cmdLabel = '';
+  var locVal   = '';
+  var modeVal  = '';
+  var fileVal  = '';
+  var countVal = '';
+  var bodyCmd  = '';   // command string for PAREDN-FILES body
+
+  if (bot === 'PHL-WX' || bot === 'AUS-WX' || bot === 'USA-WX') {
+    var cmd   = document.getElementById('wxCmd').value;
+    var loc   = trim(document.getElementById('location').value);
+    var mode  = document.getElementById('mode').value;
+    var count = document.getElementById('pagasaCount').value;
+    var meta  = null;
+    if (bot === 'PHL-WX') meta = WX_META[cmd]  || null;
+    if (bot === 'AUS-WX') meta = AUS_META[cmd] || null;
+    if (bot === 'USA-WX') meta = USA_META[cmd] || null;
+
+    if (!cmd) {
+      setPreview('<span style="color:#999;">&#8212; select a report type above &#8212;</span>', '');
+      document.getElementById('Newsubject').value = '';
+      return;
+    }
+    subj = cmd;
+    if (meta && meta.needsLoc   && loc)             { subj += ' ' + loc; }
+    if (meta && meta.needsCount && count !== '3')   { subj += ' ' + count; }
+    if (meta && meta.needsMode  && mode === 'LONG') { subj += ' LONG'; }
+
+    cmdLabel = meta ? meta.label : cmd;
+    locVal   = (meta && meta.needsLoc)   ? loc   : '';
+    modeVal  = (meta && meta.needsMode)  ? mode  : '';
+    countVal = (meta && meta.needsCount) ? count : '';
+
+    // All WX bots: command goes in Subject line (and body first line as fallback)
+    document.getElementById('Newsubject').value = subj;
+    bodyCmd = subj;
+
+  } else if (bot === 'PAREDN-FILES') {
+    var fcmd  = document.getElementById('fileCmd').value;
+    var fname = trim(document.getElementById('filename').value);
+    var fmeta = FILE_META[fcmd] || null;
+
+    if (!fcmd) {
+      setPreview('<span style="color:#999;">&#8212; select a command above &#8212;</span>', '');
+      document.getElementById('Newsubject').value = '';
+      return;
+    }
+    subj = fcmd;
+    if (fmeta && fmeta.needsFile && fname) { subj += ' ' + fname; }
+
+    cmdLabel = fmeta ? fmeta.label : fcmd;
+    fileVal  = (fmeta && fmeta.needsFile) ? fname : '';
+
+    // PAREDN-FILES: fixed subject, command goes in body first line
+    document.getElementById('Newsubject').value = 'PAREDN File Request';
+    bodyCmd = subj;
+
+  } else if (bot === 'PHL-AI') {
+    var q = trim(document.getElementById('aiQuestion').value);
+
+    if (!q) {
+      setPreview('<span style="color:#999;">&#8212; type your question above &#8212;</span>', '');
+      document.getElementById('Newsubject').value = '';
+      return;
+    }
+    subj = q;
+    cmdLabel = 'Ask PHL-AI';
+
+    // PHL-AI reads the question from the SUBJECT line (falls back to
+    // body only if Subject is blank) — so, unlike PAREDN-FILES, the
+    // real question must go directly into Newsubject, not a fixed
+    // subject with the real content in the body.
+    document.getElementById('Newsubject').value = subj;
+    bodyCmd = subj;
+
+  } else {
+    setPreview('<span style="color:#999;">&#8212; select a bot above &#8212;</span>', '');
+    document.getElementById('Newsubject').value = '';
+    return;
+  }
+
+  setPreview(null, subj);
+
+  // Populate all hidden var inputs
+  document.getElementById('CmdLabel').value = cmdLabel;
+  document.getElementById('LocVal').value   = locVal;
+  document.getElementById('ModeVal').value  = modeVal;
+  document.getElementById('CountVal').value = countVal;
+  document.getElementById('FileVal').value  = fileVal;
+  document.getElementById('BotName').value  = bot;
+
+  // Build BodyText — command always on first line, then formatted block
+  var lines = [];
+  lines.push(bodyCmd);
+  lines.push('-');
+  lines.push('PAREDN BOT REQUEST');
+  lines.push('------------------');
+  lines.push('Bot     : ' + bot);
+  lines.push((bot === 'PHL-AI' ? 'Question: ' : 'Command : ') + subj);
+  if (locVal)  { lines.push('Location: ' + locVal); }
+  if (fileVal) { lines.push('File    : ' + fileVal); }
+  if (modeVal) { lines.push('Detail  : ' + modeVal); }
+  lines.push('');
+  lines.push('Bot will reply to your callsign via Winlink.');
+  lines.push('Submitted via PAREDN Bot Request Template v3.0');
+  document.getElementById('BodyText').value = lines.join('\r\n');
+}
+
+function setPreview(rawHtml, text) {
+  var el = document.getElementById('subjectPreview');
+  if (rawHtml !== null) { el.innerHTML = rawHtml; }
+  else { el.textContent = text; }
+}
+
+function trim(s) { return (s || '').replace(/^\s+|\s+$/g, ''); }
+
+// ── createjson: write FormData.txt content to attached_text ──────────────
+function createjson() {
+  var jsontext = document.getElementById('FormData').value;
+  var subj  = document.getElementById('Newsubject').value;
+  var bot   = document.getElementById('botSelect').value;
+  var label = document.getElementById('CmdLabel').value;
+  var loc   = document.getElementById('LocVal').value;
+  var mode  = document.getElementById('ModeVal').value;
+  var file  = document.getElementById('FileVal').value;
+
+  jsontext = jsontext.replace('jA', subj);
+  jsontext = jsontext.replace('jB', bot);
+  jsontext = jsontext.replace('jC', label);
+  jsontext = jsontext.replace('jD', loc);
+  jsontext = jsontext.replace('jE', mode);
+  jsontext = jsontext.replace('jF', file);
+
+  // Normalise to \r\n - Winlink FormData.txt parser requires Windows line endings
+  jsontext = jsontext.split('\r\n').join('\n');
+  jsontext = jsontext.split('\r').join('\n');
+  jsontext = jsontext.split('\n').join('\r\n');
+
+  document.getElementById('attached_text').value = jsontext;
+}
+
+// ── Validation and submit ─────────────────────────────────────────────────
+function validate() {
+  var bot = document.getElementById('botSelect').value;
+  if (!bot) { alert('Please select a bot.'); return false; }
+
+  if (bot === 'PHL-WX' || bot === 'AUS-WX' || bot === 'USA-WX') {
+    var cmd  = document.getElementById('wxCmd').value;
+    var meta = null;
+    if (bot === 'PHL-WX') meta = WX_META[cmd]  || null;
+    if (bot === 'AUS-WX') meta = AUS_META[cmd] || null;
+    if (bot === 'USA-WX') meta = USA_META[cmd] || null;
+    var loc  = trim(document.getElementById('location').value);
+    if (!cmd) { alert('Please select a Report Type.'); return false; }
+    if (meta && meta.needsLoc && !loc) {
+      alert('Please enter a Location for the ' + cmd + ' command.');
+      document.getElementById('location').focus();
+      return false;
+    }
+  } else if (bot === 'PAREDN-FILES') {
+    var fcmd  = document.getElementById('fileCmd').value;
+    var fmeta = FILE_META[fcmd] || null;
+    var fname = trim(document.getElementById('filename').value);
+    if (!fcmd) { alert('Please select a File Command.'); return false; }
+    if (fmeta && fmeta.needsFile && !fname) {
+      alert('Please enter a filename for the GET command.');
+      document.getElementById('filename').focus();
+      return false;
+    }
+  } else if (bot === 'PHL-AI') {
+    var q = trim(document.getElementById('aiQuestion').value);
+    if (!q) {
+      alert('Please type a question for PHL-AI.');
+      document.getElementById('aiQuestion').focus();
+      return false;
+    }
+    if (q.length > 100) {
+      alert('Please keep your question to 100 characters or fewer for reliable delivery over radio (currently ' + q.length + ').');
+      document.getElementById('aiQuestion').focus();
+      return false;
+    }
+  }
+
+  buildSubject();
+  createjson();
+  return confirm('Click OK to submit, then close the browser window to return to Winlink Express and post your message.');
+}
+
+function checkIfInBrowser() {
+  var x = document.getElementById('testCall').value;
+  if (x.indexOf('{Msg') > -1) {
+    document.getElementById('Submit').style.visibility = 'hidden';
+    alert('You are running this form outside of Winlink Express.\n\nPlease open it through the Winlink Express Template Manager.');
+  }
+}
+
+window.onload = function() { checkIfInBrowser(); onBotChange(); };
+</script>
+</head>
+
+<body>
+<form id="myform" method="post"
+  onsubmit="return validate();"
+  enctype="multipart/form-data"
+  action="http://{FormServer}:{FormPort}">
+
+<!-- ═══ Winlink required named inputs ═══ -->
+<input type="hidden" name="MsgTo"      id="MsgTo"      value="" />
+<input type="hidden" name="Newsubject" id="Newsubject"  value="" />
+<input type="hidden" name="BotName"    id="BotName"     value="" />
+<input type="hidden" name="CmdLabel"   id="CmdLabel"    value="" />
+<input type="hidden" name="LocVal"     id="LocVal"      value="" />
+<input type="hidden" name="ModeVal"    id="ModeVal"     value="" />
+<input type="hidden" name="CountVal"   id="CountVal"    value="" />
+<input type="hidden" name="FileVal"    id="FileVal"     value="" />
+<input type="hidden" name="BodyText"   id="BodyText"    value="" />
+<input type="hidden" name="attached_file" value="FormData.txt" />
+<textarea name="attached_text" id="attached_text" style="display:none;"></textarea>
+<textarea name="FormData"      id="FormData"      style="display:none;">MsgTo:T=jB
+Newsubject:T=jA
+BotName:T=jB
+CmdLabel:T=jC
+LocVal:T=jD
+ModeVal:T=jE
+FileVal:T=jF</textarea>
+<input type="hidden" name="testCall"  id="testCall"  value="{MsgSender}" />
+<input type="hidden" name="MsgSender" id="MsgSender" value="{MsgSender}" />
+
+<table width="600" border="3" cellpadding="4" cellspacing="0" bordercolor="#003087" align="center">
+<tbody>
+
+<!-- HEADER -->
+<tr>
+  <td bgcolor="#003087" style="text-align:center; padding:10px;">
+    <span style="color:#ffffff; font-size:20px; font-weight:bold; font-style:italic;">PAREDN Bot Request</span><br />
+    <span style="color:#a8cce8; font-size:12px; font-weight:bold;">PHL-WX &bull; AUS-WX &bull; USA-WX &bull; PAREDN-FILES &bull; PHL-AI &bull; DX1PRD</span><br />
+    <span style="color:#C8902A; font-size:11px;">Philippine Amateur Radio Emergency Data Network</span>
+  </td>
+</tr>
+
+<!-- BOT SELECTION -->
+<tr>
+  <td bgcolor="#dee9f9">
+    <span class="lbl">Select Bot *</span><br />
+    <select id="botSelect" onchange="onBotChange();">
+      <option value="">&#8212; Select a bot &#8212;</option>
+      <option value="PHL-WX">PHL-WX &mdash; Philippines Weather (WX, FC, PAGASA, TCB, OUTLOOK, GALE, HF)</option>
+      <option value="AUS-WX">AUS-WX &mdash; Australia Weather (BOM ACCESS-G via Open-Meteo)</option>
+      <option value="USA-WX">USA-WX &mdash; United States Weather (NOAA / NWS)</option>
+      <option value="PAREDN-FILES">PAREDN-FILES &mdash; File Bot (List, Download files)</option>
+      <option value="PHL-AI">PHL-AI &mdash; Ask a Question (Ham Radio / PAREDN, English or Tagalog)</option>
+    </select>
+  </td>
+</tr>
+
+<!-- TO (auto-filled display) -->
+<tr>
+  <td bgcolor="#dee9f9">
+    <span class="lbl">To (auto-set by bot selection)</span><br />
+    <input type="text" id="toDisplay" value="" size="30" readonly="readonly"
+           style="background:#e8eaf0; color:#333; font-weight:bold;" />
+    <span class="note">&nbsp;Set automatically &mdash; do not change</span>
+  </td>
+</tr>
+
+<!-- ══ WX SECTION (PHL-WX / AUS-WX / USA-WX) ════════════════════════════ -->
+<tr id="wxSection" style="display:none;">
+  <td bgcolor="#dee9f9">
+    <span class="lbl">Report Type *</span><br />
+    <select id="wxCmd" size="1" style="font-size:13px; font-weight:bold; width:380px;" onchange="onWxCmdChange();">
+      <option value="">&#8212; Select a report type &#8212;</option>
+    </select>
+  </td>
+</tr>
+
+<!-- ══ PAREDN-FILES SECTION ════════════════════════════════════════════ -->
+<tr id="fileSection" style="display:none;">
+  <td bgcolor="#d4edda">
+    <span class="lbl">File Command *</span><br />
+    <select id="fileCmd" size="1" style="font-size:13px; font-weight:bold; width:380px;"
+            onchange="onFileCmdChange();">
+      <option value="">&#8212; Select a command &#8212;</option>
+      <option value="LIST">LIST &#8212; Show available files</option>
+      <option value="GET">GET &#8212; Download a specific file</option>
+      <option value="HELP">HELP &#8212; Show command reference</option>
+    </select>
+  </td>
+</tr>
+
+<!-- ══ PHL-AI SECTION ═══════════════════════════════════════════════════ -->
+<tr id="aiSection" style="display:none;">
+  <td bgcolor="#f3e9fb">
+    <span class="lbl">Your Question *</span><br />
+    <input type="text" id="aiQuestion" size="48" maxlength="100"
+           placeholder="Type your question in English or Tagalog"
+           onkeyup="buildSubject();" onchange="buildSubject();" /><br />
+    <span class="note">General ham radio / PAREDN reference only &mdash; NOT for live weather
+      or live emergency status (use PHL-WX for that). Examples: "What does QRT mean?" &nbsp;|&nbsp;
+      "Ano ang ibig sabihin ng 73?" &nbsp;|&nbsp; Keep to 100 characters or fewer.</span>
+  </td>
+</tr>
+
+<!-- CMD DESCRIPTION (shared) -->
+<tr>
+  <td bgcolor="#fff8e6" style="display:none;" id="descRow">
+    <div class="cmddesc" id="cmdDesc" style="display:none;"></div>
+  </td>
+</tr>
+
+<!-- LOCATION (WX only) -->
+<tr id="locationRow" style="display:none;">
+  <td bgcolor="#dee9f9">
+    <span class="lbl">Location *</span><br />
+    <input type="text" id="location" size="48" maxlength="80"
+           placeholder="City, province, region code (NCR, R3, R7), or lat,lon"
+           onkeyup="buildSubject();" onchange="buildSubject();" /><br />
+    <span class="note" id="locNote">Examples: Navotas &nbsp;|&nbsp; Quezon City &nbsp;|&nbsp; NCR &nbsp;|&nbsp; R7 &nbsp;|&nbsp; 14.65,121.02</span>
+  </td>
+</tr>
+
+<!-- PAGASA COUNT (WX only) -->
+<tr id="countRow" style="display:none;">
+  <td bgcolor="#dee9f9">
+    <span class="lbl">Number of Advisories</span><br />
+    <select id="pagasaCount" size="1" onchange="buildSubject();">
+      <option value="3" selected="selected">3 (default)</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="5">5</option>
+      <option value="10">10</option>
+    </select>
+    <span class="note">&nbsp;How many PAGASA CAP advisories to include in the reply</span>
+  </td>
+</tr>
+
+<!-- DETAIL LEVEL (WX only) -->
+<tr id="modeRow" style="display:none;">
+  <td bgcolor="#dee9f9">
+    <span class="lbl">Detail Level</span><br />
+    <select id="mode" size="1" onchange="buildSubject();">
+      <option value="SHORT" selected="selected">SHORT &#8212; compact summary (recommended for most radio links)</option>
+      <option value="LONG">LONG &#8212; full detail</option>
+    </select>
+  </td>
+</tr>
+
+<!-- FILENAME (FILES only) -->
+<tr id="filenameRow" style="display:none;">
+  <td bgcolor="#d4edda">
+    <span class="lbl">Filename *</span><br />
+    <input type="text" id="filename" size="48" maxlength="80"
+           placeholder="Exact filename e.g. AREDN_Setup_Guide.pdf"
+           onkeyup="buildSubject();" onchange="buildSubject();" /><br />
+    <span class="note">Send LIST first to see all available filenames. Allowed types: .txt .csv .pdf .html .gpx</span>
+  </td>
+</tr>
+
+<!-- SUBJECT PREVIEW -->
+<tr>
+  <td bgcolor="#eef2fb">
+    <span class="lbl">Message Subject (auto-built &mdash; this becomes the bot command)</span><br />
+    <div class="preview" id="subjectPreview">
+      <span style="color:#999;">&#8212; select a bot and command above &#8212;</span>
+    </div>
+  </td>
+</tr>
+
+<!-- SUBMIT -->
+<tr>
+  <td style="background-color:#f8f8f8; padding:6px 8px;">
+    <input type="submit" name="Submit" id="Submit" value="Submit" />
+    &nbsp;&nbsp;
+    <input type="reset" value="Reset Form"
+           onclick="setTimeout(function(){ onBotChange(); document.getElementById('subjectPreview').innerHTML='<span style=&quot;color:#999;&quot;>&#8212; select a bot and command above &#8212;</span>'; document.getElementById('cmdDesc').style.display='none'; },10);" />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <span class="version">PAREDN Bot Request v3.0 &bull; DX1PRD &bull; 2026</span>
+  </td>
+</tr>
+
+</tbody>
+</table>
+<br />&nbsp;
+
+</form>
+</body>
+</html>

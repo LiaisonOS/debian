@@ -1,3 +1,7 @@
 #!/bin/bash
-TITLE="${1:-EmComm Terminal}"
-exec xfce4-terminal --title="$TITLE" --font="Monospace 10" --color-bg="#000000" --color-fg="#00ff00" "$@"
+TITLE="${1:-LiaisonOS Terminal}"
+[ $# -gt 0 ] && shift
+if [ $# -gt 0 ]; then
+    exec QtTerminal --title="$TITLE" -e "$*"
+fi
+exec QtTerminal --title="$TITLE"

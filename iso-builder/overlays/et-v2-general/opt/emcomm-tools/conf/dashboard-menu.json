@@ -21,8 +21,17 @@
         { "type": "mode", "id": "varac",              "label": "VarAC (VARA Chat)", "label_touch": "VARAC",     "label_abbr": "VRAC", "strip_icon": "💬" },
         { "type": "mode", "id": "js8call",            "label": "JS8Call",           "label_abbr": "JS8",   "strip_icon": "📻" },
         { "type": "mode", "id": "fldigi",             "label": "fldigi",            "label_touch": "Fldigi",    "label_abbr": "FLD",   "strip_icon": "〰️" },
-        { "type": "mode", "id": "chat-chattervox",    "label": "Chattervox",        "label_abbr": "CHTV",  "strip_icon": "🐺" },
-        { "type": "mode", "id": "chat-chattervox-bt", "label": "Chattervox (BT)",   "label_abbr": "CHTBT", "strip_icon": "🐺" }
+        {
+          "type": "auto",
+          "label": "Mesh25",
+          "label_abbr": "MESH",
+          "strip_icon": "🕸️",
+          "map": {
+            "kiss_usb": "chat-mesh25-usb",
+            "bluetooth": "chat-mesh25-bt",
+            "default": "chat-mesh25"
+          }
+        }
       ]
     },
 
@@ -32,8 +41,17 @@
       "title_fr": "APRS",
       "icon": "📡",
       "items": [
-        { "type": "mode", "id": "aprs-client",     "label": "Client (YAAC)",       "label_abbr": "YAAC",  "strip_icon": "📍" },
-        { "type": "mode", "id": "aprs-client-bt",  "label": "Client (YAAC BT)",    "label_abbr": "YACBT", "strip_icon": "📍" },
+        {
+          "type": "auto",
+          "label": "YAAC",
+          "label_abbr": "YAAC",
+          "strip_icon": "📍",
+          "map": {
+            "kiss_usb": "aprs-client-usb",
+            "bluetooth": "aprs-client-bt",
+            "default": "aprs-client"
+          }
+        },
         { "type": "mode", "id": "aprs-beacon",     "label": "Beacon",             "label_abbr": "BCON",  "strip_icon": "📶" },
         { "type": "mode", "id": "aprs-digipeater", "label": "Digipeater",          "label_abbr": "DIGI",  "strip_icon": "📡" }
       ]

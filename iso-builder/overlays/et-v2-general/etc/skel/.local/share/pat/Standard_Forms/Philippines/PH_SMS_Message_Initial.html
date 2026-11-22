@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><title>Winlink PH SMS Message</title>
+
+<style type="text/css">
+/* -- Base typography -- */
+body, td, th {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: inherit;
+}
+.zentriert, .zentriert1 { font-size: 12px; font-weight: inherit; }
+input, select, textarea {
+  padding: 1px;
+  border-radius: 2px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: inherit;
+}
+.rechtsbuendig { font-size: 12px; font-weight: inherit; }
+.SubmitBtn     { font-size: 12px; font-weight: inherit; }
+.version { color: #666666; position: relative; left: 0px; top: 3px; font-size: 12px; font-weight: inherit; }
+
+/* -- Color tokens (teal palette) -- */
+/* Primary teal:  #0a7c6e  |  Light teal bg: #e0f4f1  |  Mid teal: #0d9d8a */
+
+/* -- Header band -- */
+.form-header {
+  background: linear-gradient(135deg, #0a7c6e 0%, #0d9d8a 100%);
+  color: #ffffff;
+  padding: 10px 14px 12px;
+  text-align: center;
+  border-radius: 4px 4px 0 0;
+}
+.form-header .title {
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+.form-header .subtitle {
+  font-size: 11px;
+  margin-top: 4px;
+  opacity: 0.88;
+}
+
+/* -- Section rows -- */
+.section-row {
+  background-color: #e0f4f1;
+  border-bottom: 1px solid #b2ddd6;
+  padding: 8px 12px;
+}
+.section-row-alt {
+  background-color: #f5fbfa;
+  border-bottom: 1px solid #b2ddd6;
+  padding: 8px 12px;
+}
+
+/* -- Labels -- */
+.field-label {
+  font-size: 13px;
+  font-weight: bold;
+  color: #0a5c52;
+}
+.warn-label {
+  font-size: 12px;
+  color: #c0392b;
+  font-style: italic;
+  font-weight: normal;
+}
+
+/* -- Input fields -- */
+.input-wide {
+  border: 2px solid #0d9d8a;
+  border-radius: 4px;
+  padding: 3px 5px;
+  font-size: 12px;
+  background-color: #ffffff;
+  width: 520px;
+}
+.input-wide:focus { outline: none; border-color: #0a5c52; box-shadow: 0 0 3px rgba(13,157,138,0.4); }
+
+.input-std {
+  border: 2px solid #0d9d8a;
+  border-radius: 4px;
+  padding: 3px 5px;
+  font-size: 12px;
+  background-color: #ffffff;
+}
+.input-std:focus { outline: none; border-color: #0a5c52; }
+
+.input-addr {
+  border: 2px solid #0d9d8a;
+  border-radius: 4px;
+  padding: 3px 5px;
+  font-size: 12px;
+  background-color: #ffffff;
+  width: 680px;
+}
+.input-addr:focus { outline: none; border-color: #0a5c52; }
+
+/* -- Validation feedback -- */
+.phone-error {
+  color: #c0392b;
+  font-size: 11px;
+  font-weight: bold;
+  display: none;
+  margin-left: 6px;
+}
+
+/* -- Buttons -- */
+input[type=button] {
+  border: 2px solid #0d9d8a;
+  border-radius: 4px;
+  font-size: 13px;
+  padding: 3px 8px;
+  background-color: #ffffff;
+  color: #0a5c52;
+  cursor: pointer;
+  margin: 2px;
+}
+input[type=button]:hover { background-color: #e0f4f1; }
+
+input[type=submit] {
+  border: 2px solid #1a7a3a;
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #1a7a3a;
+  padding: 3px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  margin: 2px;
+}
+input[type=submit]:hover { background-color: #eafaf0; }
+
+input[type=reset] {
+  border: 2px solid #c0392b;
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #c0392b;
+  padding: 3px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  margin: 2px;
+}
+input[type=reset]:hover { background-color: #fdf0ef; }
+
+/* -- Message textarea -- */
+.msg-textarea {
+  border: 2px solid #0d9d8a;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #ffffff;
+  width: 97%;
+  resize: vertical;
+}
+.msg-textarea:focus { outline: none; border-color: #0a5c52; }
+
+/* -- Char counter -- */
+.char-count-box {
+  border: 1px solid #b2ddd6;
+  border-radius: 3px;
+  background: #ffffff;
+  width: 36px;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* -- Footer bar -- */
+.footer-row {
+  background-color: #e0f4f1;
+  border-top: 2px solid #0a7c6e;
+  padding: 6px 12px;
+}
+.ver-label { color: #0a5c52; font-size: 11px; }
+
+/* -- Outer wrapper -- */
+.outer-table {
+  border: 2px solid #0a7c6e;
+  border-radius: 5px;
+  border-collapse: separate;
+  width: 900px;
+  box-shadow: 0 2px 6px rgba(10,124,110,0.15);
+}
+
+/* -- Pop-up / lightbox (unchanged) -- */
+.pop-up { position:absolute; top:0; left:-500em; visibility:visible; }
+.pop-up:target { position:static; left:0; }
+.popBox {
+  background:#ffffff; position:absolute; left:25%; right:25%; top:20%; bottom:20%;
+  z-index:10; border:1px solid #3a3a3a; border-radius:.25rem;
+  box-shadow:0 .5rem .5rem rgba(0,0,0,.5); opacity:0;
+  transition:opacity 0.8s ease-out; visibility:visible;
+}
+:target .popBox { position:fixed; opacity:1; }
+.lightbox { display:none; text-indent:-200em; background-color:rgba(0,0,0,.4);
+  width:100%; height:100%; position:fixed; top:0; left:0; bottom:0; right:0; z-index:5; }
+:target .lightbox { display:block; }
+.close:link,.close:visited {
+  position:absolute; top:-0.75em; right:-0.75em; display:block;
+  width:2em; height:2em; line-height:1.8; padding:0; text-align:center;
+  text-decoration:none; background-color:#000; border:2px solid #fff; color:#fff;
+  border-radius:50%; box-shadow:0 0 .5rem .5rem rgba(0,0,0,.5); z-index:12; visibility:visible;
+}
+.close:before { content:"X"; }
+.close:hover,.close:active,.close:focus { box-shadow:0 0 .5rem .5rem rgba(255,0,0,.5); background-color:#c00; color:#fff; }
+.close span { text-indent:-200em; display:block; }
+.popScroll {
+  position:absolute; top:1rem; left:1rem; right:1rem; bottom:1rem;
+  overflow-y:auto; *overflow-y:scroll; padding-right:0.5em; z-index:11; visibility:visible;
+}
+.popScroll h2 { margin-top:0; }
+
+.formtext11 { font-family:Arial,Helvetica,sans-serif; font-size:11pt; font-weight:normal; margin:10px; }
+.MSGtext { font-family:Arial,Helvetica,sans-serif; font-size:12px; }
+</style>
+
+<script>
+/* -- Auto-grow textarea -- */
+function AutoGrowTextArea(textField) {
+  if (textField.clientHeight < textField.scrollHeight) {
+    textField.style.height = textField.scrollHeight + "px";
+    if (textField.clientHeight < textField.scrollHeight)
+      textField.style.height = (textField.scrollHeight * 2 - textField.clientHeight) + "px";
+  }
+}
+
+function Countthelines(f) {
+  var text1 = f;
+  var text2 = text1.replace(/\s+$/,"");
+  var split2 = text2.split("\n");
+  var mytotal = split2.length * 17;
+  if (mytotal < 150) mytotal = 150;
+  return mytotal.toString();
+}
+function newfix(f) {
+  var ThisText = document.getElementById(f).value;
+  var makeit = Countthelines(ThisText);
+  document.getElementById(f).style.height = makeit + "px";
+}
+function Fixarea() { newfix("Message"); AutoGrowTextArea(document.getElementById("Message")); }
+function RWS(str) { return str.replace(/\s+$/,"").trim(); }
+
+/* -- Save / Load -- */
+function saveTextAsFile() {
+  var textToWrite = document.getElementById('parseme').value;
+  var fileNameToSaveAs = "PH SMS Message data " + DateforFile() + ".txt";
+  fileNameToSaveAs = prompt("", fileNameToSaveAs);
+  var ie = navigator.userAgent.match(/MSIE\s([\d.]+)/),
+      ie11 = navigator.userAgent.match(/Trident\/7.0/) && navigator.userAgent.match(/rv:11/),
+      ieEDGE = navigator.userAgent.match(/Edge/g),
+      ieVer = (ie ? ie[1] : (ie11 ? 11 : (ieEDGE ? 12 : -1)));
+  if (ie && ieVer < 10) { console.log("No blobs on IE ver<10"); return; }
+  var textFileAsBlob = new Blob([textToWrite], { type: 'text/plain' });
+  if (ieVer > -1) {
+    window.navigator.msSaveBlob(textFileAsBlob, fileNameToSaveAs);
+  } else {
+    var downloadLink = document.createElement("a");
+    downloadLink.download = fileNameToSaveAs;
+    downloadLink.href = window.URL.createObjectURL(textFileAsBlob);
+    downloadLink.onclick = function(e) { document.body.removeChild(e.target); };
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+  }
+}
+
+function DateforFile() {
+  var d = new Date();
+  var thisyear = d.getFullYear();
+  var thismonth = d.getMonth() + 1;
+  if (thismonth < 10) thismonth = "0" + thismonth;
+  var thisday = d.getDate();
+  if (thisday < 10) thisday = "0" + thisday;
+  var h = (d.getHours() < 10 ? '0' : '') + d.getHours();
+  var m = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+  return thisyear + '-' + thismonth + '-' + thisday + ' ' + h + '_' + m;
+}
+
+function isObject(arg) { return Object.prototype.toString.call(arg) === '[object Object]'; }
+
+function formDataToObject(elForm) {
+  /* 2026-09-08: Negate the complete type test. */ if (!(elForm instanceof Element)) return;
+  var fields = elForm.querySelectorAll('input, select, textarea'), o = {};
+  for (var i = 0, imax = fields.length; i < imax; ++i) {
+    var field = fields[i], sKey = field.name || field.id;
+    if (field.type === 'button' || field.type === 'image' || field.type === 'submit' || field.type === 'file' || field.type === 'reset' || !sKey) continue;
+    if (sKey === 'parseme' || sKey === 'check2' || sKey === 'Alladdresses') continue;
+    switch (field.type) {
+      case 'checkbox': o[sKey] = +field.checked; break;
+      case 'radio':
+        if (o[sKey] === undefined) o[sKey] = '';
+        if (field.checked) o[sKey] = field.value;
+        break;
+      case 'select-multiple':
+        var a = [];
+        for (var j = 0, jmax = field.options.length; j < jmax; ++j)
+          if (field.options[j].selected) a.push(field.options[j].value);
+        o[sKey] = a;
+        break;
+      default: o[sKey] = field.value;
+    }
+  }
+  document.getElementById('parseme').value = JSON.stringify(o, null, 2);
+}
+
+function populateForm(jsonStr) {
+  var skipKeys = { parseme:1, check2:1, Alladdresses:1,
+                   txtfiletoread:1, ResetForm:1, Submit:1, Templateversion:1 };
+  var o;
+  try { o = JSON.parse(jsonStr); } catch(e) {
+    alert('Could not read saved data: ' + e.message); return;
+  }
+  if (!isObject(o)) return;
+  for (var i in o) {
+    if (skipKeys[i]) continue;
+    var el = document.getElementById(i) || document.querySelector('[name=' + i + ']');
+    if (!el) continue;
+    if (el.type === 'file' || el.type === 'reset' || el.type === 'submit') continue;
+    if (el.type === 'radio') el = document.querySelectorAll('[name=' + i + ']');
+    switch (typeof o[i]) {
+      case 'number': el.checked = o[i]; break;
+      case 'object':
+        if (el.options && o[i] instanceof Array)
+          for (var j = 0, jmax = el.options.length; j < jmax; ++j)
+            if (o[i].indexOf(el.options[j].value) > -1) el.options[j].selected = true;
+        break;
+      default:
+        if (el instanceof NodeList)
+          for (var j = 0, jmax = el.length; j < jmax; ++j)
+            if (el[j].value === o[i]) el[j].checked = true;
+        else el.value = o[i];
+    }
+  }
+  updateAPRSCount();
+  Fixfields();
+}
+
+function SaveData() { formDataToObject(document.getElementById('myform')); saveTextAsFile(); }
+
+/* -- Utilities -- */
+function addSemi(myStr) {
+  var S = myStr;
+  if (myStr.trim().length !== 0) S = S + ';';
+  return S;
+}
+
+function numbersonly(evt) {
+  var charCode = (evt.which) ? evt.which : event.keyCode;
+  // Allow: digits (48-57), comma (44), space (32), backspace (8)
+  if ((charCode >= 48 && charCode <= 57) || charCode === 44 || charCode === 32 || charCode === 8) return true;
+  return false;
+}
+
+function wordcount(s) {
+  var cnt = s.length;
+  document.getElementById('check2').value = cnt;
+}
+
+/* == APRS character counter for AU/VK Message field == */
+/*
+  The gateway strips the "From <name> / Sent on <time>" header before
+  sending via APRS, so only the Message field content counts toward
+  the 54-character APRS limit (@61xxxxxxxxx prefix uses 13 of 67 chars).
+  This counter reflects exactly what the VK recipient will receive.
+*/
+var APRS_LIMIT = 54;
+function updateAPRSCount() {
+  var msg = document.getElementById('Message').value.trim();
+  msg = msg.replace(/[\r\n]+/g, ' ').replace(/ {2,}/g, ' ').trim();
+  var used = msg.length;
+  var remaining = APRS_LIMIT - used;
+  var countEl = document.getElementById('aprs-count');
+  var barEl   = document.getElementById('aprs-bar');
+  var warnEl  = document.getElementById('aprs-warn');
+  if (!countEl) return;
+  countEl.textContent = used + " / " + APRS_LIMIT;
+  var pct = Math.min(used / APRS_LIMIT, 1);
+  var barColor = pct < 0.75 ? '#0d9d8a' : pct < 1.0 ? '#e67e22' : '#c0392b';
+  barEl.style.width = Math.min(pct * 100, 100) + '%';
+  barEl.style.backgroundColor = barColor;
+  countEl.style.color = pct >= 1.0 ? '#c0392b' : '#0a5c52';
+  if (remaining < 0) {
+    warnEl.textContent = 'WARNING: ' + Math.abs(remaining) + ' char(s) over limit -- will be truncated for VK/AU recipients!';
+    warnEl.style.display = 'block';
+  } else if (remaining <= 10) {
+    warnEl.textContent = 'Only ' + remaining + ' char(s) remaining for VK/AU recipients.';
+    warnEl.style.display = 'block';
+  } else {
+    warnEl.style.display = 'none';
+  }
+}
+
+function TimeNow(Timefld) {
+  var d = new Date(),
+      thisyear = d.getFullYear(),
+      thismonth = d.getMonth() + 1,
+      thisday = d.getDate(),
+      h = (d.getHours() < 10 ? '0' : '') + d.getHours(),
+      m = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+  thismonth = (thismonth < 10 ? '0' : '') + thismonth;
+  var myprompt = thisyear + '-' + thismonth + '-' + thisday + ' ' + h + ':' + m;
+  var RightNow = prompt("", myprompt);
+  document.getElementById(Timefld).value = RightNow;
+}
+
+function Checkifinbrowser() {
+  var x = document.getElementById("testCall").value;
+  var n = x.search("{Msg");
+  if (n > -1) {
+    document.getElementById('Submit').style.visibility = 'hidden';
+    alert('You are running this form outside of Winlink.\n \nWhen you have completed the form, SAVE the data and then give or send the SAVED data file to the radio operator. The operator will load the SAVED data into the correct form and send via winlink. ');
+  } else {
+    document.getElementById('Submit').style.visibility = 'visible';
+  }
+}
+
+function Fixfields() { AutoGrowTextArea(document.getElementById("Message")); }
+
+/* -- Phone number validation -- */
+/*
+  Local PH numbers: must be exactly 11 digits, starting with 0
+  e.g. 09171234567
+  International: 10+ digits, no leading-zero restriction enforced here
+*/
+function validateLocalPhone(inputEl, errorId) {
+  var errEl = document.getElementById(errorId);
+  var raw = inputEl.value.trim();
+  if (raw === '') { errEl.style.display = 'none'; inputEl.style.borderColor = '#0d9d8a'; return true; }
+  // Split by comma, clean each entry
+  var numbers = raw.split(',').map(function(n){ return n.replace(/-/g,'').trim(); }).filter(function(n){ return n !== ''; });
+  // Check max 15
+  if (numbers.length > 15) {
+    errEl.textContent = 'ERROR: Maximum 15 numbers allowed.';
+    errEl.style.display = 'inline';
+    inputEl.style.borderColor = '#c0392b';
+    return false;
+  }
+  // Validate each number individually
+  for (var i = 0; i < numbers.length; i++) {
+    var n = numbers[i];
+    if (!/^0\d{10}$/.test(n)) {
+      errEl.style.display = 'inline';
+      inputEl.style.borderColor = '#c0392b';
+      if (n.length === 10 && /^\d{10}$/.test(n)) {
+        errEl.textContent = 'ERROR: "' + n + '" has 10 digits - must be 11 digits starting with 0 (e.g. 09171234567)';
+      } else if (n.charAt(0) !== '0') {
+        errEl.textContent = 'ERROR: "' + n + '" must start with 0';
+      } else {
+        errEl.textContent = 'ERROR: "' + n + '" must be exactly 11 digits (0 + 10 digits)';
+      }
+      return false;
+    }
+  }
+  // All valid
+  errEl.style.display = 'none';
+  inputEl.style.borderColor = '#0d9d8a';
+  return true;
+}
+
+/* -- AU/VK phone number validation -- */
+/*
+  Australian mobile numbers (local):  04xxxxxxxx  (10 digits, starts with 04)
+  Australian mobile numbers (intl):   614xxxxxxxx (11 digits, starts with 614)
+  Both formats accepted. Gateway normalises to 614xxxxxxxx internally.
+*/
+function validateAUPhone(inputEl, errorId) {
+  var errEl = document.getElementById(errorId);
+  var raw = inputEl.value.trim();
+  if (raw === '') { errEl.style.display = 'none'; inputEl.style.borderColor = '#0d9d8a'; return true; }
+  var numbers = raw.split(',').map(function(n){ return n.replace(/-/g,'').trim(); }).filter(function(n){ return n !== ''; });
+  if (numbers.length > 15) {
+    errEl.textContent = 'ERROR: Maximum 15 numbers allowed in the AU/VK field.';
+    errEl.style.display = 'inline';
+    inputEl.style.borderColor = '#c0392b';
+    return false;
+  }
+  for (var i = 0; i < numbers.length; i++) {
+    var n = numbers[i];
+    // Accept local 04xxxxxxxx (10 digits) or international 614xxxxxxxx (11 digits)
+    if (!/^04\d{8}$/.test(n) && !/^614\d{8}$/.test(n)) {
+      errEl.style.display = 'inline';
+      inputEl.style.borderColor = '#c0392b';
+      if (/^\+/.test(n)) {
+        errEl.textContent = 'ERROR: "' + n + '" -- omit the + sign (use 0412345678 or 61412345678)';
+      } else if (/^61/.test(n) && n.length !== 11) {
+        errEl.textContent = 'ERROR: "' + n + '" -- international AU format must be 11 digits (e.g. 61412345678)';
+      } else if (/^04/.test(n) && n.length !== 10) {
+        errEl.textContent = 'ERROR: "' + n + '" -- local AU format must be 10 digits starting with 04 (e.g. 0412345678)';
+      } else {
+        errEl.textContent = 'ERROR: "' + n + '" -- use local (0412345678) or international (61412345678) AU format';
+      }
+      return false;
+    }
+  }
+  errEl.style.display = 'none';
+  inputEl.style.borderColor = '#0d9d8a';
+  return true;
+}
+
+/* -- Build Alladdresses on submit -- */
+/* Supports up to 15 numbers per box, comma-separated */
+function getsmsAddresses() {
+  var a = document.getElementById('phone').value.replace(/-/g,'').trim();
+  var b = document.getElementById('phone2').value.replace(/-/g,'').trim();
+  var c = document.getElementById('phone_au').value.replace(/-/g,'').trim();
+  function cleanList(str) {
+    if (str === '') return '';
+    return str.split(',').map(function(n){ return n.trim(); }).filter(function(n){ return n !== ''; }).join(',');
+  }
+  var listA = cleanList(a);
+  var listB = cleanList(b);
+  var listC = cleanList(c);
+  // Combine all three lists, dropping any that are empty
+  var parts = [listA, listB, listC].filter(function(x) { return x !== ''; });
+  document.getElementById('Alladdresses').value = parts.join(',');
+}
+
+
+/* -- Submit guard:/* -- Submit guard: validate PH local AND AU fields before submit -- */
+function validateAndSubmit() {
+  // --- Validate Local PH field ---
+  var phoneEl = document.getElementById('phone');
+  var errEl = document.getElementById('phone-error');
+  var raw = phoneEl.value.replace(/-/g,'').trim();
+  if (raw !== '') {
+    var numbers = raw.split(',').map(function(n){ return n.trim(); }).filter(function(n){ return n !== ''; });
+    if (numbers.length > 15) {
+      errEl.textContent = 'ERROR: Maximum 15 numbers allowed in the Local SMS field.';
+      errEl.style.display = 'inline';
+      phoneEl.style.borderColor = '#c0392b';
+      phoneEl.focus();
+      return false;
+    }
+    for (var i = 0; i < numbers.length; i++) {
+      if (!/^0\d{10}$/.test(numbers[i])) {
+        if (numbers[i].length === 10 && /^\d{10}$/.test(numbers[i])) {
+          errEl.textContent = 'ERROR: "' + numbers[i] + '" has 10 digits - local PH numbers need 11 digits starting with 0 (e.g. 09171234567)';
+        } else if (!numbers[i].startsWith('0')) {
+          errEl.textContent = 'ERROR: "' + numbers[i] + '" must start with 0';
+        } else {
+          errEl.textContent = 'ERROR: "' + numbers[i] + '" must be exactly 11 digits (0 + 10 digits)';
+        }
+        errEl.style.display = 'inline';
+        phoneEl.style.borderColor = '#c0392b';
+        phoneEl.focus();
+        return false;
+      }
+    }
+    errEl.style.display = 'none';
+    phoneEl.style.borderColor = '#0d9d8a';
+  }
+  // --- Validate AU/VK field ---
+  var auEl = document.getElementById('phone_au');
+  var auRaw = auEl.value.replace(/-/g,'').trim();
+  if (auRaw !== '') {
+    if (!validateAUPhone(auEl, 'au-phone-error')) {
+      auEl.focus();
+      return false;
+    }
+  }
+  getsmsAddresses();
+  return true;
+}
+
+/* -- File reader -- */
+window.onload = function () {
+  var fi = document.getElementById('txtfiletoread');
+  if (fi) {
+    fi.addEventListener('change', function (e) {
+      var f = e.target.files[0]; if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        try {
+          var o = JSON.parse(ev.target.result);
+          for (var k in o) {
+            var el = document.getElementById(k);
+            if (el && el.type !== 'file' && el.type !== 'submit' && el.type !== 'reset') {
+              el.value = o[k];
+            }
+          }
+          updateAPRSCount();
+        } catch(err) { alert('Could not load file.'); }
+      };
+      reader.readAsText(f, 'UTF-8');
+    }, false);
+  }
+  Checkifinbrowser();
+};
+</script>
+</head>
+<body>
+<form style="font-family: Arial;" pbzloc="3"
+  onsubmit="return validateAndSubmit() && confirm('To complete your form submission, click OK and close the open browser window. You will return to the new message window so you can post your message to the outbox');"
+  method="post" id="myform" enctype="multipart/form-data"
+  action="http://{FormServer}:{FormPort}">
+
+<table class="outer-table" border="0" align="center" cellpadding="0" cellspacing="0">
+<tbody>
+
+<!-- == HEADER == -->
+<tr>
+  <td>
+    <div class="form-header">
+      <div class="title">Winlink PH SMS Message</div>
+      <div class="subtitle">
+        This form generates a short text message that can be sent to an email and/or SMS address.<br />
+        The PAREDN club (DX1PRD) runs SMS gateways for PH, US, and AU/VK numbers - accessible via Winlink only.<br />
+        <em>No delivery guarantee is made or implied.</em>
+      </div>
+      <div style="margin-top:8px;">
+        <input type="button" value="Load PH SMS Message Data" onclick="document.getElementById('txtfiletoread').click();" />
+        <input type="file" id="txtfiletoread" accept=".txt" style="display:none;" />
+      </div>
+    </div>
+  </td>
+</tr>
+
+<!-- == SEND-TO ADDRESS == -->
+<tr>
+  <td class="section-row">
+    <span class="field-label">Send to address(s):</span><br />
+    <span class="warn-label">Separate multiple email addresses and SMS numbers with a comma ( <strong>,</strong> )</span><br />
+    <input name="address" type="text" id="address" class="input-addr"
+      placeholder="winlink2sms@gmail.com"
+      onchange="this.value = addSemi(this.value);"
+      value="winlink2sms@gmail.com," />
+  </td>
+</tr>
+
+<!-- == LOCAL SMS == -->
+<tr>
+  <td class="section-row-alt">
+    <span class="field-label">Local PH SMS number(s):</span>
+    <span class="warn-label">&nbsp;11 digits starting with 0 each, comma-separated, max 15 numbers (e.g. 09171234567, 09181234567)</span><br />
+    <input name="phone" type="text" id="phone" class="input-wide"
+      placeholder="e.g. 09171234567, 09181234567 - up to 15 numbers, comma-separated, 11 digits each"
+      onkeypress="return numbersonly(event)"
+      onblur="validateLocalPhone(this,'phone-error')"
+      oninput="this.value=this.value.replace(/[^0-9,]/g,''); validateLocalPhone(this,'phone-error')"
+      value="" /><br />
+    <span id="phone-error" class="phone-error"></span>
+  </td>
+</tr>
+
+<!-- == INTERNATIONAL SMS == -->
+<tr>
+  <td class="section-row">
+    <span class="field-label">US &amp; Puerto Rico SMS number(s):</span>
+    <span class="warn-label">&nbsp;Include country code without + sign, comma-separated, max 15 numbers (e.g. 12125551234 for US, 17872345678 for Puerto Rico)</span><br />
+    <input name="phone2" type="text" id="phone2" class="input-wide"
+      placeholder="e.g. 12125551234 (US) or 17872345678 (Puerto Rico) - up to 15 numbers, comma-separated, include country code"
+      onkeypress="return numbersonly(event)"
+      oninput="this.value=this.value.replace(/[^0-9,]/g,'')"
+      value="" />
+    <input name="Alladdresses" type="hidden" id="Alladdresses" value="" />
+  </td>
+</tr>
+
+<!-- == AU/VK SMS == -->
+<tr>
+  <td class="section-row-alt">
+    <span class="field-label">Australian SMS number(s):</span>
+    <span class="warn-label">&nbsp;Australian mobile numbers, comma-separated, max 15 (e.g. 0412345678 or 61412345678)</span><br />
+    <span class="warn-label">&nbsp;&#9888; AU recipients must opt-in at <strong>aprs.wiki</strong> before first message. Delivered via APRS-IS / NA7Q SMS Gateway.</span><br />
+    <input name="phone_au" type="text" id="phone_au" class="input-wide"
+      placeholder="e.g. 0412345678, 0498765432 - up to 15 numbers, comma-separated"
+      onkeypress="return numbersonly(event)"
+      onblur="validateAUPhone(this,'au-phone-error')"
+      oninput="this.value=this.value.replace(/[^0-9,]/g,''); validateAUPhone(this,'au-phone-error')"
+      value="" /><br />
+    <span id="au-phone-error" class="phone-error"></span>
+  </td>
+</tr>
+
+<!-- == FROM / DATE-TIME == -->
+<tr>
+  <td class="section-row-alt">
+    <span class="field-label">From:</span>&nbsp;
+    <input title="Your name/group or person you are sending for."
+      id="From_Name" maxlength="30" required="required" name="From_Name"
+      class="input-std" placeholder="Enter your name" size="32" />
+    &nbsp;&nbsp;
+    <span class="field-label">Date/Time:</span>&nbsp;
+    <input name="time" type="text" id="time" class="input-std"
+      onclick="TimeNow('time')" size="22" maxlength="21" placeholder="Click for Date/Time" />
+    <textarea name="parseme" cols="60" id="parseme" style="display:none;"></textarea>
+  </td>
+</tr>
+
+<!-- == MESSAGE == -->
+<tr>
+  <td class="section-row" style="vertical-align:top;">
+    <span class="field-label">Message</span>
+    &nbsp;&nbsp;&nbsp;
+    <span style="font-size:12px; color:#0a5c52;">Character count:&nbsp;
+      <input name="check2" id="check2" size="3" maxlength="3" class="char-count-box zentriert1"
+        readonly="readonly" value="0" type="text" />
+    </span>
+    <br /><br />
+    <textarea cols="120" rows="4" maxlength="140" name="Message" id="Message"
+      class="msg-textarea"
+      onkeypress="if(event.keyCode==13){return false}"
+      onkeyup="AutoGrowTextArea(this); wordcount(this.value); updateAPRSCount();"
+      onchange="this.value=RWS(this.value); updateAPRSCount();"
+      placeholder="Type your message here - 140 chars max (54 chars for AU/VK via APRS)"></textarea>
+
+    <div id="aprs-counter-box" style="margin-top:6px; padding:5px 8px; background:#f5fbfa; border:1px solid #b2ddd6; border-radius:4px; font-size:11px;">
+      <span style="color:#0a5c52; font-weight:bold;">AU/VK APRS limit (54 chars):</span>
+      &nbsp;<span id="aprs-count" style="font-weight:bold; color:#0a5c52;">0 / 54</span>
+      &nbsp;&nbsp;
+      <span style="display:inline-block; vertical-align:middle; width:160px; height:8px; background:#e0f4f1; border:1px solid #b2ddd6; border-radius:4px; overflow:hidden;">
+        <span id="aprs-bar" style="display:block; height:100%; width:0%; background:#0d9d8a; border-radius:4px; transition:width 0.15s, background-color 0.15s;"></span>
+      </span>
+      &nbsp;&nbsp;<span style="color:#666; font-style:italic;">Only the Message text is sent via APRS -- From/Sent header is stripped automatically.</span>
+      <div id="aprs-warn" style="display:none; color:#c0392b; font-weight:bold; margin-top:3px;"></div>
+    </div>
+    <br />
+  </td>
+</tr>
+
+<!-- == BUTTONS / FOOTER == -->
+<tr>
+  <td class="footer-row">
+    <input class="SubmitBtn" enctype="multipart/form-data" id="Submit" method="Post"
+      name="Submit" style="height:28px; width:60px;" value="Submit" type="submit" />
+    &nbsp;
+    <input type="button" value="Save PH SMS Message Data" onclick="SaveData()" />
+    &nbsp;
+    <input class="BtnFormat2" value="Reset Form" name="ResetForm" type="reset" />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <span class="ver-label">PH SMS Message &nbsp;v2.7</span>
+    <input name="testCall" type="hidden" id="testCall" value="{MsgSender}" />
+    <input name="Templateversion" type="hidden" id="templateversion" value="PH SMS Message version 2.7" />
+  </td>
+</tr>
+
+</tbody>
+</table>
+</form>
+</body></html>

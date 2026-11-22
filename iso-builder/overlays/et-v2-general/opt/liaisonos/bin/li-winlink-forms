@@ -1,0 +1,92 @@
+#!/bin/bash
+#
+# Author  : Sylvain Deguire (VA2OPS)
+# Purpose : Manage CUSTOM Winlink/Pat forms (templates) on LiaisonOS.
+#
+#   The official Winlink Standard Forms ship in the ISO at
+#     ~/.local/share/pat/Standard_Forms/
+#   and Pat can refresh them with its "Update Forms" button.
+#
+#   Your OWN forms are kept separate so a Pat forms-update can't wipe them:
+#     - installed into:  <forms>/Custom Forms/        (Pat discovers them here)
+#     - master copy in:  ~/.config/liaisonos/winlink-forms/   (survives updates)
+#   If a Pat update ever clears your custom folder, run 'li-winlink-forms sync'
+#   to restore them from the master copy.
+#
+#   A Winlink form is a '.txt' template (defines To/Subject/Msg + <var> fields),
+#   usually with one or two '.html' pages (Initial/Viewer). Add all files that
+#   belong to the form together.
+#
+# Usage:
+#   li-winlink-forms add <file...>   install form file(s) (.txt and/or .html)
+#   li-winlink-forms list            list your custom forms
+#   li-winlink-forms sync            re-install master copies into Pat's folder
+#   li-winlink-forms path            print the custom-forms folder
+#
+set -u
+
+FORMS_ROOT="${PAT_FORMS_PATH:-$HOME/.local/share/pat/Standard_Forms}"
+CUSTOM_DIR="$FORMS_ROOT/Custom"
+MASTER_DIR="$HOME/.config/liaisonos/winlink-forms"
+
+G='\033[1;32m'; R='\033[1;31m'; Y='\033[1;33m'; C='\033[1;36m'; D='\033[0m'
+ok(){ echo -e "${G}[ok]${D} $*"; }
+warn(){ echo -e "${Y}[warn]${D} $*"; }
+err(){ echo -e "${R}[err]${D} $*" >&2; exit 1; }
+
+usage(){ sed -n '2,/^set -u/p' "$0" | sed 's/^# \{0,1\}//; s/^#//' | grep -vE "set -u|^!"; }
+
+cmd_add(){
+    [[ $# -ge 1 ]] || err "give at least one form file (.txt and/or .html)"
+    mkdir -p "$CUSTOM_DIR" "$MASTER_DIR"
+    local n=0
+    for f in "$@"; do
+        [[ -f "$f" ]] || { warn "skip (not a file): $f"; continue; }
+        case "${f,,}" in
+            *.txt|*.html|*.htm) : ;;
+            *) warn "skip (not a .txt/.html form file): $f"; continue ;;
+        esac
+        local base; base="$(basename "$f")"
+        cp -f "$f" "$MASTER_DIR/$base"       # canonical copy (update-proof)
+        cp -f "$f" "$CUSTOM_DIR/$base"       # live copy Pat reads
+        ok "added: $base"
+        n=$((n+1))
+    done
+    [[ $n -gt 0 ]] || err "nothing added"
+    echo
+    ok "$n file(s) installed into: $CUSTOM_DIR"
+    # Flag any .txt whose referenced HTML pages aren't present yet.
+    for t in "$CUSTOM_DIR"/*.txt; do
+        [[ -e "$t" ]] || continue
+        while IFS= read -r html; do
+            [[ -z "$html" ]] && continue
+            [[ -f "$CUSTOM_DIR/$html" ]] || warn "$(basename "$t") references '$html' — add that .html too"
+        done < <(grep -i '^Form:' "$t" 2>/dev/null | head -1 | sed 's/^[Ff]orm://' | tr ',' '\n' | sed 's/^ *//; s/ *$//')
+    done
+    echo "Restart Pat (or reopen the Template picker) to see the new form(s)."
+}
+
+cmd_list(){
+    if [[ -d "$CUSTOM_DIR" ]] && ls "$CUSTOM_DIR"/*.txt >/dev/null 2>&1; then
+        echo "Custom forms in: $CUSTOM_DIR"
+        for t in "$CUSTOM_DIR"/*.txt; do echo "  - $(basename "${t%.txt}")"; done
+    else
+        echo "No custom forms yet. Add one with:  li-winlink-forms add myform.txt myform.html"
+    fi
+}
+
+cmd_sync(){
+    [[ -d "$MASTER_DIR" ]] && ls "$MASTER_DIR"/* >/dev/null 2>&1 || err "no master copies in $MASTER_DIR"
+    mkdir -p "$CUSTOM_DIR"
+    cp -f "$MASTER_DIR"/* "$CUSTOM_DIR/"
+    ok "re-installed $(ls "$MASTER_DIR" | wc -l) file(s) from master → $CUSTOM_DIR"
+}
+
+case "${1:-}" in
+    add)  shift; cmd_add "$@" ;;
+    list) cmd_list ;;
+    sync) cmd_sync ;;
+    path) echo "$CUSTOM_DIR" ;;
+    ""|-h|--help|help) usage ;;
+    *) err "unknown command '$1' (try: add | list | sync | path)" ;;
+esac

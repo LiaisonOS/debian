@@ -8,8 +8,7 @@
   "rigctrl": {
     "id": "2014",
     "baud": "9600",
-    "ptt": "RTS",
-    "pttOnly": "false"
+    "ptt": "RTS"
   },
   "audio": {
     "script": "/opt/emcomm-tools/conf/radios.d/audio/lab599-tx500mp.sh"
@@ -19,6 +18,8 @@
     "2. Set MODE = DIGI",
     "",
     "Do not enable VOX on radio"
+
   ],
-  "fieldNotes": []
+  "fieldNotes": [
+  ]
 }

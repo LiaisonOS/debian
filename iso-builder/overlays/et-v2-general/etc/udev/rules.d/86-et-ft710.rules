@@ -8,8 +8,16 @@
 #            Since FT-710 and FT-991A share the same USB vendor:product IDs,
 #            the PROGRAM check (udev-tester.sh) is required to distinguish them.
 #
-# CAUTION  : This is a BEST EFFORT rule — no FT-710 hardware was available for
-#            testing. If the symlink points to the wrong port, debug with:
+# CONFIRMED : Validated on real FT-710 hardware (VA2QR, Oct 2026) — direct USB
+#            cable, no DigiRig. CAT = CP2105 10c4:ea70 (iface 00). Audio = the
+#            radio's built-in C-Media codec 0d8c:0013, tagged ET_AUDIO. Both work.
+#
+# GOTCHA   : The audio rule is PROGRAM-gated on the ACTIVE radio (FT-710/FTX-1/
+#            FT-991A share USB IDs). If you plug the rig in and THEN select
+#            FT-710, the sound card already enumerated and won't be renamed
+#            ET_AUDIO (CAT re-processes on select, audio does not) -> audio
+#            shows RED. Fix: with FT-710 selected, unplug/replug the USB once.
+#            Debug:
 #              udevadm info -a -n /dev/ttyUSBx | grep -E 'serial|Interface|idVendor|idProduct'
 #              udevadm info --query=all --name=/dev/ttyUSBx
 #
@@ -43,3 +51,12 @@ SUBSYSTEM=="sound", ATTRS{idVendor}=="0d8c", ATTRS{idProduct}=="0013", \
     ENV{ET_DEVICE}="FT-710", \
     ATTR{id}="ET_AUDIO", \
     ENV{ET_SUBDEVICE}="AUDIO", GROUP="audio", MODE="0660", SYMLINK+="et-audio"
+
+# Keep the FT-710's C-Media USB audio codec (0d8c:0013) ALWAYS POWERED.
+# Disables USB autosuspend so the codec can't drop off the bus on laptops with
+# aggressive USB power management (observed on HP laptops: CAT stays up via
+# cp210x, but snd-usb-audio gets suspended and the card starts reporting
+# "unplugged" in alsamixer — killing RX/TX audio). Matches the USB device node
+# (not the sound interface); TEST guards machines without the attribute.
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0d8c", ATTR{idProduct}=="0013", \
+    TEST=="power/control", ATTR{power/control}="on"

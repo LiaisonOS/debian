@@ -105,6 +105,7 @@ plymouth_msg "EmComm-Tools: Saving your configuration..."
 
 # Create directories
 mkdir -p "${PERSISTENCE_PATH}/configs/pat"
+mkdir -p "${PERSISTENCE_PATH}/configs/liaisonos"
 mkdir -p "${PERSISTENCE_PATH}/configs/js8call"
 mkdir -p "${PERSISTENCE_PATH}/configs/qttermtcp"
 mkdir -p "${PERSISTENCE_PATH}/configs/qttermtcp/bbs-cache"
@@ -113,12 +114,13 @@ mkdir -p "${PERSISTENCE_PATH}/configs/wsjtx"
 mkdir -p "${PERSISTENCE_PATH}/configs/fldigi"
 mkdir -p "${PERSISTENCE_PATH}/configs/vara"
 mkdir -p "${PERSISTENCE_PATH}/configs/varac"
-mkdir -p "${PERSISTENCE_PATH}/configs/chattervox"
+mkdir -p "${PERSISTENCE_PATH}/configs/mesh25"
 mkdir -p "${PERSISTENCE_PATH}/configs/direwolf"
 mkdir -p "${PERSISTENCE_PATH}/configs/yaac"
 mkdir -p "${PERSISTENCE_PATH}/configs/yaac-config"
 mkdir -p "${PERSISTENCE_PATH}/configs/navit"
 mkdir -p "${PERSISTENCE_PATH}/configs/firefox"
+mkdir -p "${PERSISTENCE_PATH}/configs/chromium"
 mkdir -p "${PERSISTENCE_PATH}/configs/thunderbird"
 mkdir -p "${PERSISTENCE_PATH}/configs/wifi"
 mkdir -p "${PERSISTENCE_PATH}/configs/bluetooth"
@@ -278,6 +280,84 @@ save_firefox_profile() {
     chmod -R g+rwX "${dest_dir}/" 2>/dev/null || true
     
     log "✓ Saved: Firefox profile"
+    return 0
+}
+
+# ===========================================================================
+# CHROMIUM FUNCTIONS
+# ===========================================================================
+# Chromium gets the same treatment as Firefox: a curated copy of the profile's
+# user data (cookies, logins, preferences, bookmarks, and the web-app storage
+# that keeps sites like Teams logged in), skipping the large regenerable caches.
+# NOTE: cross-reboot login survival relies on Chromium using the "basic"
+# password store (portable key in "Local State") instead of a per-session
+# keyring — that is forced via /etc/chromium.d/et-password-store.
+
+is_chromium_running() {
+    pgrep -x "chromium" > /dev/null 2>&1 || pgrep -f "chromium" > /dev/null 2>&1
+}
+
+save_chromium_profile() {
+    local dest_dir="${PERSISTENCE_PATH}/configs/chromium"
+    local src="${HOME}/.config/chromium"
+
+    if is_chromium_running; then
+        log "⚠ Chromium is running - skipping save to prevent database corruption"
+        log "  Close Chromium and run save again to backup browser data"
+        return 1
+    fi
+
+    if [[ ! -d "$src" ]]; then
+        log "⚠ No Chromium profile found"
+        return 1
+    fi
+
+    mkdir -p "${dest_dir}/Default"
+
+    # Top-level files (Local State holds the cookie/password encryption key)
+    local top_files=( "Local State" "First Run" )
+    for f in "${top_files[@]}"; do
+        [[ -f "${src}/${f}" ]] && cp "${src}/${f}" "${dest_dir}/"
+    done
+
+    # Default profile files (critical user data)
+    local files=(
+        "Preferences"               # Settings
+        "Secure Preferences"        # Settings (MAC-protected)
+        "Bookmarks"
+        "Cookies"                   # Logins/sessions (Teams etc.)
+        "Login Data"                # Saved passwords (encrypted)
+        "Web Data"                  # Autofill
+        "History"
+        "Favicons"
+        "TransportSecurity"
+        "Network Action Predictor"
+    )
+    for f in "${files[@]}"; do
+        [[ -f "${src}/Default/${f}" ]] && cp "${src}/Default/${f}" "${dest_dir}/Default/"
+    done
+
+    # Default profile dirs — web-app storage + extensions (where Teams keeps its
+    # session). Can be sizeable, but needed for stay-logged-in behavior.
+    local dirs=(
+        "Local Storage"
+        "Session Storage"
+        "IndexedDB"
+        "Extensions"
+        "Local Extension Settings"
+    )
+    for d in "${dirs[@]}"; do
+        if [[ -d "${src}/Default/${d}" ]]; then
+            rm -rf "${dest_dir}/Default/${d}" 2>/dev/null
+            cp -r "${src}/Default/${d}" "${dest_dir}/Default/"
+        fi
+    done
+
+    # Fix ownership (use et-data group for portability)
+    chown -R :et-data "${dest_dir}/" 2>/dev/null || true
+    chmod -R g+rwX "${dest_dir}/" 2>/dev/null || true
+
+    log "✓ Saved: Chromium profile"
     return 0
 }
 
@@ -536,6 +616,20 @@ save_file "${HOME}/.config/WSJT-X.ini" "${PERSISTENCE_PATH}/configs/wsjtx/WSJT-X
 mkdir -p "${PERSISTENCE_PATH}/configs/QtMercury"
 save_file "${HOME}/.config/liaisonos/qtmercury.ini" "${PERSISTENCE_PATH}/configs/QtMercury/qtmercury.ini" "QtMercury"
 
+# --- LiaisonOS Automation (missions / presence schedule) ---
+mkdir -p "${PERSISTENCE_PATH}/configs/liaisonos"
+save_file "${HOME}/.config/liaisonos/automation.json" "${PERSISTENCE_PATH}/configs/liaisonos/automation.json" "Automation schedule"
+
+
+# --- et-logger QRZ.com credentials ---
+save_file "${HOME}/.config/liaisonos/logger/qrz.json" "${PERSISTENCE_PATH}/configs/liaisonos/qrz.json" "QRZ credentials"
+# Bulletin bodies (.txt + .json) that bbs_publish missions reference by ID —
+# without these the schedule restores but the BBS-bulletin slots are unfireable.
+if [[ -d "${HOME}/.config/liaisonos/bulletins/pending" ]]; then
+    mkdir -p "${PERSISTENCE_PATH}/configs/liaisonos/bulletins/pending"
+    save_dir "${HOME}/.config/liaisonos/bulletins/pending" "${PERSISTENCE_PATH}/configs/liaisonos/bulletins/pending" "Automation bulletins"
+fi
+
 # --- QtTermTCP ---
 mkdir -p "${PERSISTENCE_PATH}/configs/QtTermTCP"
 save_file "${HOME}/QtTermTCP.ini" "${PERSISTENCE_PATH}/configs/QtTermTCP/QtTermTCP.ini" "QtTermTCP"
@@ -608,9 +702,56 @@ if [[ -d "$LIAISONSAR_DIR" ]]; then
     save_file "$LIAISONSAR_DIR/track-settings.json"  "${PERSISTENCE_PATH}/configs/yaac-config/liaisonos/track-settings.json"  "LiaisonSAR track settings"
 fi
 
-# --- Chattervox (config + keystore with signing keys) ---
-save_file "${HOME}/.chattervox/config.json" "${PERSISTENCE_PATH}/configs/chattervox/config.json" "Chattervox config"
-save_file "${HOME}/.chattervox/keystore.json" "${PERSISTENCE_PATH}/configs/chattervox/keystore.json" "Chattervox keystore"
+# --- Mesh25 (Ed25519 identity/keystore + chat history + mailbox + parked mail) ---
+# keystore.txt carries the operator's Ed25519 identity AND every learned peer
+# key + trust — losing it means a new identity (and "key changed" alerts) every
+# reboot, so it is the must-have. History/mail/parked are nice-to-have.
+save_file "${HOME}/.config/liaisonos/mesh25/keystore.txt"            "${PERSISTENCE_PATH}/configs/mesh25/keystore.txt" "Mesh25 keystore (Ed25519 identity + peer keys)"
+save_file "${HOME}/.local/share/liaisonos/qtchattervox/history.json" "${PERSISTENCE_PATH}/configs/mesh25/history.json" "Mesh25 chat history"
+save_file "${HOME}/.local/share/liaisonos/qtchattervox/mail.json"    "${PERSISTENCE_PATH}/configs/mesh25/mail.json"    "Mesh25 mailbox"
+if [[ -d "${HOME}/.local/share/liaisonos/mesh25" ]]; then
+    mkdir -p "${PERSISTENCE_PATH}/configs/mesh25/parked"
+    save_dir "${HOME}/.local/share/liaisonos/mesh25" "${PERSISTENCE_PATH}/configs/mesh25/parked" "Mesh25 parked mail"
+fi
+
+# --- POTACAT (POTA spot aggregator / logger — Electron userData) ---
+# The app sets its Electron name to "POTACAT" at runtime, so its userData is
+# ~/.config/POTACAT (uppercase) - the lowercase guard never matched and the
+# save was silently skipped. Accept either spelling, prefer the real one.
+POTACAT_DIR=""
+for _pd in "${HOME}/.config/POTACAT" "${HOME}/.config/potacat"; do
+    [[ -d "$_pd" ]] && { POTACAT_DIR="$_pd"; break; }
+done
+if [[ -n "$POTACAT_DIR" ]]; then
+    # Whole folder, hidden files included, as an exact mirror: copy to a
+    # staging dir, verify the file count, then swap it in. The previous save
+    # on the key is only replaced once the new copy is proven complete.
+    if pgrep -f '/opt/POTACAT/' >/dev/null 2>&1; then
+        pkill -TERM -f '/opt/POTACAT/' 2>/dev/null
+        for _i in $(seq 1 20); do
+            pgrep -f '/opt/POTACAT/' >/dev/null 2>&1 || break
+            read -r -t 0.5 _ </dev/null 2>/dev/null || true
+        done
+    fi
+    _pdst="${PERSISTENCE_PATH}/configs/potacat"
+    _ptmp="${PERSISTENCE_PATH}/configs/.potacat.new"
+    rm -rf "$_ptmp"
+    mkdir -p "${PERSISTENCE_PATH}/configs"
+    if _perr=$(cp -rT --preserve=timestamps "$POTACAT_DIR" "$_ptmp" 2>&1); then
+        _psrc_n=$(find "$POTACAT_DIR" | wc -l)
+        _ptmp_n=$(find "$_ptmp" | wc -l)
+        if [[ "$_psrc_n" -eq "$_ptmp_n" ]]; then
+            rm -rf "$_pdst" && mv "$_ptmp" "$_pdst"
+            log "✓ Saved: POTACAT data - whole folder ($_ptmp_n entries, $(du -sh "$_pdst" | cut -f1))"
+        else
+            rm -rf "$_ptmp"
+            log "✗ FAILED: POTACAT copy incomplete ($_ptmp_n of $_psrc_n) - previous save kept"
+        fi
+    else
+        rm -rf "$_ptmp"
+        log "✗ FAILED: POTACAT copy error - previous save kept: $(echo "$_perr" | head -2)"
+    fi
+fi
 
 # --- Navit (config and bookmarks) ---
 NAVIT_CONF_DIR="${HOME}/.navit"
@@ -646,6 +787,16 @@ if pgrep -x "firefox-esr" > /dev/null 2>&1 || pgrep -x "firefox" > /dev/null 2>&
     sleep 3
 fi
 save_firefox_profile
+
+# --- Chromium ---
+plymouth_msg "EmComm-Tools: Saving Chromium (this may take a moment)..."
+# Force Chromium to flush data to disk by terminating any lingering processes
+if pgrep -x "chromium" > /dev/null 2>&1; then
+    log "Closing Chromium to flush data..."
+    pkill -TERM chromium 2>/dev/null
+    sleep 3
+fi
+save_chromium_profile
 
 # --- WiFi Networks (NetworkManager) ---
 # NOTE: WiFi save requires sudo access. Works automatically in Live mode.

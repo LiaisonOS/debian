@@ -1,0 +1,30 @@
+{
+    "$schema": "et-mode-v2",
+    "id": "chat-mesh25-usb",
+    "name": {
+        "en": "Mesh25 (USB)",
+        "fr": "Mesh25 (USB)"
+    },
+    "category": "packet",
+    "requires": {
+        "devices": ["et-kiss"]
+    },
+    "prechecks": [
+        {"type": "callsign-set"}
+    ],
+    "config": [],
+    "pre_start": [
+        {"action": "kiss-tnc-init", "device": "/dev/et-kiss", "baud": 9600},
+        {"action": "kill-all"}
+    ],
+    "chain": [
+        {
+            "name": "mesh25",
+            "command": ["Mesh25", "--kiss", "/dev/et-kiss", "--baud", "9600"],
+            "health": {},
+            "restart": "never"
+        }
+    ],
+    "post_start": [],
+    "kill_all_first": true
+}

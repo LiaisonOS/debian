@@ -2,7 +2,7 @@
 #
 # Author  : Sylvain Deguire (VA2OPS)
 # Purpose : Give the sysop a live view into headless Direwolf. Opens a
-#           terminal that tails ~/.local/share/emcomm-tools/direwolf.log
+#           terminal that tails ~/.local/share/emcomm-tools/logs/direwolf.log
 #           so decoded AX.25 frames, audio-level readouts
 #           ("audio level = XX(YY/ZZ)"), PTT toggles, and Direwolf
 #           warnings/errors are visible in real time.
@@ -15,7 +15,7 @@
 #           li-direwolf-monitor <logfile> # explicit path
 #
 
-LOG="${1:-$HOME/.local/share/emcomm-tools/direwolf.log}"
+LOG="${1:-$HOME/.local/share/emcomm-tools/logs/direwolf.log}"
 
 # Ensure the file exists so `tail -F` doesn't complain on cold start.
 mkdir -p "$(dirname "$LOG")"
@@ -25,8 +25,6 @@ touch "$LOG"
 # a plain `-e` with a simple command string — that combination is known
 # to launch reliably under et-supervisor. --disable-server makes each
 # invocation an independent process (no shared terminal-server).
-exec xfce4-terminal \
-    --disable-server \
+exec QtTerminal \
     --title="Direwolf Monitor" \
-    --geometry=120x32 \
     -e "tail -n 40 -F $LOG"

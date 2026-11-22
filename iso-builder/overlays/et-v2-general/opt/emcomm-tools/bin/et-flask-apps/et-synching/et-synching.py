@@ -43,7 +43,7 @@ ET_CONFIG_FILE = Path.home() / ".config" / "emcomm-tools" / "user.json"
 ET_SYNCHING_CONFIG = Path.home() / ".config" / "emcomm-tools" / "bt-synching.json"
 RADIOS_CONF_DIR = Path("/opt/emcomm-tools/conf/radios.d")
 GPS_NOTIFY_SOCK = "/tmp/et-gps-notify.sock"
-RFCOMM_DEV = "/dev/rfcomm0"
+RFCOMM_DEV = "/dev/rfcomm1"
 ET_GPS_LINK = "/dev/et-gps"
 SERVICE_NAME = "LiaisonGPS"
 PORT = 5053
@@ -161,7 +161,7 @@ def rfcomm_connect(mac, channel):
     The actual BT connection is initiated by gpsd opening /dev/rfcomm0.
     When gpsd stops and closes the fd, the slot auto-releases cleanly."""
     r = subprocess.run(
-        ['sudo', 'rfcomm', 'bind', '0', mac, str(channel)],
+        ['sudo', 'rfcomm', 'bind', '1', mac, str(channel)],
         capture_output=True
     )
     print(f"[GPS] rfcomm bind: rc={r.returncode} {r.stderr.decode().strip()}")
@@ -170,7 +170,7 @@ def rfcomm_connect(mac, channel):
 
 def rfcomm_disconnect():
     """Release rfcomm0."""
-    r = subprocess.run(['sudo', 'rfcomm', 'release', '0'], capture_output=True)
+    r = subprocess.run(['sudo', 'rfcomm', 'release', '1'], capture_output=True)
     print(f"[GPS] rfcomm release: rc={r.returncode} {r.stderr.decode().strip()}")
 
 
@@ -315,7 +315,7 @@ def rfcomm_is_connected():
     """Return True only if rfcomm show 0 output contains 'connected'.
     After Android closes: output shows 'closed' — this returns False."""
     try:
-        r = subprocess.run(['rfcomm', 'show', '0'],
+        r = subprocess.run(['rfcomm', 'show', '1'],
                            capture_output=True, text=True, timeout=3)
         result = 'connected' in r.stdout.lower()
         print(f"[GPS] rfcomm show 0: {r.stdout.strip()} → {'UP' if result else 'DOWN'}")
@@ -334,14 +334,14 @@ def rfcomm_watcher():
             break
         _wait.wait(timeout=1)
 
-    print("[GPS] rfcomm0 active — watching for disconnect...")
+    print("[GPS] rfcomm1 active — watching for disconnect...")
     _notify_gps("gps:start")
 
     while _gps_active and rfcomm_is_connected():
         _wait.wait(timeout=2)
 
     if _gps_active:
-        print("[GPS] rfcomm0 closed — Android disconnected. Running cleanup...")
+        print("[GPS] rfcomm1 closed — Android disconnected. Running cleanup...")
         gps_cleanup()
 
 
@@ -468,7 +468,7 @@ def api_connect_stream():
         else:
             if rfcomm_proc: rfcomm_proc.terminate()
             yield sse_done({'done': True, 'success': False,
-                       'error': 'rfcomm0 did not appear — check Bluetooth connection'})
+                       'error': 'rfcomm1 did not appear — check Bluetooth connection'})
             return
         yield sse({'step': 'rfcomm', 'msg': 'RFCOMM connected — reading GPS data...'})
 

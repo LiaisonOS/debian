@@ -1,0 +1,25 @@
+{
+  "id": "kenwood-tmd750a",
+  "vendor": "Kenwood",
+  "model": "TM-D750A (BT)",
+  "bands": [
+    "VHF",
+    "UHF"
+  ],
+  "bluetooth": {
+    "deviceName": "TM-D750",
+    "channel": "27",
+    "mac": "",
+    "gps_offset": 0
+  },
+  "notes": [
+    "Confirmed on VA2OPS's rig 2026-11-14: advertises Bluetooth name 'TM-D750'",
+    "(not TM-D750A) on SPP channel 27 (MAC 7C:B8:DA:9E:F1:88).",
+    "RADIO SETUP (all three required):",
+    "  1. Bluetooth: On (and pair with the computer).",
+    "  2. Internal TNC: KISS mode, 1200-baud packet (match your net).",
+    "  3. Menu 984 'KISS PC input/output' = Bluetooth  <-- CRITICAL: routes the",
+    "     KISS data to BT. If left on USB, rfcomm connects but carries NO data."
+  ],
+  "fieldNotes": []
+}

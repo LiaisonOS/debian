@@ -308,6 +308,90 @@ PROFILES_EOF
 }
 
 # ===========================================================================
+# CHROMIUM FUNCTIONS
+# ===========================================================================
+
+is_chromium_running() {
+    pgrep -x "chromium" > /dev/null 2>&1 || pgrep -f "chromium" > /dev/null 2>&1
+}
+
+restore_chromium_profile() {
+    local src_dir="${PERSISTENCE_PATH}/configs/chromium"
+    local dest="${HOME}/.config/chromium"
+
+    log "Chromium restore: starting..."
+
+    # Need at least a Local State or a Default/Preferences to call it a backup
+    if [[ ! -d "$src_dir" ]] || { [[ ! -f "${src_dir}/Local State" ]] && [[ ! -f "${src_dir}/Default/Preferences" ]]; }; then
+        log "Chromium restore: No backup found"
+        return 1
+    fi
+
+    log "Chromium restore: backup found at $src_dir"
+
+    if is_chromium_running; then
+        if is_live_boot; then
+            log "Chromium restore: Chromium running in live mode - killing it"
+            pkill -f "chromium" 2>/dev/null || true
+            sleep 2
+        else
+            log "Chromium restore: Chromium running - skipping to prevent corruption"
+            return 1
+        fi
+    fi
+
+    mkdir -p "${dest}/Default"
+
+    # Top-level files
+    local top_files=( "Local State" "First Run" )
+    for f in "${top_files[@]}"; do
+        if [[ -f "${src_dir}/${f}" ]]; then
+            cp "${src_dir}/${f}" "${dest}/"
+            log "Chromium restore: copied $f"
+        fi
+    done
+
+    # Default profile files
+    local files=(
+        "Preferences"
+        "Secure Preferences"
+        "Bookmarks"
+        "Cookies"
+        "Login Data"
+        "Web Data"
+        "History"
+        "Favicons"
+        "TransportSecurity"
+        "Network Action Predictor"
+    )
+    for f in "${files[@]}"; do
+        if [[ -f "${src_dir}/Default/${f}" ]]; then
+            cp "${src_dir}/Default/${f}" "${dest}/Default/"
+            log "Chromium restore: copied Default/$f"
+        fi
+    done
+
+    # Default profile dirs (web-app storage + extensions)
+    local dirs=(
+        "Local Storage"
+        "Session Storage"
+        "IndexedDB"
+        "Extensions"
+        "Local Extension Settings"
+    )
+    for d in "${dirs[@]}"; do
+        if [[ -d "${src_dir}/Default/${d}" ]]; then
+            rm -rf "${dest}/Default/${d}" 2>/dev/null
+            cp -r "${src_dir}/Default/${d}" "${dest}/Default/"
+            log "Chromium restore: copied Default/${d}/"
+        fi
+    done
+
+    log "✓ Restored: Chromium profile"
+    return 0
+}
+
+# ===========================================================================
 # THUNDERBIRD FUNCTIONS
 # ===========================================================================
 
@@ -518,6 +602,28 @@ if restore_file "${PERSISTENCE_PATH}/configs/QtMercury/qtmercury.ini" "${HOME}/.
     ((RESTORED++)) || true
 fi
 
+# --- LiaisonOS Automation (missions / presence schedule) ---
+if restore_file "${PERSISTENCE_PATH}/configs/liaisonos/automation.json" "${HOME}/.config/liaisonos/automation.json" "Automation schedule"; then
+    ((RESTORED++)) || true
+fi
+
+
+# --- et-logger QRZ.com credentials ---
+if restore_file "${PERSISTENCE_PATH}/configs/liaisonos/qrz.json" "${HOME}/.config/liaisonos/logger/qrz.json" "QRZ credentials"; then
+    chmod 600 "${HOME}/.config/liaisonos/logger/qrz.json" 2>/dev/null || true
+    ((RESTORED++)) || true
+fi
+# Bulletin bodies (.txt + .json) for bbs_publish missions — restore alongside
+# the schedule so BBS-bulletin slots are fireable again.
+BULLETINS_USB="${PERSISTENCE_PATH}/configs/liaisonos/bulletins/pending"
+BULLETINS_DIR="${HOME}/.config/liaisonos/bulletins/pending"
+if [[ -d "$BULLETINS_USB" ]] && [[ -n "$(ls -A "$BULLETINS_USB" 2>/dev/null)" ]]; then
+    mkdir -p "$BULLETINS_DIR"
+    cp -f "$BULLETINS_USB"/* "$BULLETINS_DIR/" 2>/dev/null || true
+    log "✓ Restored: Automation bulletins"
+    ((RESTORED++)) || true
+fi
+
 # --- QtTermTCP ---
 if restore_file "${PERSISTENCE_PATH}/configs/QtTermTCP/QtTermTCP.ini" "${HOME}/QtTermTCP.ini" "QtTermTCP"; then
     ((RESTORED++)) || true
@@ -660,18 +766,39 @@ else
     log "⏭ Skip: YAAC MapCache (not found on USB)"
 fi
 
-# --- Chattervox (config + keystore with signing keys) ---
-CHATTERVOX_DIR="${HOME}/.chattervox"
-if [[ -d "${PERSISTENCE_PATH}/configs/chattervox" ]]; then
-    mkdir -p "$CHATTERVOX_DIR"
-    if restore_file "${PERSISTENCE_PATH}/configs/chattervox/config.json" "${CHATTERVOX_DIR}/config.json" "Chattervox config"; then
+# --- Mesh25 (Ed25519 identity/keystore + chat history + mailbox + parked mail) ---
+if [[ -d "${PERSISTENCE_PATH}/configs/mesh25" ]]; then
+    mkdir -p "${HOME}/.config/liaisonos/mesh25" \
+             "${HOME}/.local/share/liaisonos/qtchattervox" \
+             "${HOME}/.local/share/liaisonos/mesh25"
+    if restore_file "${PERSISTENCE_PATH}/configs/mesh25/keystore.txt" "${HOME}/.config/liaisonos/mesh25/keystore.txt" "Mesh25 keystore (Ed25519 identity + peer keys)"; then
         ((RESTORED++)) || true
     fi
-    if restore_file "${PERSISTENCE_PATH}/configs/chattervox/keystore.json" "${CHATTERVOX_DIR}/keystore.json" "Chattervox keystore"; then
+    if restore_file "${PERSISTENCE_PATH}/configs/mesh25/history.json" "${HOME}/.local/share/liaisonos/qtchattervox/history.json" "Mesh25 chat history"; then
+        ((RESTORED++)) || true
+    fi
+    if restore_file "${PERSISTENCE_PATH}/configs/mesh25/mail.json" "${HOME}/.local/share/liaisonos/qtchattervox/mail.json" "Mesh25 mailbox"; then
+        ((RESTORED++)) || true
+    fi
+    if restore_dir "${PERSISTENCE_PATH}/configs/mesh25/parked" "${HOME}/.local/share/liaisonos/mesh25" "Mesh25 parked mail"; then
         ((RESTORED++)) || true
     fi
 else
-    log "⏭ Skip: Chattervox (not found on USB)"
+    log "⏭ Skip: Mesh25 (not found on USB)"
+fi
+
+# --- POTACAT (POTA spot aggregator / logger — Electron userData) ---
+if [[ -d "${PERSISTENCE_PATH}/configs/potacat" ]]; then
+    # Restore to the dir the app actually reads: ~/.config/POTACAT (uppercase).
+    mkdir -p "${HOME}/.config/POTACAT"
+    if _perr=$(cp -rT --preserve=timestamps "${PERSISTENCE_PATH}/configs/potacat" "${HOME}/.config/POTACAT" 2>&1); then
+        log "✓ Restored: POTACAT data - whole folder ($(find "${HOME}/.config/POTACAT" | wc -l) entries)"
+        ((RESTORED++)) || true
+    else
+        log "✗ FAILED: POTACAT restore error: $(echo "$_perr" | head -2)"
+    fi
+else
+    log "⏭ Skip: POTACAT (not found on USB)"
 fi
 
 # --- Navit (config and bookmarks) ---
@@ -693,6 +820,12 @@ fi
 # --- Firefox ---
 log "Starting Firefox restore..."
 if restore_firefox_profile; then
+    ((RESTORED++)) || true
+fi
+
+# --- Chromium ---
+log "Starting Chromium restore..."
+if restore_chromium_profile; then
     ((RESTORED++)) || true
 fi
 

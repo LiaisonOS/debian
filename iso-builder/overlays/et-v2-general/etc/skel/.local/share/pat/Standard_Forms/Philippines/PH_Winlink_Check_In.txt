@@ -1,0 +1,47 @@
+Form:PH_Winlink_Check_In_Initial.html,PH_Winlink_Check_In_Viewer.html
+Autoload:True
+To:<var MsgTo>
+Subject: <var Newsubject>
+Readonly:True
+Msg:
+-
+<var Organization> Check-In
+Status:     [<var Status>]
+Precedence: [<var Precedence>]
+Incident:   <var IncidentName>
+DRRMC Level:<var DRRMCLevel>
+Date/Time:  <var DateTime>
+Band:       <var Band>
+Session:    <var Session>
+Msg No:     <var MsgNo>
+-------------------------------------------------------------
+Initial Assigned Operators: <var Assigned>
+Station Contact Name:       <var ContactName>
+Station Callsign:           <var MsgSender>
+-------------------------------------------------------------
+Additional Location Info:   <var Location>
+City / Town:  <var CityTown>
+Barangay:     <var Barangay>
+Province:     <var Province>
+Region/Country: <var Region>
+GPS:          LAT <var mapLat>  LON <var mapLon>
+MGRS:         <var MGRS>
+Grid Square:  <var Grid>
+-------------------------------------------------------------
+Comments:
+
+<var Comments>
+
+-------------------------------------------------------------
+Below Info Used for Copy and Paste to Spreadsheet
+
+TAB Delimited:
+
+<var Organization>	<var DateTime>	<var MsgSender>	<var Assigned>	<var ContactName>	<var Location>	<var CityTown>	<var Barangay>	<var Province>	<var Region>	<var GPS2>	<var MGRS>	<var Grid>	<var Band>	<var Session>	<var Commentstab>
+
+Semicolon Delimited Values:
+
+<var Organization>;<var DateTime>;<var MsgSender>;<var Assigned>;<var ContactName>;<var Location>;<var CityTown>;<var Barangay>;<var Province>;<var Region>;<var GPS2>;<var MGRS>;<var Grid>;<var Band>;<var Session>;<var Commentstab>
+----------
+<var Templateversion>
+[No changes or editing of this message are allowed]

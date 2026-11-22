@@ -8,7 +8,7 @@
 | 5052 | et-radio             | et-radio.py               |
 | 5053 | et-synching          | et-synching.py            |
 | 5054 | et-user              | et-user.py                |
-| 5055 | et-chattervox-keys   | et-chattervox-keys.py     |
+| 5055 | _(free)_             | _(was et-chattervox-keys; retired — Mesh25 keys are in-app)_ |
 | 5056 | et-tile-downloader   | et-tile-downloader.py     |
 | 5057 | et-radio-config      | et-radio-config.py        |
 | 5058 | et-repeater          | et-repeater.py            |

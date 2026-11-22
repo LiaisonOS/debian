@@ -1,0 +1,4 @@
+# Allow the dashboard to capture a USB serial KISS TNC when a USB-KISS radio
+# is selected: et-kiss-detect writes a per-station udev rule, reloads udev and
+# stops rigctld (so the TNC isn't claimed as a CAT radio).
+%dialout ALL=(ALL) NOPASSWD: /opt/emcomm-tools/sbin/et-kiss-detect

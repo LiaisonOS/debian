@@ -1,0 +1,347 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<!-- 2026-09-08: Correct audited form defects F07. See accompanying correction report. -->
+
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8" /><title>Local Weather Conditions</title>
+
+<style type="text/css">
+
+.pop-up {
+	position:absolute;
+	top:0;
+	left:-500em;
+	visibility: hidden;
+}  
+  
+.pop-up:target {position:static; left:0;}  
+  
+/* The pop-up itself */  
+  
+.popBox {
+	background:#ffffff;
+	position:absolute;
+	left:15%;
+	right:15%;
+	top:10%;
+	bottom:15%;
+	z-index:10;
+	border:1px solid #3a3a3a;
+  
+/* CSS3 where available: rounded corners, drop-shadow, and fade in. */  
+  
+border-radius:.25rem;  
+  
+box-shadow:0 .5rem .5rem rgba(0,0,0,.5);  
+	opacity:0;
+	transition: opacity 0.8s ease-out;
+	visibility: hidden;
+}  
+  
+:target .popBox {position:fixed; opacity:1;}  
+  
+/* Light box properties */  
+  
+.lightbox {  
+  
+display:none;  
+  
+text-indent:-200em;  
+  
+background-color:rgba(0,0,0,.4);  
+  
+width:100%;  
+  
+height:100%;  
+  
+position:fixed;  
+  
+top:0;  
+  
+left:0;  
+  
+bottom:0;  
+  
+right:0;  
+  
+z-index:5;  
+  
+}  
+  
+:target .lightbox {display:block;}  
+  
+/* The pop-ups close link, moved via CSS to the top right of the pop-up */  
+  
+.close:link,  
+  
+.close:visited {
+	position: absolute;
+	top: -0.75em;
+	right: -0.75em;
+	display: block;
+	width: 2em;
+	height: 2em;
+	line-height: 1.8;
+	padding: 0;
+	text-align: center;
+	text-decoration: none;
+	background-color: #000;
+	border: 2px solid #fff;
+	color: #fff;
+	border-radius: 50%;
+  
+box-shadow: 0 0 .5rem .5rem rba(0,0,0,.5);
+	visibility: hidden;
+}  
+  
+.close:before {content:"X";}  
+  
+.close:hover,  
+  
+.close:active,  
+  
+.close:focus {  
+  
+box-shadow: 0 0 .5rem .5rem rba(255,0,0,.5);  
+  
+background-color: #c00;  
+  
+color: #fff;  
+  
+}  
+  
+.close span {  
+  
+text-indent: -200em;  
+  
+display: block;  
+  
+}  
+  
+/* The pop-up content div will scroll if it has too much content */  
+  
+.popScroll {
+	position:absolute;
+	top: 1rem;
+	left: 1rem;
+	right: 1rem;
+	bottom: 1rem;
+	overflow-y: auto;
+  
+*overflow-y: scroll;  
+	padding-right: 0.5em;
+	visibility: hidden;
+}  
+  
+.popScroll h2 {margin-top:0}  
+
+body, td, th {
+
+font-family: Arial, Helvetica, sans-serif;
+
+}
+
+.zentriert {
+
+text-align: center;
+
+}
+
+input, select {
+
+padding: 1px;
+
+-moz-border-radius-topleft: 2px;
+
+-moz-border-radius-topright: 2px;
+
+-moz-border-radius-bottomright: 2px;
+
+-moz-border-radius-bottomleft: 2px;
+
+font-family: Arial, Helvetica, sans-serif;
+
+font-size: 12px;
+
+text-align: left;
+
+font-weight: normal;
+
+font-style: normal;
+
+}
+
+textarea {
+
+padding: 1px;
+
+-moz-border-radius-topleft: 2px;
+
+-moz-border-radius-topright: 2px;
+
+-moz-border-radius-bottomright: 2px;
+
+-moz-border-radius-bottomleft: 2px;
+
+font-family: Arial, Helvetica, sans-serif;
+
+font-size: 12px;
+
+font-weight: normal;
+
+font-style: normal;
+
+}
+
+.rechtsbuendig {
+
+text-align: right;
+
+}
+
+.SubmitBtn {
+
+text-align: right;
+
+}
+
+.version {
+
+font-size: 10px;
+
+color: #666666;
+
+position: relative;
+
+left: 0px;
+
+top: 3px;
+
+}
+
+hr.new1 {
+  border-top: 1px solid red;
+}
+.style23 {color: #000000}
+.style26 {color: #000000; font-size: 12px; }
+.style27 {font-size: 12px}
+.style28 {color: #2A5F00}
+.style29 {font-size: 14px}
+.style30 {font-size: 16px}
+</style>
+
+
+
+</head>
+
+<body>
+
+<div style="text-align: center;">
+
+
+
+<table style="width: 1071px;" align="center" border="0">
+
+<tbody>
+
+<tr>
+
+<td>
+
+  <table width="75%"  border="1" cellspacing="0" cellpadding="5">
+    <tr bgcolor="#dee9f9">
+      <td colspan="2" ><div align="center">
+        <p><strong>CURRENT LOCAL WEATHER CONDITIONS<br />
+          <span class="style30">{var Title}
+          </span></strong></p>
+        <p><span class="style13"> {var IsExercise}</p>
+      </div></td>
+      </tr>
+    <tr>
+      <td width="52%" align="left" valign="top" bgcolor="#f8f8ff" ><div align="left"><span class="style26" >Call sign: {var Call}      </span></div></td>
+      <td width="48%" align="left"bgcolor="#f8f8ff" ><span class="style26" >Observer Name : {var RepName}      </span></td>
+    </tr>
+    <tr>
+      <td align="left" valign="top" bgcolor="#f8f8ff" ><span class="style27">Date Time: {var DateTime}</span></td>
+      <td align="left" valign="top" nowrap="nowrap" bgcolor="#f8f8ff" ><span class="style26">Location: {var Location} </span></td>
+    </tr>
+    <tr>
+      <td colspan="2" align="left" valign="top" bgcolor="#f8f8ff" ><span class="style27">City/Municipality:{var City}&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp;State/Provence/Region: {var State}<span style="color: #000000; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;">&nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; County: {var County}&nbsp; &nbsp; &nbsp; &nbsp;Country: {var Country}</span></span></td>
+      </tr>
+    <tr>
+      <td colspan="2" align="left" valign="top" bgcolor="#f8f8ff" ><span style="color: #000000; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;"><span class="style27">Latitude: &nbsp; {var mapLat}<span style="color: #000000; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;"> &nbsp; &nbsp; &nbsp;</span></span>&nbsp;&nbsp;<span class="style27">Longitude</span></span><span class="style27" style="color: #000000; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;">:
+            {var mapLon}            <span style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;">&nbsp; &nbsp; </span></span><span class="style27" style="color: #000000; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;"><em>&nbsp; </em>MGRS<em>:&nbsp; </em> {var MGRS} &nbsp;<em><em> <em><em><em> &nbsp;</em></em></em> &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</em></em>Grid:<em>&nbsp;</em></span><span class="style27" style="color: #000000; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;"> {var Grid} </span>             &nbsp;<span class="style27">&nbsp;&nbsp;&nbsp;&nbsp;Location source:	{var locationSource}</span></td>
+      </tr>
+    <tr align="left" valign="top">
+      <td colspan="2" class="style26"><table width="89%"  border="0" cellspacing="0" cellpadding="0"  bordercolor="#999999" >
+        <tr valign="top">
+          <td width="100%">Current Conditions: <span class="style27">
+            <input name="measuereused" type="hidden" id="measuereused" />
+            <span style="font-weight: bold;"><span style="font-weight: bold;">
+              <input name="mtemp" type="hidden" id="mtemp" value="C" />
+              <span style="font-weight: bold;"><span style="font-weight: bold;">
+                <input name="mspeed" type="hidden" id="mspeed" value="KM/h" />
+                <span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;">
+                  <input name="Barmeasure" type="hidden" id="Barmeasure" value="millibars" />
+                  <span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;">
+                    <input name="SnowMeasure" type="hidden" id="SnowMeasure" value="centimeters" />
+                    <span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;"><span style="font-weight: bold;">
+                      <input name="RainMeasure" type="hidden" id="RainMeasure" value="millimeters" />
+                      </span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></td>
+          </tr>
+        </table>
+        <p>{var TheConditions}</p></td>
+    </tr>
+
+    <tr align="left" valign="top">
+      <td colspan="2"><div align="left" class="style27">Temperature: &nbsp;
+        {var TempI} 
+  &deg;F<span  id="TempFM1"> | </span> 
+        {var TempM} 
+  &deg;C&nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;Humidity:
+        {var Humidity}% &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Dew Point:
+        {var DewI} 
+  &deg;<span  id="TempFM1a">F | </span> {var DewM}
+  &deg;C</div></td>
+    </tr>
+    <tr align="left" valign="top">
+      <td colspan="2"><div align="left" class="style27">Barometer: {var BarometerI} inHg   &nbsp;| {var BarometerM} millibars&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Three hour trend: {var Barmtrend}</div></td>
+    </tr>
+    <tr align="left" valign="top">
+      <td colspan="2"><div align="left" class="style27"> Wind Speed: {var WindSpeedI} mph |  &nbsp;{var WindSpeedM} km/h&nbsp;&nbsp;      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Direction From: {var Direction}</div></td>
+    </tr>
+    <tr align="left" valign="top">
+      <td colspan="2"><div align="left" class="style27">Wind Gusts: {var GustsI} mph |  {var GustsM} km/h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Gusts MAX&nbsp;&nbsp;&nbsp;: {var MaxGustsI} mph |  {var MaxGustsM} km/h<br />
+      </div></td>
+    </tr>
+    <tr align="left" valign="top">
+      <td colspan="2"> <div align="left" class="style27">Rain 1 HR: {var Rain1hrI} inches | {var Rain1hrM} millimeters     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rain Total: {var RaintotalI} inches | {var RaintotalM} millimeters<br />
+      </div></td>
+    </tr>
+    <tr align="left" valign="top">
+      <td colspan="2"><div align="left" class="style27">Snow 1 HR: {var Snow1hrI} inches | {var Snow1hrM} centimeters    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Snow Total: {var SnowTotalI} inches | {var SnowTotalM} centimeters <br />
+      </div></td>
+    </tr>
+    <tr align="left" valign="top">
+      <td colspan="2"><div align="left"><span class="style27">NWS Level:{var Warning}          {var WarningFld}
+</span></div>        <div align="left"><span class="style27"></span></div></td>
+      </tr>
+    <tr align="left" valign="top">
+      <td colspan="2"><p align="left" class="style27"> &nbsp; <span class="style28">&nbsp;Notes:&nbsp;&nbsp; </span> <span style="width:750px; margin: 8px;  word-wrap:break-word; display:inline-block;">{var Comments} </span>       </p>
+        <p align="left" class="style27">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<span style="font-style: italic;"> &nbsp;<span style="font-weight: bold;"> &nbsp;&nbsp;<span style="font-style: italic;"><span style="font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>&nbsp;&nbsp;<span style="font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>&nbsp;&nbsp;<span style="font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>&nbsp;&nbsp;<span style="font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>&nbsp;&nbsp;<span style="font-weight: bold;">&nbsp;&nbsp;</span></span></span></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Form Concept by KF5SMH&nbsp;&nbsp;<span style="font-style: italic;"><span style="font-weight: bold;"><span style="font-style: italic;"><span style="font-weight: bold;">&nbsp;&nbsp;&nbsp;</span>&nbsp;&nbsp;<span style="font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>&nbsp;&nbsp;<span style="font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>&nbsp;&nbsp;<span style="font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>&nbsp;&nbsp;<span style="font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>&nbsp;&nbsp;<span style="font-weight: bold;">&nbsp;&nbsp;&nbsp;</span>&nbsp;&nbsp;</span></span>Ver {var Templateversion}
+            <input name="version" type="hidden" id="version" value="(var Templateversion)" />
+    </span> </p></td>
+    </tr>
+  </table>  </td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</form>
+
+</div>
+
+</body></html>

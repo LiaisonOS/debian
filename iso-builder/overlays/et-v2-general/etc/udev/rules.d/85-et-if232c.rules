@@ -1,0 +1,24 @@
+# Author   : Sylvain Deguire (VA2OPS)
+# Date     : 3 November 2026
+# Purpose  : udev rule for the Kenwood IF-232C CAT interface over USB.
+#            Field-validated with Pierre VE2EH's Kenwood TS-850
+#            (CAT = IF-232C, audio = SignaLink; see 84-et-signalink.rules).
+#
+# The IF-232C is a TTL<->RS-232 level converter for the radio's ACC port. On a
+# modern PC it is reached through a USB-serial cable; Pierre's is a Prolific
+# PL2303 variant (067b:23a3, "ATEN Serial Bridge"). Tag it as ET_CAT and start
+# rigctld — the active radio profile (e.g. TS-850: Hamlib model 2009, 4800 baud,
+# PTT=RIG) drives everything else via wrapper-rigctld.sh.
+#
+# The ENV{ET_DEVICE}=="" guard claims it only if no earlier, more specific rule
+# already matched. NOTE the comma before RUN+= — rigctld will not start without
+# it (same gotcha fixed earlier in the DigiRig Lite rule).
+#
+# Postconditions:
+# 1. /dev/et-cat created
+# 2. rigctld is started
+
+SUBSYSTEM=="tty", ATTRS{idVendor}=="067b", ATTRS{idProduct}=="23a3", ENV{ET_DEVICE}=="", \
+    ACTION=="add", \
+    ENV{ET_DEVICE}="IF-232C", ENV{ET_SUBDEVICE}="CAT", GROUP="dialout", MODE="0660", SYMLINK+="et-cat", \
+    RUN+="/usr/bin/systemctl start rigctld"

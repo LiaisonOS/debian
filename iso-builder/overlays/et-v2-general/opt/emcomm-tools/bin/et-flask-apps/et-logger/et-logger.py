@@ -28,6 +28,9 @@ import threading
 import time
 import logging
 import math
+import urllib.request
+import urllib.parse
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from datetime import datetime, timezone
 from flask import Flask, render_template, request, jsonify, Response, send_file
@@ -303,6 +306,23 @@ def init_db():
             FOREIGN KEY (session_id) REFERENCES sessions(id)
         )
     """)
+    # Our own growing callsign database. Every station we resolve via QRZ (and
+    # work) is cached here so future lookups are instant + OFFLINE, and so our
+    # DB keeps growing beyond the bundled US/CA license file. Keyed by call.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS worked_callsigns (
+            call TEXT PRIMARY KEY,
+            name TEXT DEFAULT '',
+            grid TEXT DEFAULT '',
+            lat REAL,
+            lon REAL,
+            state TEXT DEFAULT '',
+            country TEXT DEFAULT '',
+            cqzone TEXT DEFAULT '',
+            source TEXT DEFAULT 'qrz',
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     # Antenna profiles + pattern cache — module lives alongside et-logger.py.
     # Import failure is non-fatal so et-logger still starts on machines
     # without PyNEC (dev boxes); the /api/antennas/* routes gate on the flag.
@@ -463,6 +483,295 @@ def search_callsigns(partial, limit=50):
             break
     results.sort(key=lambda x: x.get('call', ''))
     return results
+
+
+# ============================================================================
+# QRZ.com XML lookup (online enrichment — offline-safe)
+# ============================================================================
+# LiaisonOS is offline-first: the US/CA license DB works with no internet.
+# When internet IS available and the operator has set QRZ credentials, we add
+# a third lookup tier so calls not in the local DB (DX, etc.) still resolve —
+# including the CQ zone, which is gold during CQ WW. Everything here fails
+# silently to None when offline / unconfigured so the logger never blocks.
+
+QRZ_CONFIG = LOGGER_DIR / "qrz.json"
+QRZ_API = "https://xmldata.qrz.com/xml/current/"
+
+_qrz_state = {"key": None, "ts": 0.0}   # cached session key (QRZ keys last ~24h)
+_qrz_cache = {}                          # call -> result dict | None (per process)
+
+
+def load_qrz_config():
+    try:
+        with open(QRZ_CONFIG) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_qrz_config(cfg):
+    LOGGER_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = QRZ_CONFIG.with_suffix(".json.tmp")
+    with open(tmp, "w") as f:
+        json.dump(cfg, f, indent=2)
+    tmp.replace(QRZ_CONFIG)
+    try:
+        os.chmod(QRZ_CONFIG, 0o600)  # password inside — keep private
+    except OSError:
+        pass
+
+
+def _qrz_local(tag):
+    """Strip the XML namespace QRZ wraps every tag in."""
+    return tag.split("}")[-1].lower()
+
+
+def _qrz_parse(xml_bytes):
+    root = ET.fromstring(xml_bytes)
+    out = {}
+    for section in root:
+        sect = _qrz_local(section.tag)
+        d = out.setdefault(sect, {})
+        for child in section:
+            d[_qrz_local(child.tag)] = (child.text or "").strip()
+    return out
+
+
+def _qrz_login(user, password, timeout=6):
+    """Return (session_key, error). Network/parse failure raises."""
+    url = QRZ_API + "?" + urllib.parse.urlencode({
+        "username": user, "password": password,
+        "agent": "liaisonos-etlogger1.0",
+    })
+    with urllib.request.urlopen(url, timeout=timeout) as resp:
+        data = _qrz_parse(resp.read())
+    sess = data.get("session", {})
+    if sess.get("key"):
+        return sess["key"], None
+    return None, sess.get("error", "Unknown QRZ login error")
+
+
+def _qrz_session_key(force=False):
+    cfg = load_qrz_config()
+    if not (cfg.get("enabled") and cfg.get("user") and cfg.get("password")):
+        return None, "QRZ not configured"
+    now = time.time()
+    if not force and _qrz_state["key"] and (now - _qrz_state["ts"] < 12 * 3600):
+        return _qrz_state["key"], None
+    key, err = _qrz_login(cfg["user"], cfg["password"])
+    if key:
+        _qrz_state["key"] = key
+        _qrz_state["ts"] = now
+    return key, err
+
+
+def _qrz_fetch(call, key, timeout=6):
+    url = QRZ_API + "?" + urllib.parse.urlencode({"s": key, "callsign": call})
+    with urllib.request.urlopen(url, timeout=timeout) as resp:
+        return _qrz_parse(resp.read())
+
+
+def qrz_lookup(call, timeout=6):
+    """Look a call up on QRZ. Returns (result_or_None, status) where status is
+    one of: 'found', 'notfound' (QRZ reached, no such call), 'unconfigured',
+    'offline' (couldn't reach QRZ), 'error' (bad creds / QRZ error). The status
+    lets the caller distinguish a bogus callsign from 'we couldn't check'."""
+    call = (call or "").upper().strip()
+    if not call:
+        return None, "notfound"
+    if call in _qrz_cache:
+        return _qrz_cache[call]
+
+    out = (None, "offline")
+    try:
+        key, err = _qrz_session_key()
+        if not key:
+            out = (None, "unconfigured" if err == "QRZ not configured" else "error")
+        else:
+            data = _qrz_fetch(call, key, timeout)
+            # Session expired mid-use → QRZ returns an error, re-login once.
+            if not data.get("callsign") and data.get("session", {}).get("error"):
+                key, err = _qrz_session_key(force=True)
+                if key:
+                    data = _qrz_fetch(call, key, timeout)
+            c = data.get("callsign")
+            if c:
+                name = (c.get("fname", "") + " " + c.get("name", "")).strip()
+                try:
+                    lat = float(c["lat"]) if c.get("lat") else None
+                    lon = float(c["lon"]) if c.get("lon") else None
+                except (ValueError, TypeError):
+                    lat = lon = None
+                out = ({
+                    "call": call, "name": name,
+                    "city": c.get("addr2", ""), "state": c.get("state", ""),
+                    "zip": c.get("zip", ""), "country": c.get("country", ""),
+                    "grid": c.get("grid", ""), "cqzone": c.get("cqzone", ""),
+                    "lat": lat, "lon": lon, "source": "qrz",
+                }, "found")
+            else:
+                # QRZ answered but has no such callsign → genuinely not found.
+                out = (None, "notfound")
+    except Exception:
+        out = (None, "offline")  # network failure — can't validate, stay silent
+
+    _qrz_cache[call] = out
+    return out
+
+
+def _lookup_session_history(call, session_id):
+    """Most recent QSO with this call in the session — reuses the operator's
+    own ground truth (name/QTH and, crucially, the CQ zone they entered)."""
+    if not session_id:
+        return None
+    try:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT name, state, country, gridsquare, exch_rcvd FROM qsos "
+            "WHERE session_id = ? AND call = ? ORDER BY id DESC LIMIT 1",
+            (session_id, call.upper().strip())).fetchone()
+        conn.close()
+    except Exception:
+        return None
+    if not row:
+        return None
+    return {"name": row["name"], "state": row["state"],
+            "country": row["country"], "grid": row["gridsquare"],
+            "zone": row["exch_rcvd"]}
+
+
+def lookup_worked_callsign(call):
+    """Our own growing DB — a station we've previously resolved + worked.
+    Returns a dict (source='mydb') or None."""
+    call = (call or "").upper().strip()
+    if not call:
+        return None
+    try:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT call,name,grid,lat,lon,state,country,cqzone "
+            "FROM worked_callsigns WHERE call = ?", (call,)).fetchone()
+        conn.close()
+    except Exception:
+        return None
+    if not row:
+        return None
+    return {"call": row["call"], "name": row["name"], "grid": row["grid"],
+            "lat": row["lat"], "lon": row["lon"], "state": row["state"],
+            "country": row["country"], "cqzone": row["cqzone"],
+            "source": "mydb"}
+
+
+def save_worked_callsign(info, conn=None):
+    """Upsert a resolved station into our own growing DB. Only stores entries
+    that carry something useful (coords or grid). Derives lat/lon from grid if
+    QRZ gave a grid but no coordinates. Safe no-op on failure."""
+    if not info:
+        return
+    call = (info.get("call") or "").upper().strip()
+    if not call:
+        return
+    lat, lon = info.get("lat"), info.get("lon")
+    grid = info.get("grid") or ""
+    if (lat is None or lon is None) and grid:
+        try:
+            g = grid_to_latlon(grid)
+            if g:
+                lat, lon = g
+        except (ValueError, IndexError, TypeError):
+            pass
+    if lat is None and lon is None and not grid:
+        return  # nothing worth remembering
+    own = conn is None
+    try:
+        if own:
+            conn = get_db()
+        conn.execute("""
+            INSERT INTO worked_callsigns
+                (call,name,grid,lat,lon,state,country,cqzone,source,updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+            ON CONFLICT(call) DO UPDATE SET
+                name=excluded.name, grid=excluded.grid,
+                lat=excluded.lat, lon=excluded.lon,
+                state=excluded.state, country=excluded.country,
+                cqzone=excluded.cqzone, source=excluded.source,
+                updated_at=CURRENT_TIMESTAMP
+        """, (call, info.get("name", ""), grid, lat, lon,
+              info.get("state", ""), info.get("country", ""),
+              str(info.get("cqzone", "") or ""), info.get("source", "qrz")))
+        if own:
+            conn.commit()
+    except Exception:
+        pass
+    finally:
+        if own and conn:
+            conn.close()
+
+
+def lookup_callsign_tiered(call, session_id=None, allow_qrz=True, meta=None):
+    """Resolve a call through the operator's tiers:
+    internal US/CA DB → OUR growing DB (worked_callsigns) → current session log
+    → QRZ.com. Returns a merged dict (or None). 'source' names the primary tier;
+    'known_zone' carries a CQ zone the operator already logged for this call
+    (beats QRZ's default). If 'meta' is passed it gets 'qrz_status'. A fresh QRZ
+    hit is saved into our growing DB."""
+    call = (call or "").upper().strip()
+    info = lookup_callsign(call)
+    if info:
+        info = dict(info)
+        info.setdefault("source", "db")
+
+    # Our own growing DB — fills gaps (and often avoids a QRZ round-trip).
+    mine = lookup_worked_callsign(call)
+    if mine:
+        if info is None:
+            info = dict(mine)
+        else:
+            for k in ("name", "grid", "lat", "lon", "state", "country", "cqzone"):
+                if not info.get(k) and mine.get(k) not in (None, ""):
+                    info[k] = mine[k]
+
+    hist = _lookup_session_history(call, session_id)
+
+    # QRZ fills remaining gaps (grid/cqzone/name/coords) or stands in. A fresh
+    # QRZ result is remembered in our own DB so we never pay for it twice.
+    if allow_qrz and (info is None or not info.get("grid") or not info.get("cqzone")
+                      or info.get("lat") is None):
+        q, qstatus = qrz_lookup(call)
+        if meta is not None:
+            meta["qrz_status"] = qstatus
+        if q:
+            save_worked_callsign(q)
+            if info is None:
+                info = dict(q)
+            else:
+                for k in ("name", "city", "state", "country",
+                          "grid", "cqzone", "lat", "lon"):
+                    if not info.get(k) and q.get(k):
+                        info[k] = q[k]
+                info["qrz"] = True
+
+    # The operator's own prior log entry is the most trustworthy CQ zone.
+    if hist:
+        if info is None:
+            info = {"call": call, "source": "log"}
+        if hist.get("zone"):
+            info["known_zone"] = hist["zone"]
+        for k in ("name", "state", "country", "grid"):
+            if not info.get(k) and hist.get(k):
+                info[k] = hist[k]
+
+    # Always give coordinates when a grid is known but QRZ/DB gave none — so
+    # the station maps immediately (QRZ often returns a grid without lat/lon).
+    if info and (info.get("lat") is None or info.get("lon") is None) and info.get("grid"):
+        try:
+            g = grid_to_latlon(info["grid"])
+            if g:
+                info["lat"], info["lon"] = g
+        except (ValueError, IndexError, TypeError):
+            pass
+
+    return info
 
 
 # ============================================================================
@@ -744,6 +1053,28 @@ TRANSLATIONS = {
         'sb_pts_short': 'pts',
         'new_zone': 'NEW ZONE',
         'new_country': 'NEW COUNTRY',
+        'qrz_settings': 'QRZ.com lookup',
+        'qrz_help': 'Add your QRZ.com XML-API credentials to look up callsigns online (name, QTH, grid and CQ zone) when internet is available. The local callsign database still works offline.',
+        'qrz_user': 'QRZ username',
+        'qrz_pass': 'QRZ password',
+        'qrz_pass_ph': 'your QRZ password',
+        'qrz_pass_keep': '•••••• (leave blank to keep)',
+        'qrz_enable': 'Enable QRZ.com lookups',
+        'qrz_test': 'Test',
+        'qrz_testing': 'Testing…',
+        'qrz_ok': 'QRZ login OK',
+        'qrz_unreachable': 'QRZ unreachable — no internet?',
+        'qrz_saved': 'QRZ settings saved',
+        'qrz_setup_later': 'QRZ lookup stays off — you can set it up anytime with the ⚙ button, top right.',
+        'src_db': 'local DB',
+        'src_log': 'logged',
+        'refresh_loc': '↻ Refresh Locations',
+        'refresh_loc_help': 'Look up missing QSO locations (local DB → your DB → QRZ) and plot them on the map',
+        'refresh_loc_working': '↻ Looking up…',
+        'refresh_loc_done': 'Locations refreshed — {u} added, {m} still unknown',
+        'val_invalid': 'NOT FOUND on QRZ',
+        'val_unverified': 'unverified (QRZ offline)',
+        'val_log_anyway': 'Log it anyway?',
         'dup_title': 'Duplicate on this band',
         'dup_no': 'No',
         'dup_yes': 'Yes, log it',
@@ -865,6 +1196,28 @@ TRANSLATIONS = {
         'sb_pts_short': 'pts',
         'new_zone': 'NOUV. ZONE',
         'new_country': 'NOUV. PAYS',
+        'qrz_settings': 'Recherche QRZ.com',
+        'qrz_help': 'Ajoutez vos identifiants de l\'API XML QRZ.com pour rechercher les indicatifs en ligne (nom, QTH, grille et zone CQ) lorsqu\'Internet est disponible. La base d\'indicatifs locale fonctionne toujours hors ligne.',
+        'qrz_user': 'Nom d\'utilisateur QRZ',
+        'qrz_pass': 'Mot de passe QRZ',
+        'qrz_pass_ph': 'votre mot de passe QRZ',
+        'qrz_pass_keep': '•••••• (laisser vide pour conserver)',
+        'qrz_enable': 'Activer les recherches QRZ.com',
+        'qrz_test': 'Tester',
+        'qrz_testing': 'Test en cours…',
+        'qrz_ok': 'Connexion QRZ réussie',
+        'qrz_unreachable': 'QRZ injoignable — pas d\'Internet ?',
+        'qrz_saved': 'Réglages QRZ enregistrés',
+        'qrz_setup_later': 'Recherche QRZ désactivée — vous pouvez la configurer à tout moment avec le bouton ⚙, en haut à droite.',
+        'src_db': 'base locale',
+        'src_log': 'déjà au journal',
+        'refresh_loc': '↻ Rafraîchir positions',
+        'refresh_loc_help': 'Rechercher les positions manquantes des QSO (base locale → votre base → QRZ) et les tracer sur la carte',
+        'refresh_loc_working': '↻ Recherche…',
+        'refresh_loc_done': 'Positions rafraîchies — {u} ajoutées, {m} encore inconnues',
+        'val_invalid': 'INTROUVABLE sur QRZ',
+        'val_unverified': 'non vérifié (QRZ hors ligne)',
+        'val_log_anyway': 'Enregistrer quand même ?',
         'dup_title': 'Doublon sur cette bande',
         'dup_no': 'Non',
         'dup_yes': 'Oui, enregistrer',
@@ -1098,11 +1451,82 @@ def api_position():
 
 @app.route('/api/callsign/<call>', methods=['GET'])
 def api_callsign_lookup(call):
-    """Look up a single callsign."""
-    info = lookup_callsign(call)
+    """Look up a single callsign — internal DB → session log, and QRZ only when
+    ?qrz=1 (sent on a committed call, not on every keystroke, to respect QRZ's
+    API limits).
+
+    Always 200 with a validation verdict so the UI can warn on bogus calls:
+      found        : resolved in DB/log/QRZ
+      source       : 'db' | 'log' | 'qrz' | None
+      qrz_status   : found | notfound | offline | unconfigured | error | None
+      verdict      : 'ok'        resolved somewhere
+                     'invalid'   QRZ reached and says no such call  → WARN hard
+                     'unverified' not resolved and QRZ couldn't check (offline/
+                                  disabled) → soft note, don't block offline-first
+    """
+    session_id = request.args.get('session_id')
+    allow_qrz = request.args.get('qrz') in ('1', 'true', 'yes')
+    meta = {}
+    info = lookup_callsign_tiered(call, session_id=session_id,
+                                  allow_qrz=allow_qrz, meta=meta)
+    qrz_status = meta.get('qrz_status')
+    resp = dict(info or {})
+    resp['found'] = bool(info)
+    resp['qrz_status'] = qrz_status
     if info:
-        return jsonify(info)
-    return jsonify({}), 404
+        resp['verdict'] = 'ok'
+    elif qrz_status == 'notfound':
+        resp['verdict'] = 'invalid'
+    else:
+        resp['verdict'] = 'unverified'
+    return jsonify(resp)
+
+
+@app.route('/api/qrz/config', methods=['GET'])
+def api_qrz_config_get():
+    """Report QRZ setup (never returns the password)."""
+    cfg = load_qrz_config()
+    return jsonify({
+        'user': cfg.get('user', ''),
+        'enabled': bool(cfg.get('enabled', False)),
+        'has_password': bool(cfg.get('password')),
+    })
+
+
+@app.route('/api/qrz/config', methods=['POST'])
+def api_qrz_config_set():
+    """Save QRZ credentials. A blank password keeps the stored one."""
+    data = request.get_json(silent=True) or {}
+    cfg = load_qrz_config()
+    cfg['user'] = (data.get('user') or '').strip()
+    if data.get('password'):
+        cfg['password'] = data['password']
+    if not cfg.get('user'):
+        cfg['password'] = ''
+    cfg['enabled'] = bool(data.get('enabled', False))
+    save_qrz_config(cfg)
+    # Force a fresh login + clear cached lookups so new creds take effect now.
+    _qrz_state['key'] = None
+    _qrz_cache.clear()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/qrz/test', methods=['POST'])
+def api_qrz_test():
+    """Try a QRZ login with the given (or stored) creds — no internet-safe."""
+    data = request.get_json(silent=True) or {}
+    cfg = load_qrz_config()
+    user = (data.get('user') or cfg.get('user', '')).strip()
+    password = data.get('password') or cfg.get('password', '')
+    if not user or not password:
+        return jsonify({'ok': False, 'error': 'Enter your QRZ username and password first'})
+    try:
+        key, err = _qrz_login(user, password)
+    except Exception:
+        return jsonify({'ok': False, 'error': 'QRZ unreachable — no internet?'})
+    if key:
+        return jsonify({'ok': True})
+    return jsonify({'ok': False, 'error': err or 'Login failed'})
 
 
 @app.route('/api/callsign/search', methods=['GET'])
@@ -1243,8 +1667,24 @@ def api_delete_session(session_id):
     return jsonify({'success': True})
 
 
-def _p2p_or_callsign_location(sig_info, call_info):
-    """Return (lat, lon) — park location if P2P, otherwise callsign home QTH."""
+def _cty_centroid(call):
+    """Last-resort MAP location from the DXCC entity centroid (cty.dat, prefix
+    only — no QRZ). Country-level, approximate. Returns (lat, lon) or (None,None)."""
+    if not CQWW_SCORER_OK:
+        return None, None
+    try:
+        r = cqww_scorer.country_latlon(call)
+        if r:
+            return r[0], r[1]
+    except Exception:
+        pass
+    return None, None
+
+
+def _p2p_or_callsign_location(sig_info, call_info, call=None):
+    """Return (lat, lon) — park location if P2P, otherwise the callsign's home
+    QTH, falling back to the country centroid (cty.dat) so even a station with
+    no DB/QRZ/grid match still gets an approximate map pin."""
     if sig_info:
         # Use first P2P park reference
         first_park = sig_info.split(',')[0].strip()
@@ -1252,9 +1692,13 @@ def _p2p_or_callsign_location(sig_info, call_info):
             lat, lon = lookup_park_location(first_park)
             if lat is not None:
                 return lat, lon
-    # Fallback to callsign lookup location
-    if call_info:
+    # Callsign lookup location
+    if call_info and call_info.get('lat') is not None and call_info.get('lon') is not None:
         return call_info.get('lat'), call_info.get('lon')
+    # Last resort: DXCC country centroid (approximate, offline, no QRZ)
+    c = call or (call_info or {}).get('call')
+    if c:
+        return _cty_centroid(c)
     return None, None
 
 
@@ -1326,15 +1770,22 @@ def api_log_qso():
                 (session_id, call, band)).fetchone():
             dupes.append(call)
             continue
-        call_info = lookup_callsign(call) or {}
+        # Tiered enrichment (DB → QRZ) so DX calls not in the local license DB
+        # still log a name/QTH/grid when online. Cache is warmed by live typing,
+        # so this is a cache hit at log time; offline it silently returns DB-only.
+        call_info = lookup_callsign_tiered(call) or {}
+        # Grow our own DB: remember every worked station that carries a
+        # location (coords or grid), so our DB keeps expanding beyond the
+        # bundled license file and future lookups work offline.
+        save_worked_callsign(call_info)
         name = (data.get('name', '') if single else '') or call_info.get('name', '')
         state = (data.get('state', '') if single else '') or call_info.get('state', '')
         country = (data.get('country', '') if single else '') or call_info.get('country', '')
-        gridsquare = data.get('gridsquare', '') if single else ''
+        gridsquare = (data.get('gridsquare', '') if single else '') or call_info.get('grid', '')
         for park in parks:
             row_sig = sig if park else ''
             # P2P: use park location, otherwise callsign home QTH
-            qso_lat, qso_lon = _p2p_or_callsign_location(park, call_info)
+            qso_lat, qso_lon = _p2p_or_callsign_location(park, call_info, call)
             cursor = conn.execute("""
                 INSERT INTO qsos (session_id, qso_date, time_on, call, freq, band,
                                   mode, rst_sent, rst_rcvd, tx_pwr, gridsquare,
@@ -1600,8 +2051,8 @@ def api_duplicate_check():
     conn.close()
 
     if existing:
-        return jsonify({'duplicate': True, 'time': existing['time_on'],
-                        'band': existing['band']})
+        return jsonify({'duplicate': True, 'id': existing['id'],
+                        'time': existing['time_on'], 'band': existing['band']})
     return jsonify({'duplicate': False})
 
 
@@ -1696,6 +2147,108 @@ def api_cty_info():
     lk = cqww_scorer.get_lookup()
     return jsonify({'ok': lk.ok, 'path': lk.path,
                     'prefixes': len(lk.prefix), 'exact': len(lk.exact)})
+
+
+def refresh_qso_locations(session_id=None, only_missing=True, limit=None):
+    """Backfill qso_lat/qso_lon (and grid/name/country) on existing QSOs by
+    resolving each call through the tiers (DB → our DB → QRZ). Also grows our
+    own DB as a side effect. Returns a summary dict.
+
+    only_missing=True  -> only QSOs with no coords (default; faster, QRZ-friendly)
+    session_id=None    -> all sessions; else just that one.
+    """
+    conn = get_db()
+    where = []
+    args = []
+    if session_id:
+        where.append("session_id = ?"); args.append(session_id)
+    if only_missing:
+        where.append("(qso_lat IS NULL OR qso_lon IS NULL)")
+    sql = "SELECT id, call, gridsquare, exch_rcvd FROM qsos"
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY id"
+    if limit:
+        sql += " LIMIT %d" % int(limit)
+    rows = conn.execute(sql, args).fetchall()
+
+    updated = 0
+    stillmissing = 0
+    missing_calls = []
+    for r in rows:
+        call = r["call"]
+        info = lookup_callsign_tiered(call) or {}
+        lat, lon = info.get("lat"), info.get("lon")
+        grid = info.get("grid") or r["gridsquare"] or ""
+        if (lat is None or lon is None) and grid:
+            try:
+                g = grid_to_latlon(grid)
+                if g:
+                    lat, lon = g
+            except (ValueError, IndexError, TypeError):
+                pass
+        # Next-to-last: DXCC country centroid (from the prefix; no QRZ needed).
+        if lat is None or lon is None:
+            lat, lon = _cty_centroid(call)
+        # Final resort for CONTEST QSOs: the logged received CQ zone gives at
+        # least a regional point when the call's prefix doesn't resolve (special
+        # / portable / event calls). exch_rcvd holds the CQ zone for CQ-WW logs.
+        if (lat is None or lon is None) and CQWW_SCORER_OK:
+            try:
+                zll = cqww_scorer.cq_zone_latlon(r["exch_rcvd"])
+                if zll:
+                    lat, lon = zll
+            except Exception:
+                pass
+        if lat is None or lon is None:
+            stillmissing += 1
+            if call not in missing_calls:
+                missing_calls.append(call)
+            continue
+        conn.execute(
+            "UPDATE qsos SET qso_lat=?, qso_lon=?, "
+            "gridsquare=COALESCE(NULLIF(gridsquare,''), ?), "
+            "name=COALESCE(NULLIF(name,''), ?), "
+            "country=COALESCE(NULLIF(country,''), ?), "
+            "state=COALESCE(NULLIF(state,''), ?) "
+            "WHERE id=?",
+            (lat, lon, grid, info.get("name", ""), info.get("country", ""),
+             info.get("state", ""), r["id"]))
+        updated += 1
+    conn.commit()
+    conn.close()
+    return {"scanned": len(rows), "updated": updated,
+            "still_missing": stillmissing, "missing_calls": missing_calls}
+
+
+@app.route('/api/refresh-locations', methods=['POST'])
+def api_refresh_locations():
+    """Backfill map coordinates on existing QSOs (DB → our DB → QRZ).
+    JSON body: {session_id?: int, only_missing?: bool (default true)}.
+    Needs QRZ configured+online to resolve calls not already in a local DB."""
+    data = request.get_json(silent=True) or {}
+    sid = data.get('session_id')
+    only_missing = data.get('only_missing', True)
+    try:
+        result = refresh_qso_locations(session_id=sid, only_missing=only_missing)
+        result['ok'] = True
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@app.route('/api/mydb-info', methods=['GET'])
+def api_mydb_info():
+    """How many stations are in our own growing DB."""
+    try:
+        conn = get_db()
+        n = conn.execute("SELECT COUNT(*) FROM worked_callsigns").fetchone()[0]
+        withloc = conn.execute(
+            "SELECT COUNT(*) FROM worked_callsigns WHERE lat IS NOT NULL").fetchone()[0]
+        conn.close()
+        return jsonify({'ok': True, 'count': n, 'with_location': withloc})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)})
 
 
 # ============================================================================

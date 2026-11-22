@@ -7,85 +7,39 @@
     },
     "category": "packet",
     "requires": {
-        "devices": [
-            "et-audio",
-            "et-cat"
-        ],
-        "services": [
-            "rigctld"
-        ]
+        "devices": ["et-audio", "et-cat"],
+        "services": ["rigctld"]
     },
     "prechecks": [
-        {
-            "type": "device-exists",
-            "path": "/dev/et-audio"
-        },
-        {
-            "type": "audio-tagged",
-            "tag": "ET_AUDIO"
-        },
-        {
-            "type": "service-active",
-            "name": "rigctld"
-        },
-        {
-            "type": "callsign-set"
-        }
+        {"type": "device-exists", "path": "/dev/et-audio"},
+        {"type": "audio-tagged", "tag": "ET_AUDIO"},
+        {"type": "service-active", "name": "rigctld"},
+        {"type": "callsign-set"}
     ],
     "config": [
         {
             "template": "conf/template.d/packet/direwolf.simple.conf",
             "target": "conf/packet/direwolf.conf",
             "vars": {
-                "ET_CALLSIGN": {
-                    "source": "user.json",
-                    "key": "callsign"
-                },
-                "ET_AUDIO_DEVICE": {
-                    "source": "detect-audio",
-                    "format": "plughw:{card},{device}"
-                }
+                "ET_CALLSIGN": {"source": "user.json", "key": "callsign"},
+                "ET_AUDIO_DEVICE": {"source": "detect-audio", "format": "plughw:{card},{device}"}
             }
         }
     ],
     "pre_start": [
-        {
-            "action": "kill-all"
-        },
-        {
-            "action": "audio-config"
-        }
+        {"action": "kill-all"},
+        {"action": "audio-config"}
     ],
     "chain": [
         {
             "name": "direwolf",
-            "command": [
-                "direwolf",
-                "-c",
-                "{direwolf_conf}",
-                "-l",
-                "{log_dir}",
-                "-t",
-                "0",
-                "-p"
-            ],
-            "health": {
-                "type": "tcp-port",
-                "port": 8001,
-                "timeout": 60
-            },
+            "command": ["direwolf", "-c", "{direwolf_conf}", "-l", "{log_dir}", "-t", "0", "-p"],
+            "health": {"type": "tcp-port", "port": 8001, "timeout": 60, "monitor": false},
             "restart": "audio-retry"
         },
         {
             "name": "direwolf-monitor",
-            "command": [
-                "xfce4-terminal",
-                "--disable-server",
-                "--title=Direwolf Monitor",
-                "--geometry=120x32",
-                "-e",
-                "bash -c 'mkdir -p {log_dir}/logs; touch {log_dir}/logs/direwolf.log; exec tail -n 200 -F {log_dir}/logs/direwolf.log'"
-            ],
+            "command": ["QtTerminal", "--title=Direwolf Monitor", "-e", "mkdir -p {log_dir}/logs; touch {log_dir}/logs/direwolf.log; exec tail -n 200 -F {log_dir}/logs/direwolf.log"],
             "restart": "never",
             "depends_on": "direwolf"
         }

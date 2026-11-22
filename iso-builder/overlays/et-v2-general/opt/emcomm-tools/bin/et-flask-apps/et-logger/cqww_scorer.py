@@ -36,6 +36,7 @@ class CtyLookup:
     def __init__(self, path=None):
         self.exact = {}    # "W1AW"  -> (country, continent, cqzone)
         self.prefix = {}   # "VE"    -> (country, continent, cqzone)
+        self.country_latlon = {}  # country name -> (lat, lon)  [standard, E+]
         self._maxlen = 1
         self.path = path or self._pick_path()
         self.ok = False
@@ -85,6 +86,16 @@ class CtyLookup:
             base_zone = 0
         base_cont = parts[3].strip()
         primary = parts[7].strip()
+
+        # Entity centroid lat/lon (cty.dat fields 5,6). cty.dat longitude is
+        # degrees WEST-positive, so negate for standard E-positive. Used as a
+        # last-resort MAP location when no real QTH/grid is available.
+        try:
+            clat = float(parts[4].strip())
+            clon = -float(parts[5].strip())
+            self.country_latlon.setdefault(country, (round(clat, 4), round(clon, 4)))
+        except (ValueError, IndexError):
+            pass
 
         # Primary prefix is a valid prefix too (if simple / no slash).
         if primary and "/" not in primary:
@@ -183,6 +194,51 @@ def reload_lookup():
     global _LOOKUP
     _LOOKUP = None
     return get_lookup()
+
+
+# Approximate geographic centre of each CQ zone (1–40). Rough but good enough
+# for a "general point on the map" when nothing else resolves — e.g. a contest
+# station whose special/portable call doesn't match a cty.dat prefix, but whose
+# received CQ zone we logged. (lat, lon), standard E-positive longitude.
+CQ_ZONE_LATLON = {
+    1: (64.0, -150.0), 2: (58.0, -75.0), 3: (45.0, -120.0), 4: (40.0, -100.0),
+    5: (42.0, -75.0), 6: (18.0, -100.0), 7: (12.0, -85.0), 8: (20.0, -73.0),
+    9: (5.0, -65.0), 10: (-10.0, -75.0), 11: (-10.0, -50.0), 12: (-35.0, -70.0),
+    13: (-40.0, -63.0), 14: (50.0, 2.0), 15: (47.0, 15.0), 16: (55.0, 35.0),
+    17: (58.0, 70.0), 18: (62.0, 100.0), 19: (65.0, 140.0), 20: (38.0, 30.0),
+    21: (28.0, 48.0), 22: (22.0, 78.0), 23: (42.0, 92.0), 24: (32.0, 110.0),
+    25: (37.0, 138.0), 26: (16.0, 105.0), 27: (13.0, 122.0), 28: (0.0, 115.0),
+    29: (-25.0, 120.0), 30: (-30.0, 148.0), 31: (5.0, -160.0), 32: (-38.0, 176.0),
+    33: (28.0, 0.0), 34: (22.0, 25.0), 35: (8.0, 5.0), 36: (0.0, 20.0),
+    37: (2.0, 38.0), 38: (-28.0, 26.0), 39: (-18.0, 47.0), 40: (68.0, -40.0),
+}
+
+
+def cq_zone_latlon(zone):
+    """Approximate (lat, lon) centre of a CQ zone (1–40), or None.
+    Accepts an int or a numeric string like '05'."""
+    try:
+        z = int(str(zone).strip())
+    except (ValueError, TypeError):
+        return None
+    return CQ_ZONE_LATLON.get(z)
+
+
+def country_latlon(call):
+    """Approximate MAP location for a callsign from its DXCC entity centroid
+    (cty.dat). Returns (lat, lon, country) or None. Works from the prefix alone
+    — no QRZ needed — so free-account / offline users still get a map. This is
+    COUNTRY-level, not the real QTH."""
+    lk = get_lookup()
+    if not lk.ok:
+        return None
+    country, cont, zone, is_mm = lk.resolve(call)
+    if not country:
+        return None
+    ll = lk.country_latlon.get(country)
+    if not ll:
+        return None
+    return (ll[0], ll[1], country)
 
 
 def band_to_int(band):

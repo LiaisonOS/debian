@@ -649,15 +649,34 @@ class ModeEngine:
                 if has_linbpq:
                     self._stop_linbpq()
 
-            # Kill QtMercury if Mercury modem was used
-            if config:
-                chain = config.get("chain", [])
-                has_mercury = any(s.get("name") == "mercury" for s in chain)
-                if has_mercury:
-                    subprocess.call(["pkill", "-f", "QtMercury"],
-                                    stdout=subprocess.DEVNULL,
-                                    stderr=subprocess.DEVNULL)
-                    log.info("QtMercury stopped")
+            # Close the QtMercury companion — launched fire-and-forget (untracked),
+            # so kill it by name on any stop so it never hangs on the desktop.
+            # Unconditional (no-op if not running): the old has_mercury chain
+            # check missed the QtTermTCP+Mercury path, whose stored config still
+            # has the pre-override "direwolf" step, leaving QtMercury open.
+            subprocess.call(["pkill", "-f", "QtMercury"],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL)
+
+            # Close any QtWebView companion window — launched fire-and-forget
+            # via the open-browser post_start action, so it's not a tracked
+            # process; kill it by name so it doesn't hang on the desktop after
+            # the mode stops. No-op when nothing is running.
+            subprocess.call(["pkill", "-x", "QtWebView"],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL)
+
+            # Bluetooth KISS: a BT mode binds /dev/rfcomm0 (rfcomm-bind). That
+            # binding PERSISTS after the processes die, so the next start sees
+            # /dev/rfcomm0 and skips re-binding — reusing a now-dead BT link
+            # that can't carry data. Release it on stop so the next start
+            # re-binds a fresh connection. No-op when no BT mode was running.
+            if os.path.exists("/dev/rfcomm0"):
+                log.info("Releasing Bluetooth rfcomm0 binding on stop")
+                subprocess.call(["sudo", "killall", "kissattach"],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.call(["sudo", "rfcomm", "release", "0"],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
             # Restart rigctld after Wine modes — Wine shares the serial port
             # and corrupts rigctld's connection. Same as unplugging/replugging.
@@ -738,16 +757,17 @@ class ModeEngine:
 
             self._pm.stop_all()
 
-            # Kill QtMercury companion (untracked fire-and-forget) when
-            # Mercury was in the chain. Same as stop().
-            if config:
-                chain = config.get("chain", [])
-                has_mercury = any(s.get("name") == "mercury" for s in chain)
-                if has_mercury:
-                    subprocess.call(["pkill", "-f", "QtMercury"],
-                                    stdout=subprocess.DEVNULL,
-                                    stderr=subprocess.DEVNULL)
-                    log.info("QtMercury stopped (cascade)")
+            # Close the QtMercury companion unconditionally (no-op if absent) —
+            # the chain-name check missed the QtTermTCP+Mercury path.
+            subprocess.call(["pkill", "-f", "QtMercury"],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL)
+            # Close any QtWebView companion window too — this cascade path fires
+            # when the user closes QtPatWinlink directly (not the dashboard STOP
+            # button), so it needs the same cleanup as stop().
+            subprocess.call(["pkill", "-x", "QtWebView"],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL)
 
             # Restart rigctld after Wine modes — Wine shares the serial port
             # and corrupts rigctld's connection. Same as unplugging/replugging.
@@ -869,16 +889,14 @@ class ModeEngine:
 
         try:
             self._pm.stop_all()
-            # Kill QtMercury companion (untracked fire-and-forget) when
-            # Mercury was in the chain.
-            if config:
-                chain = config.get("chain", [])
-                has_mercury = any(s.get("name") == "mercury" for s in chain)
-                if has_mercury:
-                    subprocess.call(["pkill", "-f", "QtMercury"],
-                                    stdout=subprocess.DEVNULL,
-                                    stderr=subprocess.DEVNULL)
-                    log.info("QtMercury stopped (crash)")
+            # Close the QtMercury + QtWebView companion windows
+            # unconditionally (no-op if absent).
+            subprocess.call(["pkill", "-f", "QtMercury"],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL)
+            subprocess.call(["pkill", "-x", "QtWebView"],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL)
         finally:
             with self._state_lock:
                 self._stopping = False
@@ -923,6 +941,12 @@ class ModeEngine:
             if "{audio_device}" in part:
                 audio = config_templater._detect_audio_device("plughw:{card},{device}")
                 part = part.replace("{audio_device}", audio or "plughw:0,0")
+            if "{callsign}" in part:
+                # Operator callsign from user.json — for modems that take it on
+                # the command line (a modem that takes --call {callsign}).
+                user_cfg = config_templater.load_user_config()
+                part = part.replace("{callsign}",
+                                    user_cfg.get("callsign", "N0CALL"))
             if "{pat_conf}" in part:
                 pat_conf = os.path.expanduser("~/.config/pat/config.json")
                 part = part.replace("{pat_conf}", pat_conf)
@@ -964,7 +988,7 @@ class ModeEngine:
         elif action_type == "audio-config":
             self._run_audio_config()
         elif action_type == "open-browser":
-            self._open_browser(action.get("url", ""))
+            self._open_browser(action.get("url", ""), action.get("title"))
         elif action_type == "prime-rigctld":
             self._prime_rigctld()
         elif action_type == "stop-rigctld":
@@ -993,10 +1017,14 @@ class ModeEngine:
             if not self._check_varac_license():
                 return False
         elif action_type == "yaac-config":
-            self._apply_yaac_config(bluetooth=action.get("bluetooth", False))
-        elif action_type == "chattervox-config":
-            self._apply_chattervox_config(
-                bluetooth=action.get("bluetooth", False))
+            self._apply_yaac_config(
+                bluetooth=action.get("bluetooth", False),
+                serial_device=action.get("serial_device"),
+                serial_baud=action.get("serial_baud", 1200))
+        elif action_type == "kiss-tnc-init":
+            self._apply_kiss_tnc_init(
+                action.get("device", "/dev/et-kiss"),
+                action.get("baud", 9600))
         elif action_type == "paracon-config":
             self._apply_paracon_config()
         elif action_type == "qttermtcp-config":
@@ -1080,6 +1108,23 @@ class ModeEngine:
             )
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
+        # Close any leftover QtWebView window so it doesn't hang on
+        # the desktop into the next mode.
+        try:
+            subprocess.run(
+                ["pkill", "-x", "QtWebView"],
+                timeout=5, capture_output=True
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass
+        # Close any leftover QtMercury companion window too.
+        try:
+            subprocess.run(
+                ["pkill", "-f", "QtMercury"],
+                timeout=5, capture_output=True
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass
         # Also kill any leftover processes from v1 scripts
         try:
             subprocess.run(
@@ -1107,6 +1152,134 @@ class ModeEngine:
             )
         except (FileNotFoundError, subprocess.TimeoutExpired) as e:
             log.warning("Audio config failed: %s", e)
+
+    def _kiss_is_active(self, device, timeout=1.5):
+        """Return True if the TNC is already in KISS mode (not at the cmd:
+        prompt).  Non-destructive probe: send a bare CR and sniff the reply.
+
+        A TH-D72 sitting at its TNC command prompt echoes a "cmd:" banner when
+        it receives a CR; in KISS mode a lone 0x0D is swallowed as mid-frame
+        data and produces no text. Any 0xC0 we happen to catch is a live KISS
+        frame boundary -> definitely in KISS. Silence is treated as in-KISS:
+        an idle KISS TNC with no RF traffic is silent, and assuming KISS avoids
+        the disruptive RESTART (see _apply_kiss_tnc_init). The only false branch
+        is a cmd: prompt that doesn't echo, which the TH-D72 doesn't do.
+        """
+        import time, select
+        try:
+            fd = os.open(device, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+        except OSError as e:
+            log.warning("kiss-probe: cannot open %s: %s", device, e)
+            return False
+        try:
+            # Drain anything already buffered so we only judge our own CR reply.
+            try:
+                while select.select([fd], [], [], 0)[0]:
+                    if not os.read(fd, 4096):
+                        break
+            except OSError:
+                pass
+            try:
+                os.write(fd, b"\r")
+            except OSError:
+                pass
+            buf = b""
+            end = time.time() + timeout
+            while time.time() < end:
+                if select.select([fd], [], [], 0.2)[0]:
+                    try:
+                        chunk = os.read(fd, 4096)
+                    except OSError:
+                        break
+                    if chunk:
+                        buf += chunk
+            if b"\xc0" in buf:
+                log.info("kiss-probe: saw KISS framing on %s -> already in KISS", device)
+                return True
+            if b"cmd" in buf.lower():
+                log.info("kiss-probe: cmd: prompt on %s -> NOT in KISS", device)
+                return False
+            log.info("kiss-probe: %s silent -> assuming already in KISS", device)
+            return True
+        finally:
+            os.close(fd)
+
+    def _apply_kiss_tnc_init(self, device="/dev/et-kiss", baud=9600):
+        """Ensure a serial KISS TNC (e.g. TH-D72 on /dev/et-kiss) is in KISS.
+
+        Transparent to the operator (no terminal step). The TH-D72 PERSISTS its
+        KISS-on-boot flag, so once set it comes up in KISS every power cycle.
+        We therefore probe first and, if it's already in KISS, LEAVE IT ALONE —
+        because the "KISS ON + RESTART" cycle reboots the D72's TNC and
+        re-enumerates its USB serial port. A slow app like YAAC (opens ~10s
+        later) survives that; a thin, fast KISS reader like chattervox opens the
+        port mid-reboot and never receives. Only when the radio is actually at
+        the cmd: prompt do we send KISS ON + RESTART. Run on every USB-KISS mode
+        start; idempotent.
+        """
+        import time
+        if not os.path.exists(device):
+            # Not captured yet (reboot on a live system, or the radio was
+            # plugged but not Applied in the dashboard). Try to capture now.
+            log.info("kiss-tnc-init: %s missing — running et-kiss-detect", device)
+            try:
+                subprocess.run(["sudo", "/opt/emcomm-tools/sbin/et-kiss-detect"],
+                               timeout=20, check=False)
+            except Exception as e:
+                log.warning("kiss-tnc-init: et-kiss-detect failed: %s", e)
+        if not os.path.exists(device):
+            log.warning("kiss-tnc-init: %s still not present — connect the TH-D72",
+                        device)
+            return
+        try:
+            # 9600 8N1 raw so our bytes go out verbatim.
+            #  -hupcl  : do NOT drop DTR when we close the port. With hupcl
+            #            (the default) closing lowers DTR, which bounces the
+            #            TH-D72 back out of KISS to cmd:.
+            #  -crtscts: no RTS/CTS hardware flow control (the D72 would stall
+            #            waiting on CTS that a thin reader never raises).
+            subprocess.run(
+                ["stty", "-F", device, str(baud), "raw", "-echo", "-echoe",
+                 "-echok", "cs8", "-cstopb", "-parenb", "clocal",
+                 "-hupcl", "-crtscts"],
+                timeout=5, check=False)
+
+            # Already in KISS? Then do NOT RESTART — that re-enumerates the USB
+            # serial and breaks RX for a fast-opening app (chattervox). Leave
+            # the working KISS link exactly as-is.
+            if self._kiss_is_active(device):
+                log.info("kiss-tnc-init: %s already in KISS — no RESTART needed", device)
+                return
+
+            # At the cmd: prompt — turn KISS on and RESTART to enter it.
+            with open(device, "wb", buffering=0) as f:
+                f.write(b"\r\r")           # clean prompt
+                f.flush()
+                time.sleep(0.4)
+                f.write(b"KISS ON\r")      # set KISS-on-boot flag (persists)
+                f.flush()
+                time.sleep(0.5)
+                f.write(b"RESTART\r")      # reboot the TNC -> comes up in KISS
+                f.flush()
+            # RESTART re-enumerates the USB serial — give it time to come back
+            # and re-resolve the /dev/et-kiss symlink before the app opens it.
+            time.sleep(6.0)
+            if not os.path.exists(device):
+                log.info("kiss-tnc-init: %s gone after RESTART (re-enum) — re-detecting",
+                         device)
+                try:
+                    subprocess.run(["sudo", "/opt/emcomm-tools/sbin/et-kiss-detect"],
+                                   timeout=20, check=False)
+                except Exception as e:
+                    log.warning("kiss-tnc-init: re-detect failed: %s", e)
+                time.sleep(1.0)
+            # Re-assert -hupcl on the (possibly re-enumerated) port.
+            subprocess.run(["stty", "-F", device, "-hupcl", "-crtscts"],
+                           timeout=5, check=False)
+            log.info("kiss-tnc-init: KISS ON + RESTART sent on %s @ %s",
+                     device, baud)
+        except Exception as e:
+            log.warning("kiss-tnc-init failed on %s: %s", device, e)
 
     def _apply_mercury_tnc_init(self):
         """Send ARQ tuning commands to Mercury TNC after startup."""
@@ -1223,28 +1396,20 @@ class ModeEngine:
         log.info("Mercury softvol PCM written to %s", asoundrc_path)
 
         # Radio model — pull the Hamlib numeric id from the operator's
-        # selected radio (conf/radios.d/active-radio.json → rigctrl.id).
-        # Historically hardcoded to "2" (NET rigctl) which happened to work
-        # on some Yaesus (FT-897 / FT-857) by coincidence but broke on
-        # anything Mercury talks to directly (e.g. FT-891): Mercury spoke
-        # NET-rigctl protocol at a rigctld backend that expected the
-        # specific rig's CAT commands, PTT never keyed, connect hung.
-        # Falls back to "2" only if active-radio.json is missing or malformed.
+        # Radio model = 2 (NET rigctl), ALWAYS — because radio_device below is
+        # localhost:4532, which is rigctld's NET-rigctl server (confirmed on a
+        # real FT-897: `rigctl -m 2 -r localhost:4532 f` reads the frequency,
+        # while `rigctl -m 1043 ...` times out). Mercury is a *client* of
+        # rigctld, so it must speak NET rigctl (model 2); rigctld already holds
+        # the radio with its real model + serial port.
+        #
+        # 2.4.2 changed this to the radio's native rigctrl.id, which is what
+        # broke it: native CAT at a NET-rigctl port can't talk. It only *looked*
+        # fine on Yaesu (that Hamlib driver doesn't probe the rig at open, so
+        # Mercury reached "Listening on 8300" without really reading the radio),
+        # but Icom/Kenwood drivers (G90=3088, QMX=2002) probe at open, the probe
+        # times out, and Mercury exits → "not healthy (port 8300)".
         radio_model = "2"
-        active_radio_path = os.path.join(ET_HOME,
-                                          "conf/radios.d/active-radio.json")
-        try:
-            with open(active_radio_path) as _f:
-                _rd = json.load(_f)
-            _id = (_rd.get("rigctrl") or {}).get("id")
-            if _id:
-                radio_model = str(_id).strip()
-                log.info("Mercury radio_model from active-radio.json: %s (%s %s)",
-                         radio_model, _rd.get("vendor", "?"), _rd.get("model", "?"))
-        except (FileNotFoundError, json.JSONDecodeError, KeyError) as _e:
-            log.warning("Could not read radio model from %s (%s) — "
-                        "falling back to radio_model=2 (NET rigctl)",
-                        active_radio_path, _e)
 
         ini_lines = [
             "; Mercury init configuration — auto-generated by et-supervisor",
@@ -1297,34 +1462,47 @@ class ModeEngine:
             True if rfcomm0 already exists or was successfully bound,
             False if no paired radio found or bind failed.
         """
-        if os.path.exists("/dev/rfcomm0"):
-            log.info("rfcomm0 already exists, skipping bind")
-            return True
-
-        # Build map of known radio deviceNames -> channel from *.bt.json
-        radios_dir = os.path.join(ET_HOME, "conf/radios.d")
+        import re
+        # Prefer the SELECTED radio (active-radio.json) so switching BT radios
+        # always binds the one the operator picked — not whichever paired device
+        # happens to match first. Fall back to scanning all *.bt.json only if the
+        # active radio has no bluetooth block.
         known_radios = {}  # {deviceName_lower: channel}
-        if os.path.isdir(radios_dir):
-            for fname in os.listdir(radios_dir):
-                if not fname.endswith(".bt.json"):
-                    continue
-                try:
-                    with open(os.path.join(radios_dir, fname)) as f:
-                        radio = json.load(f)
-                    bt = radio.get("bluetooth", {})
-                    name = bt.get("deviceName", "")
-                    channel = bt.get("channel", "")
-                    if name and channel:
-                        known_radios[name.lower()] = channel
-                except (json.JSONDecodeError, OSError) as e:
-                    log.warning("Could not read %s: %s", fname, e)
+        active_path = os.path.join(ET_HOME, "conf/radios.d/active-radio.json")
+        try:
+            with open(active_path) as f:
+                active = json.load(f)
+            abt = active.get("bluetooth", {})
+            if abt.get("deviceName") and abt.get("channel"):
+                known_radios[abt["deviceName"].lower()] = abt["channel"]
+                log.info("Active BT radio selected: %s channel %s",
+                         abt["deviceName"], abt["channel"])
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            log.warning("Could not read active-radio.json: %s", e)
+
+        if not known_radios:
+            radios_dir = os.path.join(ET_HOME, "conf/radios.d")
+            if os.path.isdir(radios_dir):
+                for fname in os.listdir(radios_dir):
+                    if not fname.endswith(".bt.json"):
+                        continue
+                    try:
+                        with open(os.path.join(radios_dir, fname)) as f:
+                            radio = json.load(f)
+                        bt = radio.get("bluetooth", {})
+                        name = bt.get("deviceName", "")
+                        channel = bt.get("channel", "")
+                        if name and channel:
+                            known_radios[name.lower()] = channel
+                    except (json.JSONDecodeError, OSError) as e:
+                        log.warning("Could not read %s: %s", fname, e)
 
         if not known_radios:
             log.error("No radio configs with deviceName/channel found")
             self._notify_user(_t("rfcomm_no_radio"))
             return False
 
-        log.info("Known BT radios: %s", known_radios)
+        log.info("Target BT radio(s): %s", known_radios)
 
         # Get paired devices via bluetoothctl
         try:
@@ -1364,6 +1542,30 @@ class ModeEngine:
 
         log.info("Matched BT radio: %s (%s) channel %s",
                  matched_name, matched_mac, matched_channel)
+
+        # If rfcomm0 is already bound, check WHO to. Bound to the radio we want
+        # -> keep it. Bound to a DIFFERENT (previously-selected) radio -> release
+        # it so we can rebind. This is what makes switching BT radios work: the
+        # old binding was persisting and the new radio never connected.
+        if os.path.exists("/dev/rfcomm0"):
+            bound_mac = None
+            try:
+                rf = subprocess.run(["rfcomm"], capture_output=True, text=True, timeout=5)
+                for line in rf.stdout.splitlines():
+                    m = re.match(r"\s*rfcomm0:\s*([0-9A-Fa-f:]{17})", line)
+                    if m:
+                        bound_mac = m.group(1).upper()
+                        break
+            except Exception as e:
+                log.warning("Could not read rfcomm bindings: %s", e)
+            if bound_mac and bound_mac == matched_mac.upper():
+                log.info("rfcomm0 already bound to the selected radio %s", matched_name)
+                return True
+            log.info("rfcomm0 bound to %s but want %s (%s) — releasing to rebind",
+                     bound_mac, matched_mac, matched_name)
+            subprocess.run(["sudo", "rfcomm", "release", "0"],
+                           capture_output=True, text=True, timeout=10)
+            time.sleep(1)
 
         # Bind rfcomm0
         try:
@@ -1439,11 +1641,17 @@ class ModeEngine:
 
         log.info("Pat config applied: %s -> %s", template_name, target_path)
 
-    def _open_browser(self, url):
-        """Open a URL in the preferred browser.
+    def _open_browser(self, url, title=None):
+        """Open a URL in the preferred browser (fire-and-forget, non-fatal).
 
         Resolves {auto-band} placeholder by querying rigctld for the
         current radio frequency and converting to band name.
+
+        When a `title` is given we prefer QtWebView — a dedicated controlled
+        window that loads security-hardened local UIs (those that set
+        X-Frame-Options: DENY + a same-origin WebSocket) that a framed/proxied
+        view can't. Falls back to Min / Firefox / xdg-open if QtWebView isn't
+        installed, so a missing binary never breaks the mode.
         """
         if not url:
             return
@@ -1455,11 +1663,21 @@ class ModeEngine:
 
         log.info("Opening browser to %s", url)
 
-        # Prefer Min browser (lightweight), then firefox-esr, then xdg-open
-        for browser in ["min", "firefox-esr", "firefox", "xdg-open"]:
+        generic = [["min", url], ["firefox-esr", url],
+                   ["firefox", url], ["xdg-open", url]]
+        if title:
+            # A titled launch = a controlled app window: prefer QtWebView
+            # (handles the hardened local UI, and the supervisor closes it by
+            # name on mode stop). Fall back to a generic browser if QtWebView
+            # isn't installed. Untitled launches keep the old behavior, so
+            # other modes are unaffected.
+            attempts = [["/usr/local/bin/QtWebView", url, "--title", title]] + generic
+        else:
+            attempts = generic
+        for cmd in attempts:
             try:
                 subprocess.Popen(
-                    [browser, url],
+                    cmd,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                 )
@@ -2150,7 +2368,8 @@ class ModeEngine:
     # Phase 5 action implementations
     # -----------------------------------------------------------------
 
-    def _apply_yaac_config(self, bluetooth=False):
+    def _apply_yaac_config(self, bluetooth=False, serial_device=None,
+                           serial_baud=1200):
         """Update YAAC Ports/prefs.xml from template with callsign.
 
         Copies the Ports/prefs.xml template from /etc/skel, replaces
@@ -2183,8 +2402,14 @@ class ModeEngine:
 
         content = content.replace("{{ET_CALLSIGN}}", callsign)
 
-        # Bluetooth mode: remove Direwolf KISS-over-TCP port (no Direwolf)
-        if bluetooth:
+        # USB serial KISS TNC (e.g. TH-D72 on /dev/et-kiss @ 9600): repoint the
+        # Serial_TNC port (templated as /dev/rfcomm0,1200) at the USB device.
+        if serial_device:
+            content = content.replace(
+                "/dev/rfcomm0,1200", "%s,%d" % (serial_device, serial_baud))
+
+        # Serial KISS TNC (Bluetooth rfcomm OR USB): no Direwolf KISS-over-TCP.
+        if bluetooth or serial_device:
             content = "\n".join(
                 line for line in content.splitlines()
                 if "KISS-over-TCP" not in line)
@@ -2203,108 +2428,19 @@ class ModeEngine:
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
 
-        # Remove Bluetooth TNC port if rfcomm0 not available
-        if not os.path.exists("/dev/rfcomm0"):
+        # Remove the Serial_TNC port if its device isn't present (rfcomm0 for
+        # Bluetooth, or the USB KISS device after the replacement above).
+        tnc_dev = serial_device if serial_device else "/dev/rfcomm0"
+        if not os.path.exists(tnc_dev):
             content = "\n".join(
                 line for line in content.splitlines()
-                if "rfcomm0" not in line)
+                if tnc_dev not in line)
 
         with open(target, "w") as f:
             f.write(content)
 
-        log.info("YAAC ports config applied: callsign=%s, bluetooth=%s",
-                 callsign, bluetooth)
-
-    def _apply_chattervox_config(self, bluetooth=False):
-        """Generate chattervox config.json and ensure signing key exists."""
-        user_config = config_templater.load_user_config()
-        callsign = user_config.get("callsign", "N0CALL")
-
-        if callsign == "N0CALL" or not callsign:
-            log.error("Callsign not set, cannot configure chattervox")
-            self._notify_user(_t("callsign_not_set"))
-            return
-
-        conf_dir = os.path.expanduser("~/.chattervox")
-        conf_file = os.path.join(conf_dir, "config.json")
-        keystore = os.path.join(conf_dir, "keystore.json")
-        os.makedirs(conf_dir, exist_ok=True)
-
-        # Bluetooth TNC: serial KISS directly on rfcomm0 at 1200 baud
-        # USB/soundcard: TCP KISS via Direwolf (baud irrelevant for TCP)
-        if bluetooth:
-            kiss_port = "/dev/rfcomm0"
-            kiss_baud = 1200
-            log.info("Chattervox: using Bluetooth TNC on %s @ %d",
-                     kiss_port, kiss_baud)
-        else:
-            kiss_port = "kiss://localhost:8001"
-            kiss_baud = 9600
-
-        # Write initial config (needed before genkey — chattervox reads it)
-        config = {
-            "version": 3,
-            "callsign": callsign,
-            "ssid": 0,
-            "keystoreFile": keystore,
-            "kissPort": kiss_port,
-            "kissBaud": kiss_baud,
-            "feedbackDebounce": 20000,
-        }
-        with open(conf_file, "w") as f:
-            json.dump(config, f, indent=2)
-
-        # Generate signing key if no key exists for this callsign
-        need_genkey = True
-        if os.path.isfile(keystore):
-            try:
-                with open(keystore) as f:
-                    ks = json.load(f)
-                if ks.get(callsign, []):
-                    need_genkey = False
-            except (json.JSONDecodeError, FileNotFoundError):
-                pass
-
-        if need_genkey:
-            try:
-                log.info("Generating chattervox signing key for %s", callsign)
-                subprocess.run(["chattervox", "genkey"],
-                               timeout=10, capture_output=True)
-            except (FileNotFoundError, subprocess.TimeoutExpired) as e:
-                log.error("Failed to generate chattervox key: %s", e)
-
-        # Read public key from keystore
-        signing_key = ""
-        if os.path.isfile(keystore):
-            try:
-                with open(keystore) as f:
-                    ks = json.load(f)
-                keys = ks.get(callsign, [])
-                if keys:
-                    signing_key = keys[0].get("public", "")
-            except (json.JSONDecodeError, FileNotFoundError):
-                pass
-
-        # Update config with signing key
-        if signing_key:
-            config["signingKey"] = signing_key
-            with open(conf_file, "w") as f:
-                json.dump(config, f, indent=2)
-
-            # Copy public key to clipboard and notify the user
-            try:
-                subprocess.run(["xclip", "-selection", "clipboard", "-i"],
-                               input=signing_key.encode(),
-                               timeout=5)
-                self._notify_user(
-                    f"Chattervox: Your public key is in the clipboard.\n"
-                    f"Paste it anywhere to share with other operators.\n"
-                    f"Key: {signing_key[:16]}...")
-                log.info("Chattervox public key copied to clipboard")
-            except (FileNotFoundError, subprocess.TimeoutExpired):
-                log.warning("Could not copy public key to clipboard (xclip)")
-
-        log.info("Chattervox config generated: %s", conf_file)
+        log.info("YAAC ports config applied: callsign=%s, bluetooth=%s, serial=%s",
+                 callsign, bluetooth, serial_device)
 
     def _apply_paracon_config(self):
         """Update paracon.cfg with callsign and host."""

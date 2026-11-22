@@ -33,9 +33,48 @@ app.secret_key = 'emcomm-tools-radio-config-2026'
 
 # Configuration paths
 RADIOS_DIR = Path("/opt/emcomm-tools/conf/radios.d")
-USER_RADIOS_DIR = Path.home() / ".config" / "emcomm-tools" / "radios.d"
+# Custom radios live under the CURRENT (liaisonos) config path — this is the
+# only radios.d that et-persistence save/restore captures. Writing anywhere
+# else (e.g. the legacy ~/.config/emcomm-tools/radios.d) means the radio is
+# lost on reboot of a live/persistence node. See migrate_legacy_radios().
+USER_RADIOS_DIR = Path.home() / ".config" / "liaisonos" / "radios.d"
+LEGACY_USER_RADIOS_DIR = Path.home() / ".config" / "emcomm-tools" / "radios.d"
 ACTIVE_RADIO_LINK = RADIOS_DIR / "active-radio.json"
 ET_CONFIG_FILE = Path.home() / ".config" / "emcomm-tools" / "user.json"
+
+
+def migrate_legacy_radios():
+    """One-time import of custom radios from the legacy emcomm-tools path.
+
+    Older builds wrote custom radios to ~/.config/emcomm-tools/radios.d, which
+    et-persistence never saved (it reads ~/.config/liaisonos/radios.d). Copy any
+    legacy custom radio not already present into the current path and repoint
+    its /opt symlink, so existing definitions survive the switch and get picked
+    up by the next persistence save. Never deletes the legacy files.
+    """
+    if not LEGACY_USER_RADIOS_DIR.is_dir():
+        return
+    try:
+        USER_RADIOS_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return
+    for legacy in sorted(LEGACY_USER_RADIOS_DIR.glob("*.json")):
+        dest = USER_RADIOS_DIR / legacy.name
+        if dest.exists():
+            continue
+        try:
+            dest.write_text(legacy.read_text())
+        except OSError as e:
+            print(f"Warning: could not migrate {legacy.name}: {e}")
+            continue
+        # Repoint the /opt symlink (if any) at the new location.
+        system_file = RADIOS_DIR / legacy.name
+        try:
+            if system_file.is_symlink() or system_file.exists():
+                system_file.unlink()
+            system_file.symlink_to(dest)
+        except OSError as e:
+            print(f"Warning: could not relink {legacy.name} in {RADIOS_DIR}: {e}")
 
 
 def get_language():
@@ -738,6 +777,10 @@ def open_browser(port):
 
 if __name__ == '__main__':
     port = 5057
+
+    # One-time migration of custom radios from the legacy emcomm-tools path to
+    # the liaisonos path that persistence actually saves/restores.
+    migrate_legacy_radios()
 
     if '--no-browser' in sys.argv:
         app.run(host='127.0.0.1', port=port, debug=False)

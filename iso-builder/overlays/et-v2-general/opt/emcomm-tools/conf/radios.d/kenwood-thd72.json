@@ -1,0 +1,22 @@
+{
+  "id": "kenwood-thd72",
+  "vendor": "Kenwood",
+  "model": "TH-D72 (USB KISS)",
+  "bands": [
+    "VHF",
+    "UHF"
+  ],
+  "cat": false,
+  "kiss_usb": {
+    "baud": 9600
+  },
+  "notes": [
+    "Connect the radio's micro-USB (data) port to the computer.",
+    "On Apply, LiaisonOS records this USB adapter so it maps to /dev/et-kiss.",
+    "The internal TNC is switched to KISS automatically (KISS ON + RESTART)",
+    "when you start an APRS (USB) or Chattervox (USB) session.",
+    "If you have more than one USB serial adapter plugged in, connect only the",
+    "TH-D72 when you Apply, so the right one is captured."
+  ],
+  "fieldNotes": []
+}

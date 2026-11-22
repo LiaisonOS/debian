@@ -1,0 +1,836 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8" />
+<title>PH Winlink Check-Out - Initial</title>
+<style type="text/css">
+body, td, th { font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:inherit; }
+input, select { padding:1px; font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:inherit; }
+textarea { padding:1px; font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:inherit; }
+.version { color:#666666; font-size:11px; }
+.lbl  { font-size:12px; font-weight:bold; }
+.grn  { color:#2A5F00; font-size:12px; }
+.red  { color:#FF0000; font-size:11px; }
+.note { color:#333333; font-size:11px; font-style:italic; }
+.sechdr { background-color:#1B3A6B; color:#ffffff; font-weight:bold; font-size:12px; padding:4px 6px; }
+.wxrhdr { background-color:#2A5F00; color:#ffffff; font-weight:bold; font-size:11px; padding:2px 6px; }
+.fsrhdr { background-color:#7B3F00; color:#ffffff; font-weight:bold; font-size:11px; padding:2px 6px; }
+.wsrhdr { background-color:#1B3A6B; color:#ffffff; font-weight:bold; font-size:11px; padding:2px 6px; }
+.rptlbl { font-weight:bold; font-size:12px; width:140px; display:inline-block; }
+.rptblock { border:1px solid #cccccc; padding:6px 8px; margin-bottom:6px; }
+input[type=button] { border:1.75px solid #0f88f2; border-radius:.25rem; font-size:13px; padding:2px 6px; background-color:white; cursor:pointer; }
+input[type=submit] { border:1.75px solid green; border-radius:.25rem; background-color:white; padding:2px 6px; font-size:14px; cursor:pointer; }
+input[type=reset]  { border:1.75px solid red; border-radius:.25rem; background-color:white; padding:2px 6px; font-size:13px; cursor:pointer; }
+</style>
+<script type="text/javascript">
+
+/* ── GPS helpers ── */
+function checkzero(v){ return v; }
+function splitPaste(v){
+  v=v.trim();
+  if(!v || v==='(Not available)' || v.indexOf('{')>=0) return;
+  var p=v.indexOf(',');
+  if(p<0) p=v.indexOf(' ');
+  if(p>0){
+    document.getElementById('mapLat').value=v.substring(0,p).trim();
+    document.getElementById('mapLon').value=v.substring(p+1).trim();
+    checkLatLon();
+  }
+}
+function checkLatLon(){
+  var la=document.getElementById('mapLat').value;
+  var lo=document.getElementById('mapLon').value;
+  if(la&&lo){
+    document.getElementById('GPS2').value=la+','+lo;
+    try{ var g=maidenhead(parseFloat(la),parseFloat(lo)); document.getElementById('Grid').value=g; }catch(e){}
+  }
+}
+function maidenhead(lat,lon){
+  lon+=180; lat+=90;
+  var f=String.fromCharCode(65+Math.floor(lon/20));
+  var g=String.fromCharCode(65+Math.floor(lat/10));
+  var h=String(Math.floor((lon%20)/2));
+  var i=String(Math.floor(lat%10));
+  var j=String.fromCharCode(65+Math.floor((lon%2)*12));
+  var k=String.fromCharCode(65+Math.floor((lat%1)*24));
+  return f+g+h+i+j+k;
+}
+function checkformgrs(v){
+  document.getElementById('WithSpaces').value=v;
+  document.getElementById('NoSpaces').value=v.replace(/\s/g,'');
+}
+
+function store(){
+  localStorage.setItem('COUT_MsgTo',    document.getElementById('MsgTo').value);
+  localStorage.setItem('COUT_Org',      document.getElementById('Organization').value);
+  localStorage.setItem('COUT_Contact',  document.getElementById('ContactName').value);
+  localStorage.setItem('COUT_Province', document.getElementById('Province').value);
+  localStorage.setItem('COUT_Region',   getRegionValueCOUT());
+  localStorage.setItem('COUT_EOCMsg',   document.getElementById('eoc_message').value);
+}
+function getit(){
+  var s;
+  s=localStorage.getItem('COUT_MsgTo');    if(s) document.getElementById('MsgTo').value         =s;
+  s=localStorage.getItem('COUT_Org');      if(s) document.getElementById('Organization').value   =s;
+  s=localStorage.getItem('COUT_Contact');  if(s) document.getElementById('ContactName').value    =s;
+  s=localStorage.getItem('COUT_Province'); if(s) document.getElementById('Province').value       =s;
+  s=localStorage.getItem('COUT_Region');   if(s){ document.getElementById('Region').value=s; document.getElementById('RegionHidden').value=s; }
+  s=localStorage.getItem('COUT_EOCMsg');   if(s) document.getElementById('eoc_message').value=s;
+  TimeNow('DateTime', false);
+  // Auto-fill GPS from {Latitude}/{Longitude} Winlink station tokens
+  var wlLat = document.getElementById('WLLatitude')  ? document.getElementById('WLLatitude').value  : '';
+  var wlLon = document.getElementById('WLLongitude') ? document.getElementById('WLLongitude').value : '';
+  if(wlLat && wlLat.indexOf('{') === -1 && wlLat.trim() !== '') {
+    document.getElementById('mapLat').value = wlLat.trim();
+    document.getElementById('mapLon').value = wlLon.trim();
+    checkLatLon();
+    var gpsNote = document.getElementById('gpsSource');
+    if(gpsNote) gpsNote.textContent = '✓ Auto-filled from Winlink Express station settings';
+  }
+}
+
+function TimeNow(fldId, doprompt){
+  var d=new Date(), yr=d.getFullYear(),
+      mo=(d.getMonth()+1<10?'0':'')+(d.getMonth()+1),
+      dy=(d.getDate()<10?'0':'')+d.getDate(),
+      hh=(d.getHours()<10?'0':'')+d.getHours(),
+      mm=(d.getMinutes()<10?'0':'')+d.getMinutes(),
+      ss=(d.getSeconds()<10?'0':'')+d.getSeconds(),
+      ts=yr+'-'+mo+'-'+dy+' '+hh+':'+mm+':'+ss;
+  var result=doprompt?prompt("Station Secured Date/Time (PST):",ts):ts;
+  if(!result) result=ts;
+  document.getElementById(fldId).value=result;
+  document.getElementById('timestamp').value=result;
+}
+
+function Getsubject(){
+  var org=document.getElementById('Organization').value,
+      sndr=document.getElementById('MsgSender').value,
+      inc=document.getElementById('IncidentName').value,
+      dflt="CHECK-OUT "+org+(inc?' '+inc:'')+" - "+sndr;
+  document.getElementById('Newsubject').value=dflt;
+}
+
+function AutoGrow(el){
+  if(el.clientHeight<el.scrollHeight){
+    el.style.height=el.scrollHeight+"px";
+    if(el.clientHeight<el.scrollHeight)
+      el.style.height=(el.scrollHeight*2-el.clientHeight)+"px";
+  }
+}
+
+function buildCommentstab(){
+  var c=document.getElementById('Comments').value;
+  document.getElementById('Commentstab').value=c.replace(/\n/g,' | ').replace(/\t/g,' ');
+}
+
+/* ── rebuildComments — same WXR/FSR/WSR format as Check-In ── */
+function rebuildComments(){
+  var txt =
+"(WXR) WX Report -\n"+
+"Comments: "+document.getElementById('wxr_comments').value+"\n"+
+"-\n"+
+"TEMP: "+document.getElementById('wxr_temp').value+"\n"+
+"RAIN: "+document.getElementById('wxr_rain').value+"\n"+
+"WINDY: "+document.getElementById('wxr_windy').value+"\n"+
+"CLOUDY: "+document.getElementById('wxr_cloudy').value+"\n"+
+"LIGHTNING: "+document.getElementById('wxr_lightning').value+"\n"+
+"FLOOD: "+document.getElementById('wxr_flood').value+"\n"+
+"-------------------------------\n"+
+"(FSR) Field Situation Report -\n"+
+"Comments: "+document.getElementById('fsr_comments').value+"\n"+
+"-\n"+
+"APRS CODE: "+document.getElementById('fsr_aprs').value+"\n"+
+"EMERGENCY: "+document.getElementById('fsr_emergency').value+"\n"+
+"CP VOICE: "+document.getElementById('fsr_cpvoice').value+"\n"+
+"CP TEXT: "+document.getElementById('fsr_cptext').value+"\n"+
+"PUBLIC WATER: "+document.getElementById('fsr_water').value+"\n"+
+"ELECTRICITY: "+document.getElementById('fsr_elec').value+"\n"+
+"INTERNET: "+document.getElementById('fsr_internet').value+"\n"+
+"-------------------------------\n"+
+"(WSR) Winlink Setup Report -\n"+
+"Comments: "+document.getElementById('wsr_comments').value+"\n"+
+"-\n"+
+"VHF: "+document.getElementById('wsr_vhf').value+"\n"+
+"UHF: "+document.getElementById('wsr_uhf').value+"\n"+
+"HF: "+document.getElementById('wsr_hf').value+"\n"+
+"AREDN: "+document.getElementById('wsr_aredn').value+"\n"+
+"STARLINK: "+document.getElementById('wsr_starlink').value+"\n"+
+"ANTENNA: "+document.getElementById('wsr_antenna').value+"\n"+
+"ANTENNA HEIGHT: "+document.getElementById('wsr_antheight').value+"\n"+
+"BATTERY: "+document.getElementById('wsr_battery').value+"\n"+
+"SOLAR: "+document.getElementById('wsr_solar').value+"\n"+
+"GO KIT: "+document.getElementById('wsr_gokit').value+"\n"+
+"-------------------------------\n"+
+"MESSAGE TO EOC:\n"+
+(document.getElementById('eoc_message').value.trim() ? document.getElementById('eoc_message').value.trim() : "(none)");
+  document.getElementById('Comments').value=txt;
+  document.getElementById('Commentstab').value=txt.replace(/\n/g,' | ').replace(/\t/g,' ');
+}
+
+/* ── createjson — 26 fields jA-jZ ──
+   jA=Status        jB=DateTime       jC=Band
+   jD=Session       jE=MsgSender      jF=MsgTo
+   jG=Assigned      jH=ContactName    jI=Organization
+   jJ=Location      jK=CityTown       jL=Barangay
+   jM=Province      jN=Region         jO=mapLat
+   jP=mapLon        jQ=MGRS           jR=Grid
+   jS=GPS2          jT=Comments       jU=Commentstab
+   jV=Newsubject    jW=Precedence     jX=IncidentName
+   jY=DRRMCLevel    jZ=MsgNo
+*/
+function createjson(){
+  rebuildComments();
+  var j=document.getElementById('FormData').value;
+  j=j.replace(/jA/g, document.getElementById('Status').value);
+  j=j.replace(/jB/g, document.getElementById('DateTime').value);
+  j=j.replace(/jC/g, document.getElementById('Band').value);
+  j=j.replace(/jD/g, document.getElementById('Session').value);
+  j=j.replace(/jE/g, document.getElementById('MsgSender').value);
+  j=j.replace(/jF/g, document.getElementById('MsgTo').value);
+  j=j.replace(/jG/g, document.getElementById('Assigned').value);
+  j=j.replace(/jH/g, document.getElementById('ContactName').value);
+  j=j.replace(/jI/g, document.getElementById('Organization').value);
+  j=j.replace(/jJ/g, document.getElementById('Location').value);
+  j=j.replace(/jK/g, document.getElementById('CityTown').value);
+  j=j.replace(/jL/g, document.getElementById('Barangay').value);
+  j=j.replace(/jM/g, document.getElementById('Province').value);
+  j=j.replace(/jN/g, getRegionValueCOUT());
+  j=j.replace(/jO/g, document.getElementById('mapLat').value);
+  j=j.replace(/jP/g, document.getElementById('mapLon').value);
+  j=j.replace(/jQ/g, document.getElementById('MGRS').value);
+  j=j.replace(/jR/g, document.getElementById('Grid').value);
+  j=j.replace(/jS/g, document.getElementById('GPS2').value);
+  j=j.replace(/jT/g, document.getElementById('Comments').value);
+  j=j.replace(/jU/g, document.getElementById('Commentstab').value);
+  j=j.replace(/jV/g, document.getElementById('Newsubject').value);
+  j=j.replace(/jW/g, document.getElementById('Precedence').value);
+  j=j.replace(/jX/g, document.getElementById('IncidentName').value);
+  j=j.replace(/jY/g, document.getElementById('DRRMCLevel').value);
+  j=j.replace(/jZ/g, '');
+  document.getElementById('attached_text').value=j.replace(/\r\n/g,'\n').replace(/\n/g,'\r\n');
+}
+
+function myreset(){
+  document.getElementById('IncidentName').value    ='';
+  document.getElementById('Precedence').value      ='ROUTINE';
+  document.getElementById('DRRMCLevel').value      ='Regional';
+  document.getElementById('Status').value          ='SECURED';
+  document.getElementById('Band').value            ='VHF';
+  document.getElementById('Session').value         ='NET';
+  document.getElementById('Assigned').value        ='';
+  document.getElementById('Location').value        ='';
+  document.getElementById('CityTown').value        ='';
+  document.getElementById('Barangay').value        ='';
+  document.getElementById('mapLat').value          ='';
+  document.getElementById('mapLon').value          ='';
+  document.getElementById('MGRS').value            ='';
+  document.getElementById('GPS2').value            ='';
+  document.getElementById('Subject').value         ='';
+  // reset WXR
+  document.getElementById('wxr_comments').value='';
+  document.getElementById('wxr_temp').value='';
+  document.getElementById('wxr_rain').value='N';
+  document.getElementById('wxr_windy').value='N';
+  document.getElementById('wxr_cloudy').value='N';
+  document.getElementById('wxr_lightning').value='N';
+  document.getElementById('wxr_flood').value='N';
+  // reset FSR
+  document.getElementById('fsr_comments').value='';
+  document.getElementById('fsr_aprs').value='GREEN';
+  document.getElementById('fsr_emergency').value='N';
+  document.getElementById('fsr_cpvoice').value='';
+  document.getElementById('fsr_cptext').value='';
+  document.getElementById('fsr_water').value='Y';
+  document.getElementById('fsr_elec').value='Y';
+  document.getElementById('fsr_internet').value='Y';
+  // reset WSR
+  document.getElementById('wsr_comments').value='';
+  document.getElementById('wsr_vhf').value='Y';
+  document.getElementById('wsr_uhf').value='Y';
+  document.getElementById('wsr_hf').value='Y';
+  document.getElementById('wsr_aredn').value='N';
+  document.getElementById('wsr_starlink').value='N';
+  document.getElementById('wsr_antenna').value='';
+  document.getElementById('wsr_antheight').value='';
+  document.getElementById('wsr_battery').value='Y';
+  document.getElementById('wsr_solar').value='N';
+  document.getElementById('wsr_gokit').value='Y';
+  TimeNow('DateTime', false);
+}
+
+function Checkifinbrowser(){
+  var x=document.getElementById('testCall').value;
+  if(x.indexOf('{Msg')>-1){
+    document.getElementById('Submit').style.visibility='hidden';
+    document.getElementById('MsgSender').value='';
+    alert('You are running this form outside of Winlink Express.\n\nFill in the form and use SAVE to export a data file.\nGive the file to your radio operator to load and send via Winlink.');
+  } else {
+    document.getElementById('Submit').style.visibility='visible';
+  }
+}
+
+function formDataToObject(){
+  var form=document.getElementById('myform'), fields=form.querySelectorAll('input,select,textarea'), o={};
+  for(var i=0;i<fields.length;i++){
+    var f=fields[i], k=f.name||f.id;
+    /* 2026-09-25: Exclude the temporary saved-data buffer to prevent recursive file growth. */
+    if (k === 'parseme') continue;
+    if(!k||f.type==='submit'||f.type==='button'||f.type==='reset') continue;
+    o[k]=f.value;
+  }
+  document.getElementById('parseme').value=JSON.stringify(o,null,2);
+}
+function DateforFile(){
+  var d=new Date(), yr=d.getFullYear(),
+      mo=(d.getMonth()+1<10?'0':'')+(d.getMonth()+1),
+      dy=(d.getDate()<10?'0':'')+d.getDate(),
+      hh=(d.getHours()<10?'0':'')+d.getHours(),
+      mm=(d.getMinutes()<10?'0':'')+d.getMinutes();
+  return yr+'-'+mo+'-'+dy+' '+hh+'_'+mm;
+}
+function saveTextAsFile(){
+  var text=document.getElementById('parseme').value;
+  var fname=prompt("Save as:","PH-CheckOut "+DateforFile()+".txt");
+  if(fname==null) return;
+  var blob=new Blob([text],{type:'text/plain'}), a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=fname;
+  a.style.display='none'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function SaveData(){ rebuildComments(); formDataToObject(); saveTextAsFile(); }
+
+window.onload=function(){
+  var fi=document.getElementById('txtfiletoread');
+  if(fi){
+    fi.addEventListener('change',function(e){
+      var f=e.target.files[0]; if(!f) return;
+      var reader=new FileReader();
+      reader.onload=function(ev){
+        try{ var o=JSON.parse(ev.target.result); for(var k in o){var el=document.getElementById(k);if(el)el.value=o[k];} }
+        catch(err){alert('Could not load file.');}
+      };
+      reader.readAsText(f,'UTF-8');
+    },false);
+  }
+  Checkifinbrowser();
+  getit();
+  var extgps=document.getElementById('ExtGPS').value;
+  if(extgps && extgps.trim() && extgps.indexOf('{') === -1 &&
+     extgps.trim() !== '(Not available)'){
+    splitPaste(extgps.trim());
+  }
+  var gs=document.getElementById('GridSquare').value;
+  if(gs&&gs.indexOf('{')===-1) document.getElementById('Grid').value=gs;
+}
+function getRegionValueCOUT(){
+  var sel=document.getElementById('Region');
+  if(sel.value==='__COUNTRY__'){
+    return document.getElementById('RegionCountry').value.trim()||'';
+  }
+  return sel.value;
+}
+function toggleCountryCOUT(sel){
+  var box=document.getElementById('countryBoxCOUT');
+  var inp=document.getElementById('RegionCountry');
+  if(sel.value==='__COUNTRY__'){
+    box.style.display='block';
+    inp.value='';
+    document.getElementById('RegionHidden').value='';
+    inp.focus();
+  } else {
+    box.style.display='none';
+    inp.value='';
+    document.getElementById('RegionHidden').value=sel.value;
+  }
+}
+function syncCountryCOUT(inp){
+  document.getElementById('RegionHidden').value=inp.value.trim();
+  store();
+}
+</script>
+</head>
+
+<body>
+<form style="font-family:Arial;" id="myform" method="post"
+  onsubmit="return confirm('Click OK to submit, then close the browser window to return to Winlink Express and post your message.');"
+  enctype="multipart/form-data" action="http://{FormServer}:{FormPort}">
+
+<table width="900" border="3" cellpadding="4" cellspacing="0" bordercolor="#1B3A6B" align="center">
+<tbody>
+
+<!-- HEADER -->
+<tr>
+  <td bgcolor="#1B3A6B" style="text-align:center; padding:8px;">
+    <span style="color:#ffffff; font-size:20px; font-weight:bold; font-style:italic;">PH Winlink Check-Out</span><br />
+    <span style="color:#ffffff; font-size:15px; font-weight:bold;">
+      <input name="Organization" id="Organization" value="Winlink Net"
+        style="font-size:15px; font-weight:bold; text-align:center; width:340px; background:#1B3A6B; color:#ffffff; border:1px solid #4a6fa5; border-radius:3px;"
+        onblur="store();" placeholder="Net / Organization Name" /></span><br />
+    <span style="color:#C8902A; font-size:11px; font-weight:bold;">PAREDN &bull; Philippine Amateur Radio Emergency Data Network &bull; DX1PRD</span><br /><br />
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+      <td width="50%" align="left">
+        <input type="button" value="Load Saved Data" onclick="document.getElementById('txtfiletoread').click();" />
+        <input type="file" id="txtfiletoread" accept=".txt" style="display:none;" />
+        &nbsp;<span class="grn">Load previously saved check-out data</span>
+      </td>
+      <td width="50%" align="right"><span class="red">* Required field</span></td>
+    </tr></table>
+  </td>
+</tr>
+
+<!-- ROW 1: INCIDENT / DRRMC / STATUS -->
+<tr>
+  <td bgcolor="#dee9f9">
+    <table width="100%" border="0" cellpadding="2" cellspacing="2">
+      <tr>
+        <td width="16%">
+          <span class="lbl">Precedence *</span><br />
+          <select name="Precedence" id="Precedence" required="required" size="1" style="font-weight:bold; font-size:13px; width:125px;">
+            <option value="ROUTINE" selected="selected">ROUTINE</option>
+            <option value="PRIORITY">PRIORITY</option>
+            <option value="IMMEDIATE">IMMEDIATE</option>
+            <option value="FLASH">FLASH</option>
+          </select>
+        </td>
+        <td width="34%">
+          <span class="lbl">Incident / Operation Name</span><br />
+          <input type="text" name="IncidentName" id="IncidentName" size="34" maxlength="60"
+            placeholder="e.g. TYPHOON CARINA RESPONSE or ROUTINE NET"
+            onchange="this.value=this.value.toUpperCase();" />
+        </td>
+        <td width="18%">
+          <span class="lbl">DRRMC Level *</span><br />
+          <select name="DRRMCLevel" id="DRRMCLevel" required="required" size="1" style="width:120px;">
+            <option value="Barangay">Barangay</option>
+            <option value="Municipal">Municipal</option>
+            <option value="City">City</option>
+            <option value="Provincial">Provincial</option>
+            <option value="Regional" selected="selected">Regional</option>
+            <option value="National">National</option>
+            <option value="International">International</option>
+            <option value="N/A">N/A</option>
+          </select>
+        </td>
+        <td width="18%">
+          <span class="lbl">Status *</span><br />
+          <select name="Status" id="Status" required="required" size="1" style="width:130px; font-weight:bold;">
+            <option value="SECURED" selected="selected">SECURED</option>
+            <option value="STAND DOWN">STAND DOWN</option>
+            <option value="DEMOBILIZED">DEMOBILIZED</option>
+            <option value="RELIEVED">RELIEVED</option>
+            <option value="EMERGENCY">EMERGENCY</option>
+          </select>
+        </td>
+
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<!-- ROW 2: DATE SECURED / BAND / SESSION / SENDER / TO -->
+<tr>
+  <td>
+    <table width="100%" border="0" cellpadding="2" cellspacing="2">
+      <tr>
+        <td width="26%">
+          <span class="lbl">Station Secured Date/Time (PST) *</span><br />
+          <input type="text" name="DateTime" id="DateTime" required="required" size="22" maxlength="19"
+            placeholder="Click to set" onclick="TimeNow('DateTime',true)" />
+          <input type="hidden" name="timestamp" id="timestamp" />
+        </td>
+        <td width="12%">
+          <span class="lbl">Band *</span><br />
+          <select name="Band" id="Band" required="required" size="1" style="width:80px;">
+            <option value="HF">HF</option>
+            <option value="VHF" selected="selected">VHF</option>
+            <option value="UHF">UHF</option>
+            <option value="HF/VHF">HF/VHF</option>
+            <option value="Internet">Internet</option>
+            <option value="Other">Other</option>
+          </select>
+        </td>
+        <td width="18%">
+          <span class="lbl">Session *</span><br />
+          <select name="Session" id="Session" required="required" size="1" style="width:120px;">
+            <option value="NET" selected="selected">NET</option>
+            <option value="EXERCISE">EXERCISE</option>
+            <option value="EMERGENCY">EMERGENCY</option>
+            <option value="TRAINING">TRAINING</option>
+            <option value="TEST">TEST</option>
+          </select>
+        </td>
+        <td width="18%">
+          <span class="lbl">Station Callsign</span><br />
+          <input type="text" name="MsgSender" id="MsgSender" value="{MsgSender}" readonly="readonly" size="16" maxlength="16" />
+        </td>
+        <td width="26%">
+          <span class="lbl">Send To *</span><br />
+          <input type="text" name="MsgTo" id="MsgTo" size="24" maxlength="79"
+            placeholder="Net Control Callsign" onblur="store();" />
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<!-- ROW 3: ASSIGNED / CONTACT / SUBJECT -->
+<tr>
+  <td bgcolor="#f0f4f8">
+    <table width="100%" border="0" cellpadding="2" cellspacing="2">
+      <tr>
+        <td width="42%">
+          <span class="lbl">On-Site Operator Callsigns *</span><br />
+          <input type="text" name="Assigned" id="Assigned" required="required" size="40" maxlength="60"
+            placeholder="e.g. DU3XYZ; DU3ABC; DU3DEF"
+            onchange="this.value=this.value.toUpperCase();" />
+        </td>
+        <td width="30%">
+          <span class="lbl">Station Contact Name</span><br />
+          <input type="text" name="ContactName" id="ContactName" size="28" maxlength="25"
+            placeholder="Station Contact Name" onblur="store();" />
+        </td>
+        <td width="28%">
+          <input type="hidden" name="Subject" id="Subject" value="Auto-set on Submit" />
+          <input type="hidden" name="Newsubject" id="Newsubject" />
+  <input type="hidden" name="MsgNo" id="MsgNo" />
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<!-- ROW 4: LOCATION -->
+<tr>
+  <td>
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td class="sechdr">STATION LOCATION</td></tr></table>
+    <table width="100%" border="0" cellpadding="2" cellspacing="2" style="margin-top:4px;">
+      <tr>
+        <td colspan="4">
+          <span class="lbl">Additional Location Info *</span><br />
+          <input type="text" name="Location" id="Location" required="required" size="88" maxlength="75"
+            placeholder="e.g. PGH Hospital, front building parking lot, Taft Avenue, Manila" />
+        </td>
+      </tr>
+      <tr>
+        <td width="25%">
+          <span class="lbl">City / Town</span><br />
+          <input type="text" name="CityTown" id="CityTown" size="22" maxlength="25" placeholder="City / Town" />
+        </td>
+        <td width="25%">
+          <span class="lbl">Barangay / County</span><br />
+          <input type="text" name="Barangay" id="Barangay" size="22" maxlength="25" placeholder="Barangay / County" />
+        </td>
+        <td width="25%">
+          <span class="lbl">Province / State</span><br />
+          <input type="text" name="Province" id="Province" size="22" maxlength="25" placeholder="Province / State" onblur="store();" />
+        </td>
+        <td width="25%">
+          <span class="lbl">Region / Country</span><br />
+          <input type="hidden" name="Region" id="RegionHidden" value="" />
+          <select id="Region" size="1" style="width:170px;" onchange="toggleCountryCOUT(this);" onblur="store();">
+            <option value="">-- Select Region --</option>
+            <option value="NCR">NCR</option>
+            <option value="CAR">CAR</option>
+            <option value="Region I">Region I - Ilocos</option>
+            <option value="Region II">Region II - Cagayan Valley</option>
+            <option value="Region III">Region III - Central Luzon</option>
+            <option value="Region IV-A">Region IV-A - CALABARZON</option>
+            <option value="MIMAROPA">MIMAROPA</option>
+            <option value="Region V">Region V - Bicol</option>
+            <option value="Region VI">Region VI - W. Visayas</option>
+            <option value="Region VII">Region VII - C. Visayas</option>
+            <option value="Region VIII">Region VIII - E. Visayas</option>
+            <option value="Region IX">Region IX - Zamboanga</option>
+            <option value="Region X">Region X - N. Mindanao</option>
+            <option value="Region XI">Region XI - Davao</option>
+            <option value="Region XII">Region XII - SOCCSKSARGEN</option>
+            <option value="Region XIII">Region XIII - CARAGA</option>
+            <option value="BARMM">BARMM</option>
+            <option value="__COUNTRY__">-- Enter Country Below --</option>
+          </select>
+          <div id="countryBoxCOUT" style="display:none; margin-top:4px;">
+            <input type="text" id="RegionCountry" placeholder="Type country name" style="width:165px;" oninput="syncCountryCOUT(this);" onblur="store();" />
+          </div>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<!-- ROW 5: GPS -->
+<tr>
+  <td bgcolor="#f0f4f8">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td class="sechdr">GPS COORDINATES</td></tr></table>
+    <table width="100%" border="0" cellpadding="2" cellspacing="2" style="margin-top:4px;">
+      <tr>
+        <td width="18%">
+          <span class="lbl">Latitude</span><br />
+          <input type="text" name="mapLat" id="mapLat" size="14" maxlength="12"
+            placeholder="e.g. 14.5995" onchange="splitPaste(this.value);checkLatLon();" />
+        </td>
+        <td width="18%">
+          <span class="lbl">Longitude</span><br />
+          <input type="text" name="mapLon" id="mapLon" size="14" maxlength="12"
+            placeholder="e.g. 120.9842" onchange="this.value=checkzero(this.value);checkLatLon();" />
+        </td>
+        <td width="28%">
+          <span class="lbl">MGRS</span><br />
+          <input type="text" name="MGRS" id="MGRS" size="26" maxlength="25"
+            placeholder="e.g. 51PTP8419595204"
+            onkeypress="if(event.keyCode==13){return false;}"
+            onchange="checkformgrs(this.value);" />
+        </td>
+        <td width="12%">
+          <span class="lbl">Grid Square</span><br />
+          <input type="text" name="Grid" id="Grid" value="{GridSquare}" size="8" maxlength="8" readonly="readonly" />
+        </td>
+        <td width="24%">
+          <span class="lbl">GPS (auto)</span> <span id="gpsSource" style="color:#2e7d32;font-size:10px;font-style:italic;"></span><br />
+          <input type="text" name="GPS2" id="GPS2" size="22" maxlength="40" readonly="readonly"
+            placeholder="Auto-filled from Lat/Lon" />
+        </td>
+      </tr>
+    </table>
+    <input type="hidden" name="ExtGPS"     id="ExtGPS"     value="{GPS_SIGNED_DECIMAL}" />
+    <input type="hidden" name="WLLatitude"  id="WLLatitude"  value="{Latitude}" />
+    <input type="hidden" name="WLLongitude" id="WLLongitude" value="{Longitude}" />
+    <input type="hidden" name="GridSquare" id="GridSquare" value="{GridSquare}" />
+    <input type="hidden" name="WithSpaces" id="WithSpaces" />
+    <input type="hidden" name="NoSpaces" id="NoSpaces" />
+    <input type="hidden" name="addformat" id="addformat" />
+  </td>
+</tr>
+
+<!-- ROW 6: COMMENTS — WXR / FSR / WSR -->
+<tr>
+  <td>
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td class="sechdr">COMMENTS &amp; REPORTS (FINAL / CHECK-OUT STATUS)</td></tr></table>
+    <span class="note">Record final status for each report. The dashes and block headers are required for EOC Dashboard parsing — do not remove them.</span><br /><br />
+
+    <!-- WXR -->
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td class="wxrhdr">(WXR) Weather Report</td></tr></table>
+    <div class="rptblock">
+      <span class="note">General comment:</span><br />
+      <textarea id="wxr_comments" rows="3" style="width:98%; resize:vertical;"
+        placeholder="e.g. Weather clearing up." onchange="rebuildComments();" onkeyup="rebuildComments();"></textarea><br /><br />
+      <table width="100%" border="0" cellpadding="2" cellspacing="2">
+        <tr>
+          <td width="20%"><span class="rptlbl">TEMP:</span><input type="text" id="wxr_temp" size="10" maxlength="20" placeholder="e.g. 28 C" onchange="rebuildComments();" /></td>
+          <td width="16%"><span class="rptlbl">RAIN:</span>
+            <select id="wxr_rain" onchange="rebuildComments();" style="width:80px;">
+              <option value="N">N</option><option value="Y">Y</option><option value="HEAVY">HEAVY</option>
+            </select></td>
+          <td width="16%"><span class="rptlbl">WINDY:</span>
+            <select id="wxr_windy" onchange="rebuildComments();" style="width:80px;">
+              <option value="N">N</option><option value="Y">Y</option><option value="STRONG">STRONG</option>
+            </select></td>
+          <td width="16%"><span class="rptlbl">CLOUDY:</span>
+            <select id="wxr_cloudy" onchange="rebuildComments();" style="width:80px;">
+              <option value="N">N</option><option value="Y">Y</option><option value="OVERCAST">OVERCAST</option>
+            </select></td>
+          <td width="16%"><span class="rptlbl">LIGHTNING:</span>
+            <select id="wxr_lightning" onchange="rebuildComments();" style="width:60px;">
+              <option value="N">N</option><option value="Y">Y</option>
+            </select></td>
+          <td width="16%"><span class="rptlbl">FLOOD:</span>
+            <select id="wxr_flood" onchange="rebuildComments();" style="width:90px;">
+              <option value="N">N</option><option value="Y">Y</option><option value="RISING">RISING</option><option value="CRITICAL">CRITICAL</option>
+            </select></td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- FSR -->
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td class="fsrhdr">(FSR) Field Situation Report</td></tr></table>
+    <div class="rptblock">
+      <span class="note">General comment:</span><br />
+      <textarea id="fsr_comments" rows="3" style="width:98%; resize:vertical;"
+        placeholder="e.g. Station secured. Area clear." onchange="rebuildComments();" onkeyup="rebuildComments();"></textarea><br /><br />
+      <table width="100%" border="0" cellpadding="2" cellspacing="2">
+        <tr>
+          <td width="25%"><span class="rptlbl">APRS CODE:</span>
+            <select id="fsr_aprs" onchange="rebuildComments();" style="width:90px; font-weight:bold;">
+              <option value="GREEN">GREEN</option>
+              <option value="YELLOW">YELLOW</option>
+              <option value="ORANGE">ORANGE</option>
+              <option value="RED">RED</option>
+            </select></td>
+          <td width="25%"><span class="rptlbl">EMERGENCY:</span>
+            <select id="fsr_emergency" onchange="rebuildComments();" style="width:60px;">
+              <option value="N">N</option><option value="Y">Y</option>
+            </select></td>
+          <td width="25%"><span class="rptlbl">CP VOICE:</span><input type="text" id="fsr_cpvoice" size="12" maxlength="20" placeholder="freq or N" onchange="rebuildComments();" /></td>
+          <td width="25%"><span class="rptlbl">CP TEXT:</span><input type="text" id="fsr_cptext" size="12" maxlength="20" placeholder="freq or N" onchange="rebuildComments();" /></td>
+        </tr>
+        <tr>
+          <td><span class="rptlbl">PUBLIC WATER:</span>
+            <select id="fsr_water" onchange="rebuildComments();" style="width:80px;">
+              <option value="Y">Y</option><option value="N">N</option><option value="LIMITED">LIMITED</option>
+            </select></td>
+          <td><span class="rptlbl">ELECTRICITY:</span>
+            <select id="fsr_elec" onchange="rebuildComments();" style="width:80px;">
+              <option value="Y">Y</option><option value="N">N</option><option value="LIMITED">LIMITED</option>
+            </select></td>
+          <td><span class="rptlbl">INTERNET:</span>
+            <select id="fsr_internet" onchange="rebuildComments();" style="width:60px;">
+              <option value="Y">Y</option><option value="N">N</option>
+            </select></td>
+          <td></td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- WSR -->
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td class="wsrhdr">(WSR) Winlink Setup Report</td></tr></table>
+    <div class="rptblock">
+      <span class="note">General comment:</span><br />
+      <textarea id="wsr_comments" rows="3" style="width:98%; resize:vertical;"
+        placeholder="e.g. All equipment packed and returned." onchange="rebuildComments();" onkeyup="rebuildComments();"></textarea><br /><br />
+      <table width="100%" border="0" cellpadding="2" cellspacing="2">
+        <tr>
+          <td width="20%"><span class="rptlbl">VHF:</span>
+            <select id="wsr_vhf" onchange="rebuildComments();" style="width:60px;">
+              <option value="Y">Y</option><option value="N">N</option>
+            </select></td>
+          <td width="20%"><span class="rptlbl">UHF:</span>
+            <select id="wsr_uhf" onchange="rebuildComments();" style="width:60px;">
+              <option value="Y">Y</option><option value="N">N</option>
+            </select></td>
+          <td width="20%"><span class="rptlbl">HF:</span>
+            <select id="wsr_hf" onchange="rebuildComments();" style="width:60px;">
+              <option value="Y">Y</option><option value="N">N</option>
+            </select></td>
+          <td width="20%"><span class="rptlbl">AREDN:</span>
+            <select id="wsr_aredn" onchange="rebuildComments();" style="width:60px;">
+              <option value="N">N</option><option value="Y">Y</option>
+            </select></td>
+          <td width="20%"><span class="rptlbl">STARLINK:</span>
+            <select id="wsr_starlink" onchange="rebuildComments();" style="width:60px;">
+              <option value="N">N</option><option value="Y">Y</option>
+            </select></td>
+        </tr>
+        <tr>
+          <td colspan="2"><span class="rptlbl">ANTENNA:</span><input type="text" id="wsr_antenna" size="18" maxlength="30" placeholder="e.g. Dipole" onchange="rebuildComments();" /></td>
+          <td><span class="rptlbl">HEIGHT:</span><input type="text" id="wsr_antheight" size="10" maxlength="15" placeholder="e.g. 10m" onchange="rebuildComments();" /></td>
+          <td><span class="rptlbl">BATTERY:</span>
+            <select id="wsr_battery" onchange="rebuildComments();" style="width:60px;">
+              <option value="Y">Y</option><option value="N">N</option>
+            </select></td>
+          <td><span class="rptlbl">SOLAR:</span>
+            <select id="wsr_solar" onchange="rebuildComments();" style="width:60px;">
+              <option value="N">N</option><option value="Y">Y</option>
+            </select></td>
+        </tr>
+        <tr>
+          <td><span class="rptlbl">GO KIT:</span>
+            <select id="wsr_gokit" onchange="rebuildComments();" style="width:60px;">
+              <option value="Y">Y</option><option value="N">N</option>
+            </select></td>
+          <td colspan="4"></td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- EOC MESSAGE SECTION -->
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td class="sechdr">MESSAGE TO EOC</td></tr></table>
+    <table width="100%" border="0" cellpadding="4" cellspacing="0">
+      <tr>
+        <td>
+          <span class="note" style="color:#8B0000; font-weight:bold;">&#9888; For formal welfare messages, please use the PTS (Philippine Traffic System) and/or NTS (National Traffic System) templates — not this field.</span><br /><br />
+          <span class="note">Use this field for important operational messages or urgent information to the EOC. International stations may use this to relay welfare message status or coordination notes.</span><br />
+          <textarea id="eoc_message" name="eoc_message" rows="4" cols="118" style="width:98%; resize:vertical; font-family:monospace; font-size:13px;" placeholder="Type your message to EOC here..." onblur="store();"></textarea>
+        </td>
+      </tr>
+    </table>
+
+    <textarea name="Comments" id="Comments" cols="118" rows="1" style="display:none;"></textarea>
+    <textarea name="Commentstab" id="Commentstab" cols="118" rows="1" style="display:none;"></textarea>
+  </td>
+</tr>
+
+<!-- SUBMIT ROW -->
+<tr>
+  <td style="background-color:#f8f8f8;">
+    &nbsp;
+    <input type="submit" name="Submit" id="Submit" value="Submit"
+      style="height:28px; width:60px;" onclick="Getsubject(); rebuildComments(); createjson();" />
+    &nbsp;&nbsp;
+    <input type="button" value="Save Check-Out Data" onclick="rebuildComments(); SaveData();" />
+    &nbsp;&nbsp;
+    <input type="reset" value="Reset Form" onclick="myreset();" />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <span class="version">PH Winlink Check-Out Philippine Edition &bull; PAREDN / DX1PRD &bull; Ver 5.11.1 &bull; 2026</span>
+
+    <input type="hidden" name="attached_file" id="attached_file" value="FormData.txt" />
+    <textarea name="attached_text" id="attached_text" cols="140" rows="3" style="display:none;"></textarea>
+    <input type="hidden" name="Mapfilename" id="Mapfilename" value="PH Winlink Check Out" />
+    <input type="hidden" name="Templateversion" id="Templateversion" value="PH Winlink Check-Out Philippine Edition Ver 5.11.1" />
+    <input type="hidden" name="testCall" id="testCall" value="{MsgSender}" />
+    <textarea name="parseme" id="parseme" style="display:none;"></textarea>
+    <input type="hidden" name="internetcheck" id="internetcheck" value="{InternetAvailable}" />
+    <input type="hidden" name="GPSvalid" id="GPSvalid" value="{GPSValid}" />
+
+    <textarea name="FormData" cols="70" rows="30" id="FormData" style="display:none;">MapFileName:T=PH Winlink Check Out
+Status:M=jA
+DateTime:T=jB
+Band:M=jC
+Session:M=jD
+MsgSender:T=jE
+MsgTo:T=jF
+Assigned:T=jG
+ContactName:T=jH
+Organization:T=jI
+Location:T=jJ
+CityTown:T=jK
+Barangay:T=jL
+Province:T=jM
+Region:T=jN
+mapLat:T=jO
+mapLon:T=jP
+MGRS:T=jQ
+Grid:T=jR
+GPS2:T=jS
+Comments:T=jT
+Commentstab:T=jU
+Newsubject:T=jV
+Precedence:M=jW
+IncidentName:T=jX
+DRRMCLevel:M=jY
+MsgNo:T=jZ
+Templateversion:T=TV
+Latitude:T=jO
+Longitude:T=jP
+Sender:T=jE
+Station Contact Name:T=jH
+Operators:T=jG
+Additional Location Info:T=jJ
+City / Town:T=jK</textarea>
+
+  </td>
+</tr>
+
+</tbody>
+</table>
+<br />&nbsp;
+</form>
+
+<script>
+window.addEventListener('load', function InitializeReportReset() {
+    /* 2026-09-25: Capture initial report values that native reset cannot restore after script updates; returns nothing. */
+    var ids = ["Subject"];
+    var fields = [];
+    var initialValues = [];
+    /* Capture only the confirmed report fields after the form's existing initialization. */
+    for (var i = 0; i < ids.length; i++) {
+        fields.push(document.getElementById(ids[i]));
+        initialValues.push(fields[i].value);
+    }
+    fields[0].form.addEventListener('reset', function RestoreReportReset(event) {
+        /* Restore hidden report values before native reset completes; returns nothing. */
+        if (event.defaultPrevented) return;
+        for (var i = 0; i < fields.length; i++) fields[i].value = initialValues[i];
+    });
+});
+</script>
+</body>
+</html>

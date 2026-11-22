@@ -1,0 +1,36 @@
+{
+    "$schema": "et-mode-v2",
+    "id": "aprs-client-usb",
+    "name": {
+        "en": "APRS (YAAC USB)",
+        "fr": "APRS (YAAC USB)"
+    },
+    "category": "packet",
+    "requires": {
+        "devices": ["et-kiss"]
+    },
+    "prechecks": [
+        {"type": "callsign-set"}
+    ],
+    "config": [
+        {
+            "type": "station-position",
+            "target": "~/.java/.userPrefs/org/ka2ddo/yaac/prefs.xml"
+        }
+    ],
+    "pre_start": [
+        {"action": "kiss-tnc-init", "device": "/dev/et-kiss", "baud": 9600},
+        {"action": "kill-all"},
+        {"action": "yaac-config", "serial_device": "/dev/et-kiss", "serial_baud": 9600}
+    ],
+    "chain": [
+        {
+            "name": "yaac",
+            "command": ["java", "-Xms2g", "-Xmx6g", "-XX:+UseG1GC", "-jar", "/opt/yaac/YAAC.jar"],
+            "health": {},
+            "restart": "never"
+        }
+    ],
+    "post_start": [],
+    "kill_all_first": true
+}

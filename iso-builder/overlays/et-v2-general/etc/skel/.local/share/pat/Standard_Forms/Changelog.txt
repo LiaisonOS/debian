@@ -1,0 +1,392 @@
+1.1.22.0	Sep 25, 2026
+	Multiple forms: Prevented repeated Save Data operations from nesting earlier saved files inside later saves and unnecessarily increasing file size, including all three Weather reports.
+	Multiple forms: Corrected Reset so hidden report values agree with the reset controls. Removed obsolete reset callbacks that referenced fields from other forms.
+	Multiple forms: Fixed Setup cancellation errors while preserving the existing title when Cancel is selected.
+	Incident Status, GOHSEP Resource Request (both versions), and WSDOT Bridge/Roadway Damage: Corrected restoration of saved radio choices, including compatibility with older saved files.
+	Humboldt Resource Request Form 1B: Made personnel availability and equipment choices independent for each person and corrected fourth-person choices that changed the first person.
+	FEMA Mission Assignment: Corrected Normal priority reporting as High. Corrected initial report values in FEMA Resource Request and Incident Status to agree with their selected defaults.
+	Washington Field Situation Report: Corrected the initial observed-health-needs selection to agree with its reported No value.
+	Field Situation Report and Winlink Check In/Out: Honored Cancel at the coordinate warning. Winlink Check Out: Corrected location-source data in map attachments.
+	HICS 251 and LAX Bed Availability: Removed calls to a missing helper after coordinate conversion. RRI Welfare Radiogram: Corrected sequence-number normalization and removed a duplicate Region 12 choice.
+	Specialized Alaska forms: Corrected saved-data loading, duplicate field IDs, reply date/message fields and message-body template, medical-status defaults and selection handling, hidden-data reset, month lookup, element checks, and malformed viewer markup.
+	Local Weather Report: Corrected saved-data restoration of units and weather controls, reset behavior, cleared measurements, and stale weather-condition text. Fixed Setup/Cancel behavior, metric snowfall export, rain-unit labeling, pressure-trend controls, and multiline notes in map attachments.
+	Hurricane Report: Corrected the observing-party “No” selection, which previously reported “Yes.” Fixed map export of Estimated/Measured status, reset of hidden report data, and cancellation at the coordinate warning.
+	Severe WX Report: Corrected metric labels after loading saved data, hidden-data reset, blank measurement handling, MGRS map export, and coordinate-warning cancellation. Corrected three hail-size conversions while retaining compatibility with older saved selections.
+	All three weather reports: Prevented saved-data loading from replacing the current map template with an obsolete version.
+	
+1.1.21.0	Sep 24, 2026
+	Fixed html and JavaScript errors in many forms.
+
+1.1.20.0	Apr 23, 2026
+	Fixed bug in Palmento RR viewing form.
+	Fixed a missing item in drop-down Precedence list in the Radiogram form.
+	Updated e-mail address and phone number in SHARES Radio Interference Report.
+
+1.1.19.0	Apr 4, 2026
+	Add new SDG ARES Hospital Status form.
+
+1.1.18.0	Feb 22, 2026
+	Fix a problem with a fixed port number on the PERCS Radio Room Comms Readiness form.
+	Update the Texas STAR form.
+	Changed the name of the 309 form from ICS309 to Form-309 since the 309 isn't technically an ICS form.
+	Fix a typo in the Local Weather form.
+	Remove SDG ARES Hospital Status Report form
+	Updated Request for Information Strip Reader and Response Creator form
+	
+1.1.17.0	Dec 19, 2025
+	Move two files from the RRI form section to the General form section: Form based on a concept by the SHARES Region 1 Interoperability Group   Version 1.4
+	Request for Information Strip Reader and Response Creator.html
+  Request for Information Strip Reader and Response Creator.txt
+
+1.1.16.0	Dec 12, 2025
+	Fix problems with Oregan state RR forms.
+	Several RRI forms updated.
+	
+1.1.15.0	Aug 21, 2025
+	Update RRI Radiogram and ICS213 forms.
+	Improvements to Request for Information Strip Reader and Response Creator
+	Updated Damage Assessment form -- The instructions have been incorporated in the receiving display form rather than sending them in the attached txt file.
+	Add additional data to the DYFI mapping form when exported.
+	Added Philippines Winlink Check-In and Check-Out forms.
+	Added Louisiana GOHSEP RESOURCE_REQUEST FORM with Generator - Fuel Supplements that are required if ordering fuel or a generator.
+	Added "Request for Information Strip Reader and Response Creator" to General Forms.
+	
+1.1.14.0	Jul 11, 2025
+	Update Medical Incident Report form. The update Adds a clarification in the form text and fixes a bug that stopped the form data file from being attached.
+	The Canadian form" IMS1001_IAP" has been modified to add a setup button and code to indicate the group sending the form.
+	Fix a bug in the Winlink Check-In form
+	Small change to RRI Quick Welfare Message form
+
+1.1.13.0	Jun 26, 2025
+	Update to General Medical Incident form includes enhance mapping and data capabilities when exported to a csv file.
+	Fix several problems in the WA Field Situation Report form.
+	Fixed a small bug in the template, but the bigger change is an alert that warns users to NOT edit or change the subject of the generated message. Changing the subject breaks the RRI server.
+
+1.1.12.0	Jun 13, 2025
+	Fix a problem with the UTC date-time field in the NY/NJ CSM County Status form.
+	Add new precedence options to RRI forms.
+	Added Washington State Field Situation Report form.
+
+1.1.11.0	May 28, 2025
+	Fix a typo in the NY/NJ CSM form.
+	
+1.1.10.0	May 16, 2025
+	Added NY & NJ State Forms folder with CSM form.
+	Update GOHSEP RESOURCE_REQUEST FORM in LA State Forms.
+	
+1.1.9.0	Apr 10, 2025
+	Tactical Liaison Stations for Hawaii and Puerto Rico have been updated RRI Welfare Radiogram RRI ICS213 Radiogram.
+	Fix some bugs in Hospital Bed Report.
+	Fixed a problem in the Winlink Check-In form that prevented the "3f. Location Source" value from being reported.
+
+1.1.8.0	Mar 10, 2025
+	All WX forms have been updated to avoid bug of data file growing when saved.
+	Updated ICS213 identifies the subject of message as a ICS-213 facilitating better sorting and and filtering.
+	Update Quick Message form in General Forms folder and RRI Quick Message form in RRI folder.
+	Add new PH SMS Message form for the Philippines.
+	Updated Radio Net Log form to increase length of location and improve Reset function.
+	Updated ICS-213: If no GPS was attached, the form was not filling in the lat/Lon using the default grid square.
+	
+1.1.7.0	Jan 13, 2025
+	Fixed a problem with the Canadian/BC PERCS Radio Room Comms Readiness form
+	Remove checkboxes on Field Situation Report and General Medical forms to omit XML attachments.  An option has been added to Winlink Express Form Settings screen to handle this.
+	
+1.1.6.0	Jan 9, 2024
+	Add checkbox to Field Situation Report and General Medical Forms to control whether XML file is attached to message.
+	
+1.1.5.0	Jan 6, 2025
+	Fix a bug in the Winlink Check-In form.
+	
+1.1.4.0	Jan 2, 2025
+	PERCS Radio Room Comms Readiness added to Canadian BC forms
+	GOHSEP  RESOURCE REQUEST FORM put in new LA State forms
+	Improve Welfare Bulletin Board form: Country field now has autofill. Start typing the country name in English, then select it using the mouse or keyboard arrows and press Enter.
+	Welfare Bulletin Board: Clarifies the instructions for What3Words to "What3words location (US English)"
+	Add PH Welfare Bulletin Board form to new Philippines form folder.
+	Add a checkbox to the bottom of the Winlink Check-in and Check-Out forms to control whether to include the xml file that's used to display the report as a form on the receiving system.
+	Remove extraneous text from the comment field of ICS213RR form.
+	LAX Bed Availability Report: Clarifies the instructions for What3Words to "What3words location (US English)"
+	Added Off-Grid Spotting & Hunting form under new Specialized Forms folder.
+
+1.1.3.0	Nov 8, 2024
+	Fix errors in the Welfare Bulletin Board Message form
+	
+1.1.2.0	Nov 8, 2024
+	Fix a problem manually entering latitude in an ICS-213 form.
+	
+	DYFI form has been updated at the request of USGS to only allow alphanumeric characters in the event ID and the exercise ID and no spaces.  Exercise ID will be all capitalized, the event ID will be in lowercase.
+	
+	Welfare Bulletin Board Message
+    The Welfare Bulletin Board (WBB) is available for posting by all licensed amateurs. The Welfare Bulletin Board can be found at https://www.laxnortheast.org/welfare
+    The Welfare Bulletin Board Message allows operators to post messages to the LAXNORTHEAST Welfare Bulletin Board (WBB) sending the form to tactical address WELFARE.
+    The Welfare Bulletin Board (WBB) is available for posting by all licensed amateurs.
+    
+  Damage Assessment updated to allow more digits in counts
+
+1.1.1.0	Oct 8, 2024
+	Fixed a problem saving ICS-213 forms that caused the save file to expand in size.
+	Combine WA state Bridge damage report and Roadway damage report into a combined WSDOT Bridge-Roadway Damage Report.
+	
+1.1.0.0	Sep 17, 2024
+Updated many of the forms that report latitude/longitude to also report the source of the location information (GPS, Grid square, User specified, Address lookup):
+Blood Availability.txt
+Field Situation Report.txt
+HICS 251 Facility Status Report.txt
+Hospital Bed Report.txt
+Hospital Status.txt
+Hurricane Report.txt
+ICS213 General Message.txt
+Local Weather Report.txt
+Severe WX Report.txt
+Winlink Check-in.txt
+Winlink Check-out.txt
+
+
+1.0.254.0	Aug 21, 2024
+	Added new “COASTAL REGION RESOURCE REQUEST” form for Humbolt County, CA
+	
+1.0.253.0	Aug 16, 2024
+	RRI Welfare Radiogram -- Corrected the error that left a blank space after previewing on occasion.
+	Added a few new cell phone carriers to the RRI Quick Welfare Message form.
+	
+1.0.252.0	Jul 11, 2024
+	Add City, State, Zip, and Street address fields to the Hospital Status, Hospital Bed Report, and HICS 251 Facility Status Report forms.
+
+1.0.252.0
+	Correction to ICS-213 form fixes a bug that occurred if a served agency is setup and a previous saved data fi8le is loaded the Agency title was not updated.
+	
+1.0.251.0	Jun 13, 2024
+	ICS-214 fixes a bug that allowed the "Save Data" file to grown in size if the user constantly saves data with out submitting the form.
+	Added "Blood Availability" mappable form with the help of Greg Butler in Virginia.
+	Added a new California/Humboldt County folder with EMMA FORM 1A RESOURCE REQUEST and CAL EMMA RESOURCE_REQUEST Form B  (personnel)
+	Update HICS forms to prevent editing/changing after the form is submitted.
+	
+1.0.250.0	Apr 3, 2024
+	Form 309 corrects a bug in the message body.txt
+	RRI ICS213 Radiogram Updated Help/form info  file
+	RRI Welfare Radiogram  Updated Help/form info file
+	Modified the ICS-213 to let the user enter the subject for the message.
+	The HIC 214 has updated form instructions.
+
+1.0.249.0	Mar 7, 2024
+	Fixed bug in Customizable Information form v 8.6.6.
+	Add latitude & longitude labels to lat/long fields on the Humanitarian Needs form.
+	When loading saved data for the Check-In form, warn if the data was saved from a previous version of the form.
+	Fixed bug In the ICS 309
+	Set the ICS forms so that their information cannot be changed after it's submitted.
+	Fix a problem with the 309 form having To and From fields swapped in the xml file.
+	Added ICS 205b Incident Information Technology Plan
+	Modified WA State forms to add “This is an Exercise” check box”
+
+1.0.248.0	Jan 5, 2024
+	Updated DYFI form to include best estimate of latitude and longitude accompanied by information showing the source of the location.
+	
+1.0.247.0	Dec 8, 2023
+- Bug fixes for Winlink Check-in form
+
+1.0.246.0	Nov 9, 2023
+- Bug fixes for Customizable Form
+- Bug fixed for Humanitarian Needs Identification form.
+- CERT Windshield Survey V 1.2.6 this corrects  Corrects a bug in the file reference code.
+
+1.0.245.0	Oct 17, 2023
+- Updated German version of DYFI form.  Thanks to Patrick, OE1LHP
+
+1.0.244.0	Oct 14, 2023
+- Improvements to the Bulletin form.
+- Updates to ARC Staff Requests form
+- Put back several SendReply.0 forms that got lost in an update.
+
+1.0.243.0	Oct 10, 2023
+- Put ICS213_SendReply.0 back in the distribution.
+- Fix a problem with the Bulletin form.
+
+1.0.242	Oct 9, 2023
+- If the "Address" isn't entered on the DYFI form, display an error message saying the address field is required.
+- Fix typo in After Action Review form.
+- Customizable Form v 8.6 has been modified to add a check box to include a CSV data file with all data entered into form.
+- ICS 202, version Ver 1.0.4  corrects a bug where the “user set agency”  wasn’t being displayed in the message and the viewer.
+- Added ON IMS205 form to Canadian folder -- Ontario Incident Telecommunications Plan
+- Added a new map filter item "This is an exercise: Yes/No" to the ICS-213 mapping data corresponding to the "Exercise" checkbox on the form.
+- Fix the way the date-time is specified for the Winlink Check-In form.
+- Change "ICS 309" to "Form 309" in the 309 Communications Log form.
+- Update Bulletin form to use the precedence to outine (default), Priority, Immediate and Flash as the drop down options. 
+- PH Winlink Check in and Check out comment character limit removed
+
+1.0.241
+- DCS-213 Fixed Button assignements
+- Local WX Report Updates
+- Add street address to the DYFI FormData.txt file
+
+1.0.240
+- Submit Button Updates
+  ARC Forms
+  CA State Forms
+  GENERAL Forms
+  SC State Forms
+  SHARES Forms
+  TX State Forms
+  HICS Forms
+  CANADIAN Forms
+  FEMA Forms
+  HI State Forms
+  GENERAL MEDICAL Forms
+  OR STATE Forms
+- USGS Forms explanation updates.
+  
+
+1.0.239
+- Local Weather Report Form	Fixed Barometer imperial/metric
+- DYFI en	Fixed one survey question
+- DYFI deutsch	Added German DYFI
+- Winlink Check-in	Removed Viewer Comment
+- ICS-213	Enabled GIS
+- ICS USA Forms	Moved Submit button to left
+We are in the process of moving the Submit button to the far left in all forms. Please bear with us.
+
+1.0.238
+- Local Weather Report Form	Fixed html references
+
+1.0.237
+- Hospital Bed Report	fixed typo
+- LAX Bed Availability	removed forward looking columns per Ref 1122.1 2023-04, added "THIS IS AN EXERCISE" checkbox.
+- LA COUNTY Forms	Removed LAX DRC forms
+- Local Weather Report	 K7IBC added options. Added "THIS IS AN EXERCISE" checkbox.
+- Added "THIS IS AN EXERCISE" checkboxes to
+  * General Medical Templates	
+	Hospital Bed Report
+	Hospital Status
+	Medical Incident Report
+- Winlink Check-in and Check-out	Replaced c.From help text
+- RRI Welfare Quick Message	Added character counter
+
+1.0.236
+
+- WEATHER	Severe Weather Form added metric options
+- GENERAL	After Action Review replaces After Action Report.
+- LACOUNTY	LAX HSA and Resource Request added Exercise checkboxes. Code updates. Removed both from MAPPING GIS folder.
+- LACOUNTY	DCS213 code updates.
+- HI Siren Report code updates
+- GENERAL	Moved Incident Action Plan, Quick Message, SITREP, Welfare Message, Windshield Damage Worksheet from Standard Templates to website. 
+- GENERAL	Streamlined and added features to Quick Message
+- RADIOGRAM & RRI	Welfare Radiogram and Quick Welfare Message spelling corrections.
+- SHARES	Removed SHARES Notice
+
+Special thanks to Georges Auberger WH6AZ for suggesting code updates and Steve KB1TCE for RRI updates.
+
+1.0.235 
+- Updated RRI Welfare Radiogram
+- Winlink Check-in & Check-out: added quick paste via tab to lat/lon entries
+- Radiogram updates to accept ARL and RRC. Form info updates.
+
+1.0.234
+- Updated USGS DYFI Spanish html reference
+- Winlink Check-in/out 
+    - Save Data saves Block 2 information. 
+    - Harmonized Winlink message headers. 
+
+1.0.233
+- Added RRI Welfare Message v.2.3.2
+- Palmetto Resource Request V2A renumbered fields, streamlined form per request
+- Field Situation Report locked Setup button
+- Winlink Check-in and Check-out
+   - New, more intuitive UX
+   - Updated, DACH compatible Latitude & Longitude tags and calculations
+   - Map as V5
+   - Streamlined Code
+   - Updated CSV export columns
+   - Numbered labels to distinguish Winlink Lat/Lon from form Lat/Lon
+
+1.0.232
+- SC Palmetto Resource Request removed instruction bar for voice stations, changed TXT numbering, bolded Viewer item 8. Version V1F.
+- Hurricane Report Updates
+- Local WX Report Updates
+- Updated DYFI English andd Spanish versions. Includes OPTIONAL Earthquake Early Warning Survey.
+
+1.0.231
+- Fixed WS Bridge Damage Form
+
+1.0.230
+- Added Palmetto Resource Request to SC STATE Forms folder.
+
+1.0.229
+- Added Medical Incident Report "Dutch Creek Protocol"
+- Updates to RRI Radiogram
+- Updates to Local Weather Report: one report for F and C, added field numbering
+
+1.0.228
+- WSDOT Roadway Damage Report updated
+- WSDOT Bridge Damage Report updated
+
+1.0.227
+- Field Situation Report - Updated Water variable
+- Replaced CA FIE 730 with FRM 900-001 SitRep
+
+
+1.0.226
+* Hemisphere checks added to
+	- Humanitarian Needs Form
+* Harmonized some Field Situation Report Viewer fonts
+* Corrected j26 variable in Local Weather Report mapping reference
+* Hawaii Siren Report: fixed spelling in one CSV output field
+
+1.0.225
+* Hemisphere checks added to
+	- USGS DYFI Espanol
+	- Hospital Bed Report
+	- Hospital Status
+	- LAX Bed Availability Report
+	- HICS 251 Facility Status Report
+	- SDG ARES Hospital Status
+* Added Humanitarian Needs Form to General Folder
+* Updated Mapping-GIS Shortcuts
+
+1.0.224
+* Hemisphere checks added to
+    - USGS DYFI
+    - Field Situation Report
+    - Winlink Check-out
+    - Hurricane Report
+    - Local Weather Report
+    - Severe Weather Report
+* Updated Mapping-GIS Shortcuts
+* Updated DCS-213 to allow routing selection in Viewer
+* Fixed Hawaii Siren Report Reference
+
+1.0.223
+* Deleted RRI Multi-Client Worksheet
+* Updated Hawaii Siren Form
+* ICS201 - locked block 9
+* Winlink Check-in - added hemisphere check
+* DCS213 - Updates
+
+1.0.222
+*Corrected Folder structure
+
+1.0.221
+*Added Hawaii Siren Report to HI folder and Mapping-GIS Folder
+
+1.0.220
+* RRI Folder: Added Welfare Message Shortcut to .
+* Field Situation Report: Added Grid Square Geocoordinate Check
+* Winlink Check-in: Added Grid Square Geocoordinate Check
+* WSDOT Bridge Damage Report: Updated
+* WSDOT Road Damage Report: Updated 
+* LAX Bed Availability - HSA: Updated CSV output, changed map name.
+* Radio Net Log: Fixed Setup information propagating to Viewer
+* Updated Mapping-GIS Shortcuts
+
+1.0.219
+* Added ICS 201 Incident Briefing
+* Updated HICS 201 Incident Briefing - corrected Block 4. field placement and viewer color.
+* Local Weather Report Updated: added wind direction "Variable"
+* Cleaned up superfluous files
+
+1.0.218.0 (2022-11-09) 
+* Updated HICS 201 Incident Briefing - form info
+* Updated HICS 254 Patient Tracking - fixed parsing
+* Updated Mapping/GIS folder shortcuts
+* Renamed After Action Report.txt
+* Updated Winlink Check-in Station Name pop-up
+* Updated Winlink Check-out Station Name pop-up
+

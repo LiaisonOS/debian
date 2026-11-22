@@ -1,0 +1,24 @@
+# Author   : Sylvain Deguire (VA2OPS)
+# Date     : 3 November 2026
+# Purpose  : udev rule for the Tigertronics SignaLink USB sound interface.
+#            Field-validated with Pierre VE2EH's Kenwood TS-850 setup
+#            (SignaLink = audio, IF-232C = CAT; see 85-et-if232c.rules).
+#
+# The SignaLink USB is a Texas Instruments PCM2904 USB audio codec. It is an
+# audio-only interface — PTT is keyed either by the radio's CAT (rigctld -P RIG,
+# how the TS-850 profile is set) or by the SignaLink's own internal VOX. So we
+# only need to tag it as ET_AUDIO.
+#
+# The ENV{ET_DEVICE}=="" guard means we only claim it if no earlier, more
+# specific rule already tagged this device (same catch-all pattern as the
+# DigiRig audio rule). Renaming the ALSA card id to ET_AUDIO lets the rest of
+# LiaisonOS (et-audio, direwolf, VARA, etc.) find the capture/playback.
+#
+# Postconditions:
+# 1. /dev/et-audio created
+# 2. ALSA card id = ET_AUDIO
+
+SUBSYSTEM=="sound", ATTRS{idVendor}=="08bb", ATTRS{idProduct}=="2904", ENV{ET_DEVICE}=="", \
+    ACTION=="add", \
+    ATTR{id}="ET_AUDIO", \
+    ENV{ET_DEVICE}="SIGNALINK", ENV{ET_SUBDEVICE}="AUDIO", GROUP="audio", MODE="0660", SYMLINK+="et-audio"

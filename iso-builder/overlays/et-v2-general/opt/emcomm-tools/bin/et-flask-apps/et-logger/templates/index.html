@@ -18,6 +18,7 @@
            JS refresher toggles visibility as the grid becomes available. #}
         <span class="grid-badge" id="grid-badge"
               style="{% if not my_grid %}display:none;{% endif %}">{{ my_grid }}</span>
+        <button class="refresh-btn" onclick="openQrzSettings()" title="{{ t['qrz_settings'] }}">&#9881;</button>
     </div>
 </div>
 
@@ -156,6 +157,8 @@
                 <span id="call-name"></span>
                 <span id="call-location"></span>
                 <span id="call-distance"></span>
+                <span id="call-source" class="call-source" style="display:none;"></span>
+                <span id="call-validate" style="display:none;"></span>
                 <span id="call-dup" class="dup-warning" style="display:none;">DUPLICATE</span>
             </div>
 
@@ -225,6 +228,7 @@
             <span class="legend-item"><span class="legend-dot legend-qso"></span> QSO</span>
             <span class="legend-item">&#x1F3D5; Park</span>
             <button class="btn-icon" onclick="clearParkMarkers()" title="Clear parks" style="color:var(--text-muted);font-size:0.8rem;">Clear Parks</button>
+            <button class="btn-icon" id="refresh-loc-btn" onclick="refreshMapLocations()" title="{{ t['refresh_loc_help'] }}" style="color:var(--accent);font-size:0.8rem;">{{ t['refresh_loc'] }}</button>
         </div>
         {# Takeoff-angle picker: appears only while an antenna pattern is
            drawn. Three presets cover the operator's typical use cases:
@@ -500,6 +504,33 @@
         <div class="modal-buttons">
             <button class="btn btn-secondary" onclick="closeNewSessionModal()">{{ t['cancel'] }}</button>
             <button class="btn btn-primary" onclick="createSession()">{{ t['save'] }}</button>
+        </div>
+    </div>
+</div>
+
+<!-- QRZ.com Settings Modal -->
+<div class="modal-overlay" id="qrz-modal" style="display:none;" onclick="closeQrzSettings(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h3>{{ t['qrz_settings'] }}</h3>
+        <p style="font-size:13px; color:var(--text-secondary); margin:6px 0 12px;">{{ t['qrz_help'] }}</p>
+        <div class="form-group">
+            <label>{{ t['qrz_user'] }}</label>
+            <input type="text" id="qrz-user" autocomplete="off" placeholder="VA2OPS">
+        </div>
+        <div class="form-group">
+            <label>{{ t['qrz_pass'] }}</label>
+            <input type="password" id="qrz-pass" autocomplete="off" placeholder="{{ t['qrz_pass_ph'] }}">
+        </div>
+        <div class="form-group">
+            <label class="p2p-label" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="qrz-enabled"> {{ t['qrz_enable'] }}
+            </label>
+        </div>
+        <div id="qrz-test-result" style="font-size:13px; margin:4px 0 8px; min-height:18px;"></div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeQrzSettings()">{{ t['cancel'] }}</button>
+            <button class="btn btn-secondary" onclick="testQrz()">{{ t['qrz_test'] }}</button>
+            <button class="btn btn-primary" onclick="saveQrz()">{{ t['save'] }}</button>
         </div>
     </div>
 </div>
@@ -827,6 +858,120 @@
         document.getElementById('dup-confirm-modal').style.display = 'none';
         if (_dupResolve) { _dupResolve(val); _dupResolve = null; }
     }
+
+    // === QRZ.com settings ===
+    let _qrzFirstRun = false;
+    function openQrzSettings(firstRun) {
+        _qrzFirstRun = !!firstRun;
+        document.getElementById('qrz-test-result').textContent = '';
+        document.getElementById('qrz-pass').value = '';
+        fetch('/api/qrz/config').then(r => r.json()).then(d => {
+            document.getElementById('qrz-user').value = d.user || '';
+            document.getElementById('qrz-enabled').checked =
+                (d.has_password || d.user) ? !!d.enabled : true;  // default ON for first-time setup
+            document.getElementById('qrz-pass').placeholder =
+                d.has_password ? T['qrz_pass_keep'] : T['qrz_pass_ph'];
+        });
+        document.getElementById('qrz-modal').style.display = 'flex';
+    }
+    function closeQrzSettings(e) {
+        if (e && e.target !== document.getElementById('qrz-modal')) return;
+        document.getElementById('qrz-modal').style.display = 'none';
+        // Cancelled the first-run prompt → remember it + point them at the gear.
+        if (_qrzFirstRun) {
+            _qrzFirstRun = false;
+            try { localStorage.setItem('qrzSetupDismissed', '1'); } catch (e) {}
+            showToast('info', T['qrz_setup_later'], 7000);
+        }
+    }
+    // First launch with no QRZ credentials → offer the setup dialog once.
+    function maybePromptQrzSetup() {
+        let dismissed = false;
+        try { dismissed = localStorage.getItem('qrzSetupDismissed') === '1'; } catch (e) {}
+        if (dismissed) return;
+        fetch('/api/qrz/config').then(r => r.json()).then(d => {
+            if (!d.user && !d.has_password) openQrzSettings(true);
+        }).catch(() => {});
+    }
+    function testQrz() {
+        const box = document.getElementById('qrz-test-result');
+        box.style.color = 'var(--text-secondary)';
+        box.textContent = T['qrz_testing'];
+        fetch('/api/qrz/test', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user: document.getElementById('qrz-user').value.trim(),
+                password: document.getElementById('qrz-pass').value,
+            })
+        }).then(r => r.json()).then(d => {
+            box.style.color = d.ok ? 'var(--success)' : 'var(--danger)';
+            box.textContent = d.ok ? ('✓ ' + T['qrz_ok']) : ('✗ ' + (d.error || 'Login failed'));
+        }).catch(() => { box.style.color = 'var(--danger)'; box.textContent = '✗ ' + T['qrz_unreachable']; });
+    }
+    function saveQrz() {
+        fetch('/api/qrz/config', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user: document.getElementById('qrz-user').value.trim(),
+                password: document.getElementById('qrz-pass').value,
+                enabled: document.getElementById('qrz-enabled').checked,
+            })
+        }).then(r => r.json()).then(() => {
+            showToast('success', T['qrz_saved']);
+            _qrzFirstRun = false;   // saved → not a cancelled first-run
+            try { localStorage.setItem('qrzSetupDismissed', '1'); } catch (e) {}
+            document.getElementById('qrz-modal').style.display = 'none';
+        });
+    }
+
+    // When a lookup resolves a CQ zone (operator's prior log entry first, else
+    // QRZ's cqzone), prefill the zone field for CQ WW — only if still empty, so
+    // it never overwrites what the operator typed.
+    function maybePrefillZone(data) {
+        if (!isCqWw(currentContest)) return;
+        const z = (data.known_zone || data.cqzone || '').toString().trim();
+        if (!z) return;
+        const field = document.getElementById('qso-exch-rcvd');
+        if (field.value.trim()) return;
+        field.value = (/^\d$/.test(z)) ? '0' + z : z;
+        syncZoneDisplay();
+    }
+
+    // Show where the callsign info came from: local DB, QRZ.com, or a prior
+    // QSO this session. Reassures the operator the online lookup fired.
+    function showCallSource(data) {
+        const el = document.getElementById('call-source');
+        let label = '';
+        if (data.found && (data.source === 'qrz' || data.qrz)) label = 'QRZ';
+        else if (data.found && data.source === 'log') label = T['src_log'];
+        else if (data.found && data.source === 'db') label = T['src_db'];
+        if (!label) { el.style.display = 'none'; return; }
+        el.textContent = label;
+        el.className = 'call-source' + (label === 'QRZ' ? ' src-qrz' : '');
+        el.style.display = 'inline';
+    }
+
+    // Validation outcome cache (call -> verdict) populated by committed lookups,
+    // so the log gate can warn without a second round-trip.
+    const callVerdict = {};
+
+    // Loud warning when a committed call can't be validated:
+    //   invalid    = QRZ reached and says NO SUCH CALL → red
+    //   unverified = not in DB/log and QRZ couldn't check (offline/disabled) → amber
+    function showCallValidation(data) {
+        const el = document.getElementById('call-validate');
+        const call = (data.call || document.getElementById('qso-call').value || '').toUpperCase().trim();
+        if (call) callVerdict[call] = data.verdict;
+        if (!data || data.found) { el.style.display = 'none'; return; }
+        if (data.verdict === 'invalid') {
+            el.textContent = '✗ ' + T['val_invalid'];
+            el.className = 'call-validate val-invalid';
+        } else {
+            el.textContent = '⚠ ' + T['val_unverified'];
+            el.className = 'call-validate val-unverified';
+        }
+        el.style.display = 'inline';
+    }
     // A per-band duplicate was detected and skipped. Ask (default NO); on YES,
     // re-send just those calls with force so the server logs them anyway.
     function confirmDupLog(dupes, band, payload) {
@@ -973,7 +1118,7 @@
             '<th>' + T['frequency'] + '</th><th>' + T['band'] + '</th><th>' + T['mode'] + '</th>' +
             '<th>RST</th><th>' + T['name'] + '</th><th>' + T['location'] + '</th><th>P2P</th><th></th></tr></thead><tbody>';
         qsos.forEach((q, i) => {
-            html += '<tr style="cursor:pointer" onclick="openEditQSO(' + q.id + ')">' +
+            html += '<tr id="qso-row-' + q.id + '" style="cursor:pointer" onclick="openEditQSO(' + q.id + ')">' +
                 '<td>' + (qsos.length - i) + '</td>' +
                 '<td>' + q.time_on + '</td>' +
                 '<td class="call-col">' + q.call + '</td>' +
@@ -1008,12 +1153,17 @@
             document.getElementById('call-dropdown').innerHTML = '';
             document.getElementById('call-dropdown').style.display = 'none';
             document.getElementById('call-info').style.display = 'none';
+            document.getElementById('call-dup').style.display = 'none';
+            clearLoggedRowHighlight();
             return;
         }
 
         // Duplicate check (per band)
         if (currentSessionId && call.length >= 3) {
             checkDuplicate(call);
+        } else {
+            document.getElementById('call-dup').style.display = 'none';
+            clearLoggedRowHighlight();
         }
 
         callSearchTimer = setTimeout(() => {
@@ -1031,15 +1181,21 @@
                 dd.style.display = 'block';
             });
 
-            // Direct lookup
-            fetch('/api/callsign/' + call).then(r => {
-                if (r.ok) return r.json();
-                throw new Error('not found');
-            }).then(data => {
+            // Direct lookup (DB → session log; QRZ not hit per-keystroke).
+            fetch('/api/callsign/' + call + (currentSessionId ? '?session_id=' + currentSessionId : '')).then(r => r.json())
+            .then(data => {
+                if (!data.found) {   // not local; QRZ check happens on commit (blur/select)
+                    document.getElementById('call-info').style.display = 'none';
+                    document.getElementById('call-source').style.display = 'none';
+                    return;
+                }
                 document.getElementById('call-info').style.display = 'flex';
                 document.getElementById('call-name').textContent = data.name || '';
                 document.getElementById('call-location').textContent =
                     (data.city || '') + ', ' + (data.state || '') + ' ' + (data.country || '');
+                document.getElementById('call-validate').style.display = 'none';
+                showCallSource(data);
+                maybePrefillZone(data);
                 if (data.lat && data.lon) {
                     fetch('/api/position' + (currentSessionId ? '?session_id=' + currentSessionId : '')).then(r => r.json()).then(pos => {
                         if (pos.lat) {
@@ -1055,6 +1211,7 @@
                 }
             }).catch(() => {
                 document.getElementById('call-info').style.display = 'none';
+                document.getElementById('call-source').style.display = 'none';
             });
         }, 300);
     }
@@ -1067,15 +1224,17 @@
         // Set value without triggering search
         skipNextSearch = true;
         document.getElementById('qso-call').value = call;
-        // Look up info without triggering dropdown again
-        fetch('/api/callsign/' + call).then(r => {
-            if (r.ok) return r.json();
-            throw new Error('not found');
-        }).then(data => {
+        // Look up info without triggering dropdown again (DB → log → QRZ).
+        // Committed call → allow the online QRZ tier (qrz=1).
+        fetch('/api/callsign/' + call + '?qrz=1' + (currentSessionId ? '&session_id=' + currentSessionId : '')).then(r => r.json())
+        .then(data => {
             document.getElementById('call-info').style.display = 'flex';
             document.getElementById('call-name').textContent = data.name || '';
             document.getElementById('call-location').textContent =
                 (data.city || '') + ', ' + (data.state || '') + ' ' + (data.country || '');
+            showCallSource(data);
+            showCallValidation(data);
+            maybePrefillZone(data);
         }).catch(() => {});
         // Check duplicate (per band)
         if (currentSessionId) {
@@ -1097,10 +1256,27 @@
                 if (data.duplicate) {
                     badge.textContent = 'DUPE' + (data.band ? ' ' + data.band : '');
                     badge.style.display = 'inline';
+                    highlightLoggedRow(data.id);   // scroll to + flag the existing QSO
                 } else {
                     badge.style.display = 'none';
+                    clearLoggedRowHighlight();
                 }
             });
+    }
+
+    // Visual aid during a pile-up: when the typed call is already in the log on
+    // this band, scroll the QSO list to that row and mark it so the operator
+    // doesn't have to hunt for it.
+    function clearLoggedRowHighlight() {
+        document.querySelectorAll('tr.dup-row').forEach(r => r.classList.remove('dup-row'));
+    }
+    function highlightLoggedRow(id) {
+        clearLoggedRowHighlight();
+        if (id == null) return;
+        const row = document.getElementById('qso-row-' + id);
+        if (!row) return;
+        row.classList.add('dup-row');
+        row.scrollIntoView({behavior: 'smooth', block: 'center'});
     }
 
     // Close dropdown when clicking anywhere or on blur
@@ -1119,7 +1295,33 @@
             dd.innerHTML = '';
             dd.style.display = 'none';
         }, 200);  // Small delay so click on dropdown item registers first
+        // Call committed → consult QRZ (online) once, to enrich info + prefill
+        // the CQ zone. Kept off the per-keystroke path to respect QRZ limits.
+        qrzLookupCommitted(this.value.toUpperCase().trim());
     });
+
+    // One QRZ-enabled lookup for a committed call; updates the info line, the
+    // source tag and (for CQ WW) prefills the zone if still empty.
+    function qrzLookupCommitted(call) {
+        if (!call || call.length < 3 || !currentSessionId) return;
+        fetch('/api/callsign/' + call + '?qrz=1&session_id=' + currentSessionId)
+            .then(r => r.json()).then(data => {
+                document.getElementById('call-info').style.display = 'flex';
+                if (data.found) {
+                    document.getElementById('call-name').textContent = data.name || '';
+                    const loc = (data.city || '') + ', ' + (data.state || '') + ' ' + (data.country || '');
+                    document.getElementById('call-location').textContent = (loc.trim() === ',') ? '' : loc;
+                } else {
+                    // Not found — don't leave a stale name/QTH next to the warning.
+                    document.getElementById('call-name').textContent = '';
+                    document.getElementById('call-location').textContent = '';
+                    document.getElementById('call-distance').textContent = '';
+                }
+                showCallSource(data);
+                showCallValidation(data);   // ← loud warning if QRZ says invalid
+                maybePrefillZone(data);
+            }).catch(() => {});
+    }
 
     // Extra callsigns queued for a multi-contact entry (chips). The call
     // currently typed in the box is added automatically on Log, so a single
@@ -1139,6 +1341,7 @@
         document.getElementById('call-info').style.display = 'none';
         document.getElementById('call-dup').style.display = 'none';
         document.getElementById('mult-preview').style.display = 'none';
+        clearLoggedRowHighlight();
         renderSelectedCalls();
         field.focus();
     }
@@ -1160,6 +1363,29 @@
         ).join('');
     }
 
+    // Validation gate state: set true for one pass once the operator has
+    // cleared any "not on QRZ" warning, so logQSO can proceed.
+    let _validationCleared = false;
+
+    // Verify the calls about to be logged. A call QRZ positively reports as
+    // NON-EXISTENT ('invalid') is blocked behind a confirm (default No). Calls
+    // we simply couldn't check (offline / QRZ disabled → 'unverified') are NOT
+    // blocked — offline-first. On approval, re-enters logQSO to actually log.
+    function validateCallsThenLog(calls) {
+        const need = calls.filter(c => !(c in callVerdict) || callVerdict[c] === 'unverified');
+        const checks = need.map(c =>
+            fetch('/api/callsign/' + encodeURIComponent(c) + '?qrz=1&session_id=' + currentSessionId)
+                .then(r => r.json()).then(d => { callVerdict[c] = d.verdict; })
+                .catch(() => { callVerdict[c] = 'unverified'; })
+        );
+        Promise.all(checks).then(() => {
+            const invalid = calls.filter(c => callVerdict[c] === 'invalid');
+            if (invalid.length === 0) { _validationCleared = true; logQSO(); return; }
+            askDupConfirm(invalid.join(', ') + ' — ' + T['val_invalid'] + '. ' + T['val_log_anyway'])
+                .then(yes => { if (yes) { _validationCleared = true; logQSO(); } });
+        });
+    }
+
     function logQSO() {
         if (!currentSessionId) return;
 
@@ -1169,6 +1395,10 @@
         const calls = selectedCalls.slice();
         if (typed && !calls.includes(typed)) calls.push(typed);
         if (calls.length === 0) return;
+
+        // Validate against QRZ before logging (unless already cleared this pass).
+        if (!_validationCleared) { validateCallsThenLog(calls); return; }
+        _validationCleared = false;
 
         // Use current field values — no radio query
         {
@@ -1235,6 +1465,7 @@
                     document.getElementById('call-info').style.display = 'none';
                     document.getElementById('call-dup').style.display = 'none';
                     document.getElementById('mult-preview').style.display = 'none';
+                    clearLoggedRowHighlight();
                     document.getElementById('call-dropdown').innerHTML = '';
                     document.getElementById('call-dropdown').style.display = 'none';
                     // Clear queued calls + P2P parks for next entry
@@ -2045,6 +2276,26 @@
         if (currentSessionId && !skipMapFit) loadMapQSOs();
     }
 
+    // Backfill map coordinates on existing QSOs (local DB -> our DB -> QRZ),
+    // then redraw. Fills in past contacts that had no location (e.g. logged
+    // before QRZ lookup existed). Needs QRZ configured+online for DX.
+    function refreshMapLocations() {
+        const btn = document.getElementById('refresh-loc-btn');
+        const orig = btn.textContent;
+        btn.textContent = T['refresh_loc_working']; btn.disabled = true;
+        fetch('/api/refresh-locations', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ only_missing: true })
+        }).then(r => r.json()).then(d => {
+            btn.textContent = orig; btn.disabled = false;
+            if (!d.ok) { showToast('error', d.error || 'Refresh failed'); return; }
+            showToast('success', T['refresh_loc_done']
+                .replace('{u}', d.updated).replace('{m}', d.still_missing), 7000);
+            if (qsoMap) loadMapQSOs();
+        }).catch(() => { btn.textContent = orig; btn.disabled = false;
+            showToast('error', 'Refresh failed'); });
+    }
+
     function loadMapQSOs() {
         if (!qsoMap || !currentSessionId) return;
 
@@ -2158,6 +2409,10 @@
     // browser reload. 30 s is well below the operator's tolerance for
     // stale grid, and doesn't hammer the Flask process.
     setInterval(refreshPositionBadges, 30000);
+
+    // First launch with no QRZ credentials → offer the setup dialog right away
+    // (dismissible; thereafter it's the ⚙ button, top right).
+    maybePromptQrzSetup();
 
     // =========================================================================
     // Voice Keyer

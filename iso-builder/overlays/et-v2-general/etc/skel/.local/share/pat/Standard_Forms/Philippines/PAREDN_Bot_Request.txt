@@ -1,0 +1,6 @@
+Form:PAREDN_Bot_Request.html
+To:<var MsgTo>
+Subject:<var Newsubject>
+Readonly:True
+Msg:
+<var BodyText>

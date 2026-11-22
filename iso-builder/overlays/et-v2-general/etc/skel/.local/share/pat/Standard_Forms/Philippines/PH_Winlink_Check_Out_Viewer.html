@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8" />
+<title>Check-Out - {var MsgSender} - {var Location}</title>
+<style type="text/css">
+@media print { #printPageButton { display:none; } input { outline:none !important; box-shadow:none; border:none; } }
+body, td, th { font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:inherit; }
+input { padding:1px; font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:inherit; }
+textarea { padding:1px; font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:inherit; overflow:visible; }
+.lbl  { font-size:13px; font-weight:bold; }
+.ver  { color:#666666; font-size:11px; }
+.sechdr { background-color:#1B3A6B; color:#ffffff; font-weight:bold; font-size:12px; padding:4px 6px; }
+</style>
+</head>
+<body>
+<form>
+<input type="hidden" name="Mapfilename" id="Mapfilename" value="PH Winlink Check Out" />
+</form>
+<table width="900" border="1" cellpadding="4" cellspacing="0" bordercolor="#1B3A6B" align="center" style="font-size:13px;">
+<tbody>
+
+<tr>
+  <td bgcolor="#1B3A6B" style="text-align:center; padding:8px;">
+    <span style="color:#ffffff; font-size:20px; font-weight:bold; font-style:italic;">PH Winlink Check-Out</span><br />
+    <span style="color:#ffffff; font-size:15px; font-weight:bold;"><input name="Organization" readonly="readonly" value="{var Organization}" size="40" style="font-size:15px; font-weight:bold; text-align:center; background:#1B3A6B; color:#ffffff; border:1px solid #4a6fa5; border-radius:3px;" /></span><br />
+    <span style="color:#C8902A; font-size:11px; font-weight:bold;">RECEIVED &bull; PAREDN &bull; Philippine Amateur Radio Emergency Data Network &bull; DX1PRD</span><br /><br />
+    <input id="printPageButton" type="button" value="Print / Save as PDF" onclick="window.print();" />
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor="#dee9f9">
+    <table width="100%" border="0" cellpadding="2" cellspacing="2">
+      <tr>
+        <td width="14%"><span class="lbl">Precedence</span><br /><input name="Precedence" readonly="readonly" value="{var Precedence}" size="12" style="font-weight:bold; font-size:14px;" /></td>
+        <td width="32%"><span class="lbl">Incident / Operation</span><br /><input name="IncidentName" readonly="readonly" value="{var IncidentName}" size="30" style="font-weight:bold;" /></td>
+        <td width="18%"><span class="lbl">DRRMC Level</span><br /><input name="DRRMCLevel" readonly="readonly" value="{var DRRMCLevel}" size="14" style="font-weight:bold;" /></td>
+        <td width="18%"><span class="lbl">Status</span><br /><input name="Status" readonly="readonly" value="{var Status}" size="14" style="font-weight:bold;" /></td>
+        <td width="18%"><span class="lbl">Station Secured (PST)</span><br /><input name="DateTime" readonly="readonly" value="{var DateTime}" size="20" style="font-weight:bold; color:#8B0000;" /></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<tr>
+  <td>
+    <table width="100%" border="0" cellpadding="2" cellspacing="2">
+      <tr>
+        <td width="14%"><span class="lbl">Band</span><br /><input name="Band" readonly="readonly" value="{var Band}" size="10" style="font-weight:bold;" /></td>
+        <td width="16%"><span class="lbl">Session</span><br /><input name="Session" readonly="readonly" value="{var Session}" size="12" style="font-weight:bold;" /></td>
+        <td width="22%"><span class="lbl">Station Callsign</span><br /><input name="MsgSender" readonly="readonly" value="{var MsgSender}" size="18" style="font-weight:bold; font-size:14px;" /></td>
+        <td width="22%"><span class="lbl">Sent To</span><br /><input name="MsgTo" readonly="readonly" value="{var MsgTo}" size="18" /></td>
+        <td width="26%"><span class="lbl">On-Site Operators</span><br /><input name="Assigned" readonly="readonly" value="{var Assigned}" size="24" /></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor="#f0f4f8">
+    <table width="100%" border="0" cellpadding="2" cellspacing="2">
+      <tr>
+        <td width="50%"><span class="lbl">Station Contact Name</span><br /><input name="ContactName" readonly="readonly" value="{var ContactName}" size="44" /></td>
+        <td width="50%"><span class="lbl">Organization / Net</span><br /><input name="Organization" readonly="readonly" value="{var Organization}" size="44" style="font-weight:bold;" /></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<tr>
+  <td>
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td class="sechdr">STATION LOCATION</td></tr></table>
+    <table width="100%" border="0" cellpadding="2" cellspacing="2" style="margin-top:4px;">
+      <tr><td colspan="4"><span class="lbl">Additional Location Info</span><br /><input name="Location" readonly="readonly" value="{var Location}" size="90" style="font-weight:bold;" /></td></tr>
+      <tr>
+        <td width="25%"><span class="lbl">City / Town</span><br /><input name="CityTown" readonly="readonly" value="{var CityTown}" size="22" /></td>
+        <td width="25%"><span class="lbl">Barangay / County</span><br /><input name="Barangay" readonly="readonly" value="{var Barangay}" size="22" /></td>
+        <td width="25%"><span class="lbl">Province / State</span><br /><input name="Province" readonly="readonly" value="{var Province}" size="22" /></td>
+        <td width="25%"><span class="lbl">Region / Country</span><br /><input name="Region" readonly="readonly" value="{var Region}" size="22" /></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor="#f0f4f8">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td class="sechdr">GPS COORDINATES</td></tr></table>
+    <table width="100%" border="0" cellpadding="2" cellspacing="2" style="margin-top:4px;">
+      <tr>
+        <td width="20%"><span class="lbl">Latitude</span><br /><input name="mapLat" readonly="readonly" value="{var mapLat}" size="14" /></td>
+        <td width="20%"><span class="lbl">Longitude</span><br /><input name="mapLon" readonly="readonly" value="{var mapLon}" size="14" /></td>
+        <td width="28%"><span class="lbl">MGRS</span><br /><input name="MGRS" readonly="readonly" value="{var MGRS}" size="24" /></td>
+        <td width="12%"><span class="lbl">Grid Square</span><br /><input name="Grid" readonly="readonly" value="{var Grid}" size="8" /></td>
+        <td width="20%"><span class="lbl">GPS</span><br /><input name="GPS2" readonly="readonly" value="{var GPS2}" size="20" /></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<tr>
+  <td>
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td class="sechdr">COMMENTS &amp; REPORTS (FINAL / CHECK-OUT STATUS)</td></tr></table>
+    <div id="commentsblock" style="font-family:Courier New,monospace; font-size:12px; white-space:pre-wrap; word-wrap:break-word; display:block; padding:8px; border:1px solid #cccccc; background:#f9f9f9; min-height:60px; overflow:visible;"></div>
+    <script>
+    (function(){
+      var raw='{var Comments}';
+      document.getElementById('commentsblock').innerHTML=raw.replace(/\r\n/g,'\n').replace(/\n/g,'<br>');
+    })();
+    </script>
+  </td>
+</tr>
+
+<tr>
+  <td>
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td class="sechdr">MESSAGE TO EOC</td></tr></table>
+    <div id="eocblock" style="font-family:Courier New,monospace; font-size:13px; white-space:pre-wrap; word-wrap:break-word; display:block; padding:10px; border:2px solid #8B0000; background:#fff8f8; min-height:40px; color:#8B0000; font-weight:bold;"></div>
+    <script>
+    (function(){
+      var raw='{var Comments}';
+      var plain=raw.replace(/<br\s*\/?>/gi,'\n').replace(/\r\n/g,'\n');
+      var idx=plain.indexOf('MESSAGE TO EOC:');
+      if(idx>=0){
+        var msg=plain.substring(idx+15).trim();
+        document.getElementById('eocblock').textContent=msg||'(none)';
+      } else {
+        document.getElementById('eocblock').textContent='(none)';
+      }
+    })();
+    </script>
+    <div style="font-size:11px; color:#555; padding:4px 8px;">&#9888; For formal welfare messages use PTS (Philippine Traffic System) and/or NTS (National Traffic System) templates.</div>
+  </td>
+</tr>
+
+<tr>
+  <td style="background-color:#f8f8f8; text-align:right;">
+    <span class="ver">{var Templateversion} &bull; 2026 &bull; [No changes or editing of this message are allowed]</span>
+  </td>
+</tr>
+
+</tbody>
+</table>
+<br />
+</body>
+</html>

@@ -1,0 +1,1272 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<title>PAREDN Comm Frequency Form</title>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+<style type="text/css">
+/* ===== BASE ===== */
+body, td, th { font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+input, select  { padding: 1px; font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+textarea       { margin: 4px; padding: 4px; font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+.style17       { color: #FF0000; }
+
+/* ===== BUTTONS ===== */
+input[type=button] {
+  border: 2px solid #0f88f2; border-radius: .25rem;
+  font-size: 12px; padding: 2px 6px; background-color: white;
+  margin: 2px; cursor: pointer;
+}
+input[type=submit] {
+  border: 2px solid green; border-radius: .25rem;
+  background-color: white; padding: 2px 6px; font-size: 13px; cursor: pointer;
+}
+input[type=reset] {
+  border: 2px solid red; border-radius: .25rem;
+  background-color: white; padding: 2px 6px; font-size: 13px; cursor: pointer;
+}
+
+/* ===== TITLE AREA ===== */
+#formTitleWrap {
+  text-align: center; padding: 6px 4px 2px 4px;
+}
+#formTitle {
+  font-size: 16px; font-weight: bold; font-family: Arial, Helvetica, sans-serif;
+  border: none; border-bottom: 1px dashed #aaaaaa; background: transparent;
+  text-align: center; width: 500px; color: #000;
+}
+#formTitle:focus { background: #fffff0; border: 1px solid #0f88f2; outline: none; }
+#formSubtitle {
+  font-size: 13px; font-weight: normal; font-family: Arial, Helvetica, sans-serif;
+  border: none; border-bottom: 1px dashed #cccccc; background: transparent;
+  text-align: center; width: 400px; color: #333;
+}
+#formSubtitle:focus { background: #fffff0; border: 1px solid #0f88f2; outline: none; }
+.title-hint { font-size: 9px; color: #888; font-style: italic; }
+
+/* ===== SETUP ROW ===== */
+#setupRow { text-align: left; padding: 4px 8px; }
+
+/* ===== HEADER fields ===== */
+.hdr-left  { width: 50%; vertical-align: top; text-align: center; padding: 6px; }
+.hdr-right { width: 50%; text-align: center; vertical-align: middle; padding: 6px; }
+.hdr-left label { font-size: 11px; color: #555; }
+.hdr-left input[type=text] {
+  border: 1px solid #bbb; border-radius: 3px; padding: 2px 4px;
+  background: #fff; font-size: 12px; width: 90%; max-width: 420px;
+}
+.hdr-left input[type=text]:focus { border-color: #0f88f2; background: #fffff0; }
+
+/* ===== DATA TABLE ===== */
+#dataTable {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+}
+#dataTable td, #dataTable th {
+  border: 1px solid #999999;
+  padding: 1px 2px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+#dataTable .num-cell {
+  width: 24px; min-width: 24px; max-width: 24px;
+  text-align: center; font-weight: bold; background: #f0f0f0;
+}
+/* header row cells */
+#dataTable .hdr-cell {
+  background-color: #fff8dc;
+  position: relative;
+  overflow: visible;
+}
+#dataTable .hdr-cell input {
+  background: transparent; border: none; outline: none;
+  font-weight: bold; color: #804000; font-size: 11px;
+  width: calc(100% - 10px); box-sizing: border-box;
+  cursor: text;
+}
+#dataTable .hdr-cell input:focus {
+  background: #fffff0; border-bottom: 1px solid #0f88f2;
+}
+/* separator row */
+#dataTable .sep-row td { background: #cccccc; height: 3px; padding: 0; border: none; }
+
+/* data cell inputs */
+#dataTable .data-cell input {
+  width: 100%; box-sizing: border-box;
+  border: none; outline: none; background: transparent;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+#dataTable .data-cell input:focus { background: #f0f8ff; }
+#dataTable tr:nth-child(even) .data-cell { background: #f9f9f9; }
+#dataTable tr:hover .data-cell { background: #eef6ff; }
+/* also uppercase the editable column header name inputs */
+#dataTable .hdr-cell input { text-transform: uppercase; }
+
+/* ===== COLUMN RESIZE HANDLE ===== */
+.col-resize-handle {
+  position: absolute;
+  top: 0; right: 0;
+  width: 6px; height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 10;
+  user-select: none;
+}
+.col-resize-handle:hover, .col-resize-handle.dragging {
+  background: rgba(15,136,242,0.35);
+}
+
+/* ===== POPUP ===== */
+.pop-up { position: absolute; top: 0; left: -500em; }
+.pop-up:target { position: static; left: 0; }
+.popBox {
+  background: #fff; position: absolute; left: 10%; right: 10%; top: 10%; bottom: 10%;
+  z-index: 10; border: 1px solid #3a3a3a; border-radius: .25rem;
+  box-shadow: 0 .5rem .5rem rgba(0,0,0,.5); opacity: 0; transition: opacity 0.8s ease-out;
+}
+:target .popBox { position: fixed; opacity: 1; }
+.popScroll {
+  position: absolute; top:1rem; left:1rem; right:1rem; bottom:1rem;
+  overflow-y: auto; padding-right: 0.5em;
+}
+.popScroll h2 { margin-top: 0; }
+.close:link, .close:visited {
+  position: absolute; top:-0.75em; right:-0.75em; display: block;
+  width:2em; height:2em; line-height:1.8; padding:0; text-align:center;
+  text-decoration:none; background:#000; border:2px solid #fff;
+  color:#fff; border-radius:50%;
+}
+.close:before { content:"X"; }
+.close:hover, .close:active { background:#c00; }
+.close span { text-indent:-200em; display:block; }
+</style>
+
+<script>
+/* ================================================================
+   COLUMN DEFINITIONS
+   ================================================================ */
+var COLS  = ['ColA','ColB','ColC','ColD','ColE','ColF','ColG','ColH'];
+var NROWS = 50;
+var DEFAULT_WIDTHS = [175,130,90,80,100,80,120,180];
+var colWidths = DEFAULT_WIDTHS.slice();
+
+/* ---- Apply widths to <col> elements ---- */
+function applyColWidths() {
+  for (var c = 0; c < COLS.length; c++) {
+    var el = document.getElementById('col_' + COLS[c]);
+    if (el) el.style.width = colWidths[c] + 'px';
+  }
+}
+
+/* ================================================================
+   COLUMN RESIZE via drag
+   ================================================================ */
+function initResize() {
+  var handles = document.querySelectorAll('.col-resize-handle');
+  for (var i = 0; i < handles.length; i++) {
+    (function(handle) {
+      var colIdx = parseInt(handle.getAttribute('data-col'));
+      var startX, startW;
+      handle.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        startX = e.pageX;
+        startW = colWidths[colIdx];
+        handle.className = handle.className + ' dragging';
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup',   onUp);
+      });
+      function onMove(e) {
+        var diff = e.pageX - startX;
+        var newW = Math.max(40, startW + diff);
+        colWidths[colIdx] = newW;
+        applyColWidths();
+      }
+      function onUp() {
+        handle.className = handle.className.replace(' dragging','');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onUp);
+      }
+    })(handles[i]);
+  }
+}
+
+function resetColWidths() {
+  colWidths = DEFAULT_WIDTHS.slice();
+  applyColWidths();
+}
+
+/* ================================================================
+   DATE/TIME HELPERS
+   ================================================================ */
+function shortmonth(mn) {
+  return ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"][mn];
+}
+function SetDateTime(TType, TheFld) {
+  var d  = new Date();
+  var y  = d.getFullYear();
+  var mo = d.getMonth() + 1;
+  var dy = d.getDate();
+  var h  = (d.getHours()   < 10 ? '0' : '') + d.getHours();
+  var m  = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+  if (mo < 10) mo = '0' + mo;
+  if (dy < 10) dy = '0' + dy;
+  var ts = y + '-' + mo + '-' + dy + ' ' + h + ':' + m;
+  if (TType === 'autofulldatetime') {
+    document.getElementById(TheFld).value = ts;
+  } else {
+    var v = prompt("Date/Time:", ts);
+    if (v !== null) document.getElementById(TheFld).value = v;
+  }
+}
+function DateforFile() {
+  var d  = new Date();
+  var y  = d.getFullYear();
+  var mo = d.getMonth() + 1;
+  var dy = d.getDate();
+  if (mo < 10) mo = '0' + mo;
+  if (dy < 10) dy = '0' + dy;
+  var h = (d.getHours()   < 10 ? '0' : '') + d.getHours();
+  var m = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+  return y + '-' + mo + '-' + dy + ' ' + h + '_' + m;
+}
+function AutoGrowTextArea(t) {
+  if (t && t.clientHeight < t.scrollHeight) {
+    t.style.height = t.scrollHeight + 'px';
+    if (t.clientHeight < t.scrollHeight)
+      t.style.height = (t.scrollHeight * 2 - t.clientHeight) + 'px';
+  }
+}
+function RWS(s) { return s.replace(/\s+$/, '').trim(); }
+
+/* ================================================================
+   FORCE UPPERCASE  --  CSS handles display; this ensures .value is
+   also uppercase so what Winlink sends is already uppercase.
+   Uses 'keyup' (not 'input') to avoid cursor-jump issues.
+   ================================================================ */
+function forceUpperCaseOnDataInputs() {
+  var inputs = document.querySelectorAll(
+    '#dataTable .data-cell input, #dataTable .hdr-cell input');
+  for (var i = 0; i < inputs.length; i++) {
+    inputs[i].addEventListener('keyup', function() {
+      var s = this.selectionStart;
+      var e = this.selectionEnd;
+      this.value = this.value.toUpperCase();
+      if (this.setSelectionRange) this.setSelectionRange(s, e);
+    });
+  }
+}
+
+/* ================================================================
+   ASCII SANITIZE  (strips Unicode that Winlink renders as garbage)
+   ================================================================ */
+function sanitizeASCII(str) {
+  if (!str) return '';
+  return str
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/[^\x00-\x7F]/g, '');
+}
+
+/* ================================================================
+   CSV EXPORT
+   ================================================================ */
+function getEX(id) {
+  var el = document.getElementById(id);
+  if (!el) return '';
+  var line = sanitizeASCII(el.value).toUpperCase();
+  if (line === '--') line = '';
+  line = line.replace(/"/g, '""');
+  if (line.indexOf(',') !== -1) line = '"' + line + '"';
+  return line;
+}
+
+function ExportData(Ftype) {
+  var mydata = '';
+  mydata += getEX('formTitle')         + '\n';
+  mydata += getEX('formSubtitle')      + '\n';
+  mydata += getEX('Incident_Name')     + '\n';
+  mydata += getEX('Desc')              + '\n';
+  mydata += getEX('ActivityDateTime1') + '\n\n';
+  mydata += '#,';
+  for (var c = 0; c < COLS.length; c++) {
+    mydata += getEX('Name' + COLS[c]) + (c < COLS.length - 1 ? ',' : '\n');
+  }
+  for (var x = 1; x <= NROWS; x++) {
+    var el = document.getElementById(COLS[0] + x);
+    if (el && el.value !== '') {
+      mydata += x + ',';
+      for (var c = 0; c < COLS.length; c++) {
+        mydata += getEX(COLS[c] + x) + (c < COLS.length - 1 ? ',' : '\n');
+      }
+    }
+  }
+  document.getElementById('parseme').value = mydata;
+  var doWeattach = document.getElementById('DoAttach').value;
+  if (doWeattach === 'true') {
+    document.getElementById('attached_file').value =
+      sanitizeASCII(document.getElementById('Desc').value) + ' ' + DateforFile() + '.csv';
+    document.getElementById('attached_text').value = mydata;
+  }
+  if (Ftype === 'file') { ExporttoExcel(); }
+}
+
+function ExporttoExcel() {
+  var txt   = document.getElementById('parseme').value;
+  var fname = 'CommFreq_' + DateforFile() + '.csv';
+  fname = prompt('Save as:', fname);
+  if (fname === null) return;
+  var blob = new Blob([txt], { type: 'text/plain' });
+  var a = document.createElement('a');
+  a.download = fname;
+  a.href = window.URL.createObjectURL(blob);
+  a.onclick = function(e) { document.body.removeChild(e.target); };
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+}
+
+/* ================================================================
+   SAVE / LOAD FORM JSON  (includes colWidths)
+   ================================================================ */
+function formDataToObject() {
+  var form   = document.getElementById('myform');
+  var fields = form.querySelectorAll('input, select, textarea');
+  var o = {};
+  for (var i = 0; i < fields.length; i++) {
+    var f = fields[i];
+    var k = f.name || f.id;
+    /* 2026-09-25: Exclude the temporary saved-data buffer to prevent recursive file growth. */
+    if (k === 'parseme') continue;
+    if (!k) continue;
+    if (f.type === 'button' || f.type === 'image' ||
+        f.type === 'submit' || f.type === 'reset'  ||
+        f.type === 'file')   continue;
+    switch (f.type) {
+      case 'checkbox': o[k] = +f.checked; break;
+      case 'radio':
+        if (o[k] === undefined) o[k] = '';
+        if (f.checked) o[k] = f.value;
+        break;
+      default: o[k] = f.value;
+    }
+  }
+  o['__colWidths__'] = colWidths.slice();
+  document.getElementById('parseme').value = JSON.stringify(o, null, 2);
+}
+
+function populateForm() {
+  var raw = document.getElementById('parseme').value;
+  if (!raw || raw === '') { alert('No saved data found.'); return; }
+  var o;
+  try { o = JSON.parse(raw); }
+  catch(e) { alert('Could not read saved data file.\nMake sure you select the correct .txt file saved by this form.'); return; }
+  if (typeof o !== 'object' || o === null) return;
+
+  /* restore column widths first */
+  if (o['__colWidths__'] && o['__colWidths__'].length === COLS.length) {
+    colWidths = o['__colWidths__'].slice();
+    applyColWidths();
+  }
+
+  /* restore all field values */
+  for (var k in o) {
+    if (k === '__colWidths__') continue;
+    var el = document.getElementById(k);
+    if (!el) el = document.querySelector('[name="' + k + '"]');
+    if (!el) continue;
+    if (el.type === 'radio') {
+      var radios = document.querySelectorAll('[name="' + k + '"]');
+      for (var j = 0; j < radios.length; j++) {
+        if (radios[j].value === o[k]) radios[j].checked = true;
+      }
+    } else if (el.type === 'checkbox') {
+      el.checked = !!o[k];
+    } else {
+      el.value = o[k];
+    }
+  }
+
+  var ta = document.getElementById('Comments');
+  if (ta) AutoGrowTextArea(ta);
+
+  /* update title display */
+  var ts = document.getElementById('formSubtitle');
+  if (ts) ts.value = sanitizeASCII(ts.value);
+}
+
+function SaveData() {
+  formDataToObject();
+  saveTextAsFile();
+}
+
+function saveTextAsFile() {
+  var txt   = document.getElementById('parseme').value;
+  var fname = 'PH_CF_Data_' + DateforFile() + '.txt';
+  fname = prompt('Save data as:', fname);
+  if (fname === null) return;
+  var blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  var a = document.createElement('a');
+  a.download = fname;
+  a.href = window.URL.createObjectURL(blob);
+  a.onclick = function(e) { document.body.removeChild(e.target); };
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+}
+
+/* ================================================================
+   TITLE CUSTOMISATION
+   ================================================================ */
+function saveTitleToStorage() {
+  var t = sanitizeASCII(document.getElementById('formTitle').value);
+  var s = sanitizeASCII(document.getElementById('formSubtitle').value);
+  document.getElementById('formTitle').value    = t;
+  document.getElementById('formSubtitle').value = s;
+  try {
+    localStorage.setItem('CommFreqTitle',    t);
+    localStorage.setItem('CommFreqSubtitle', s);
+  } catch(e) {}
+}
+
+function loadTitleFromStorage() {
+  try {
+    var t = sanitizeASCII(localStorage.getItem('CommFreqTitle'));
+    var s = sanitizeASCII(localStorage.getItem('CommFreqSubtitle'));
+    if (t) {
+      document.getElementById('formTitle').value = t;
+      localStorage.setItem('CommFreqTitle', t);
+    }
+    if (s) {
+      document.getElementById('formSubtitle').value = s;
+      localStorage.setItem('CommFreqSubtitle', s);
+    }
+  } catch(e) {}
+}
+
+function SetupAgency() {
+  var cur = document.getElementById('formSubtitle').value;
+  var v   = prompt('Enter Agency / Group name (shown under title):', cur);
+  if (v !== null) {
+    document.getElementById('formSubtitle').value = sanitizeASCII(v);
+    saveTitleToStorage();
+  }
+}
+
+/* ================================================================
+   ENTER KEY -- block accidental form submission from input fields
+   ================================================================ */
+function handleEnterKey(e) {
+  var tag  = (e.target || e.srcElement).tagName.toUpperCase();
+  var type = ((e.target || e.srcElement).type || '').toUpperCase();
+  if (tag === 'INPUT' &&
+      type !== 'SUBMIT' && type !== 'RESET' && type !== 'BUTTON') {
+    var key = e.keyCode || e.which;
+    if (key === 13) { e.preventDefault(); return false; }
+  }
+}
+
+/* ================================================================
+   BROWSER / WINLINK CHECK
+   ================================================================ */
+function Checkifinbrowser() {
+  var x = document.getElementById('testCall').value;
+  if (x.indexOf('{Msg') > -1) {
+    document.getElementById('Submit').style.visibility = 'hidden';
+    alert('You are running this form outside of Winlink.\n\nWhen done, SAVE the data and give the saved file to the radio operator, who will load it and send via Winlink.');
+  } else {
+    document.getElementById('Submit').style.visibility = 'visible';
+  }
+}
+
+/* ================================================================
+   WINDOW.ONLOAD
+   ================================================================ */
+window.onload = function() {
+  applyColWidths();
+  initResize();
+  forceUpperCaseOnDataInputs();
+
+  /* Enter key suppression */
+  var frm = document.getElementById('myform');
+  if (frm) frm.addEventListener('keydown', handleEnterKey, false);
+
+  /* File load -- check API support first (mirrors original form) */
+  if (window.File && window.FileReader && window.FileList && window.Blob) {
+    var fileSelected = document.getElementById('txtfiletoread');
+    if (fileSelected) {
+      fileSelected.addEventListener('change', function(e) {
+        var fileExt = /text.*/;
+        var fileToRead = fileSelected.files[0];
+        if (!fileToRead) return;
+        if (fileToRead.type.match(fileExt) || fileToRead.name.match(/\.txt$/i)) {
+          var reader = new FileReader();
+          reader.onload = function(ev) {
+            document.getElementById('parseme').value = ev.target.result;
+            populateForm();
+          };
+          reader.readAsText(fileToRead);
+        } else {
+          alert('Please select the .txt data file saved by this form.');
+        }
+      }, false);
+    }
+  } else {
+    alert('File loading is not supported in this browser.');
+  }
+
+  /* Auto set date/time */
+  SetDateTime('autofulldatetime', 'ActivityDateTime1');
+
+  /* Load stored title */
+  loadTitleFromStorage();
+
+  /* Wire title autosave */
+  var ft = document.getElementById('formTitle');
+  var fs = document.getElementById('formSubtitle');
+  if (ft) ft.addEventListener('change', saveTitleToStorage);
+  if (fs) fs.addEventListener('change', saveTitleToStorage);
+
+  Checkifinbrowser();
+};
+</script>
+</head>
+<body>
+<div style="text-align:center;">
+<form style="font-family:Arial;" id="myform" method="post" enctype="multipart/form-data"
+      action="http://{FormServer}:{FormPort}"
+      onsubmit="return confirm('To complete your form submission, click OK and close the open browser window.');">
+
+<!-- ===== HELP POPUP ===== -->
+<div id="pop1" class="pop-up">
+<div class="popBox">
+<div class="popScroll">
+<h2>PAREDN Communication Frequency Form v1.1</h2>
+<p><strong>Customizable Title &amp; Subtitle</strong><br/>
+Click directly on the large title or subtitle text at the top to edit it. Changes are saved to your browser for next time.</p>
+<p><strong>Customizable Column Names</strong><br/>
+Click any yellow header cell and type a new column name. The column name is sent in the message and shown on the viewer form.</p>
+<p><strong>Resizable Columns</strong><br/>
+Hover over the right edge of any yellow column header -- the cursor becomes a resize arrow. Drag left or right to adjust that column&rsquo;s width. Click <em>Reset Col Widths</em> to restore defaults. Column widths are saved when you use Save Form Data.</p>
+<p><strong>Data Rows (20 entries)</strong><br/>
+Default columns: Description/Channel, Tactical/Net Name, Frequency (MHz), Mode, Offset/Duplex, PL/DCS Tone, Net Control, Remarks/Location.</p>
+<p><strong>Save &amp; Load</strong><br/>
+Use <em>Save Form Data</em> to save a .txt file that can be reloaded, preserving all data including column widths. Use <em>Export to CSV</em> for spreadsheet use.</p>
+<a class="close" href="#links"><span>Close</span></a>
+</div>
+</div>
+</div>
+
+<!-- ===== OUTER TABLE ===== -->
+<table align="center" border="0" style="width:100%; max-width:1200px;">
+<tbody><tr><td>
+<table border="1" cellpadding="0" cellspacing="0" bordercolor="#999999"
+       style="background-color:rgb(250,250,255); width:100%;">
+<tbody>
+
+<!-- ===== TITLE ROW ===== -->
+<tr bgcolor="#dee9f9">
+<td colspan="2" style="text-align:center; padding:8px 4px 4px 4px;">
+  <div id="formTitleWrap">
+    <div><input type="text" id="formTitle" name="formTitle"
+         value="COMMUNICATION FREQUENCY FORM"
+         title="Click to edit form title" maxlength="80" /></div>
+    <div style="margin-top:3px;">
+      <input type="text" id="formSubtitle" name="formSubtitle"
+           value="PAREDN - Philippine Amateur Radio Emergency Data Network"
+           title="Click to edit subtitle" maxlength="100" />
+    </div>
+    <div style="margin-top:2px;"><span class="title-hint">&#9998; Click title or subtitle to edit</span></div>
+  </div>
+</td>
+</tr>
+
+<!-- ===== SETUP ROW ===== -->
+<tr>
+<td colspan="2" id="setupRow">
+  <input type="button" value="  Setup Agency" onclick="SetupAgency()" />
+  <span style="color:#FF0000; font-size:10px;">&nbsp;Click to set agency/group in subtitle</span>
+  &nbsp;&nbsp;&nbsp;
+  <input type="button" value="Reset Col Widths" onclick="resetColWidths()" title="Restore default column widths" />
+  <input type="file" id="txtfiletoread" accept=".txt" style="display:none;" />
+</td>
+</tr>
+
+<!-- ===== HEADER FIELDS ===== -->
+<tr>
+<td class="hdr-left">
+  <p><label>Event or Operation Name</label><br/>
+  <input type="text" id="Incident_Name" name="Incident_Name" maxlength="60"
+         title="Name of the event or operation."
+         onkeypress="if(event.keyCode==34){return false}" /></p>
+  <p><label>Description / Form Information</label><br/>
+  <input type="text" id="Desc" name="Desc" maxlength="60"
+         title="Brief description of this frequency plan."
+         onkeypress="if(event.keyCode==34){return false}" /></p>
+  <p><label>Prepared by (Callsign / Name)</label><br/>
+  <input type="text" id="PreparedBy" name="PreparedBy" maxlength="40"
+         onkeypress="if(event.keyCode==34){return false}" /></p>
+</td>
+<td class="hdr-right">
+  <span style="font-size:11px; color:#555;">Form Creation Date/Time</span>&nbsp;
+  <input type="text" name="ActivityDateTime1" id="ActivityDateTime1" maxlength="23" size="20"
+         onclick="SetDateTime('fulldatetime','ActivityDateTime1')"
+         title="Click to edit date/time" /><br/><br/>
+  <input name="Title" type="hidden" id="Title" value="PAREDN" />
+  <input type="button" value=" Load Form Data "
+         onclick="document.getElementById('txtfiletoread').click();" />
+  &nbsp;&nbsp;&nbsp;
+  <a href="#pop1" style="color:#cc0000; font-weight:bold; font-size:12px;">Form Info</a><br/>
+  <textarea name="parseme" cols="1" id="parseme" style="display:none;"></textarea>
+</td>
+</tr>
+
+<!-- ===== DATA TABLE ROW ===== -->
+<tr>
+<td colspan="2" style="padding:4px 4px 0 4px;">
+  <p style="margin:4px 0; color:#2A0000; font-style:italic; font-size:11px; text-align:center;">
+    &#9998; Column names are editable &nbsp;|&nbsp; Drag column edges to resize
+  </p>
+
+  <!-- The resizable data table -->
+  <div style="overflow-x:auto;">
+  <div id="tableScroll" style="max-height:480px; overflow-y:auto; overflow-x:visible;">
+  <table id="dataTable" border="1" cellpadding="2" cellspacing="0">
+
+    <!-- col elements for width control -->
+    <colgroup>
+      <col style="width:24px;" /><!-- # -->
+      <col id="col_ColA" /><col id="col_ColB" /><col id="col_ColC" /><col id="col_ColD" />
+      <col id="col_ColE" /><col id="col_ColF" /><col id="col_ColG" /><col id="col_ColH" />
+    </colgroup>
+
+    <!-- HEADER ROW (editable column names + resize handles) -->
+    <tr style="position:sticky; top:0; z-index:5;">
+      <td class="num-cell">#</td>
+      <td class="hdr-cell">
+        <input type="text" id="NameColA" name="NameColA" value="DESCRIPTION / CHANNEL"
+               maxlength="30" title="Edit column name"
+               onkeypress="if(event.keyCode==34){return false}" />
+        <div class="col-resize-handle" data-col="0" title="Drag to resize"></div>
+      </td>
+      <td class="hdr-cell">
+        <input type="text" id="NameColB" name="NameColB" value="TACTICAL / NET NAME"
+               maxlength="30" title="Edit column name"
+               onkeypress="if(event.keyCode==34){return false}" />
+        <div class="col-resize-handle" data-col="1" title="Drag to resize"></div>
+      </td>
+      <td class="hdr-cell">
+        <input type="text" id="NameColC" name="NameColC" value="FREQ (MHz)"
+               maxlength="20" title="Edit column name"
+               onkeypress="if(event.keyCode==34){return false}" />
+        <div class="col-resize-handle" data-col="2" title="Drag to resize"></div>
+      </td>
+      <td class="hdr-cell">
+        <input type="text" id="NameColD" name="NameColD" value="MODE"
+               maxlength="20" title="Edit column name"
+               onkeypress="if(event.keyCode==34){return false}" />
+        <div class="col-resize-handle" data-col="3" title="Drag to resize"></div>
+      </td>
+      <td class="hdr-cell">
+        <input type="text" id="NameColE" name="NameColE" value="OFFSET / DUPLEX"
+               maxlength="20" title="Edit column name"
+               onkeypress="if(event.keyCode==34){return false}" />
+        <div class="col-resize-handle" data-col="4" title="Drag to resize"></div>
+      </td>
+      <td class="hdr-cell">
+        <input type="text" id="NameColF" name="NameColF" value="PL / DCS TONE"
+               maxlength="20" title="Edit column name"
+               onkeypress="if(event.keyCode==34){return false}" />
+        <div class="col-resize-handle" data-col="5" title="Drag to resize"></div>
+      </td>
+      <td class="hdr-cell">
+        <input type="text" id="NameColG" name="NameColG" value="NET CONTROL"
+               maxlength="25" title="Edit column name"
+               onkeypress="if(event.keyCode==34){return false}" />
+        <div class="col-resize-handle" data-col="6" title="Drag to resize"></div>
+      </td>
+      <td class="hdr-cell">
+        <input type="text" id="NameColH" name="NameColH" value="REMARKS / LOCATION"
+               maxlength="30" title="Edit column name"
+               onkeypress="if(event.keyCode==34){return false}" />
+        <!-- no handle on last col -->
+      </td>
+    </tr>
+
+    <!-- SEPARATOR -->
+    <tr class="sep-row"><td colspan="9"></td></tr>
+
+    <!-- DATA ROWS 1 - 20 -->
+<tr><td class="num-cell">1</td>
+<td class="data-cell"><input type="text" id="ColA1" name="ColA1" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB1" name="ColB1" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC1" name="ColC1" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD1" name="ColD1" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE1" name="ColE1" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF1" name="ColF1" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG1" name="ColG1" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH1" name="ColH1" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">2</td>
+<td class="data-cell"><input type="text" id="ColA2" name="ColA2" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB2" name="ColB2" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC2" name="ColC2" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD2" name="ColD2" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE2" name="ColE2" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF2" name="ColF2" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG2" name="ColG2" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH2" name="ColH2" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">3</td>
+<td class="data-cell"><input type="text" id="ColA3" name="ColA3" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB3" name="ColB3" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC3" name="ColC3" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD3" name="ColD3" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE3" name="ColE3" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF3" name="ColF3" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG3" name="ColG3" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH3" name="ColH3" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">4</td>
+<td class="data-cell"><input type="text" id="ColA4" name="ColA4" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB4" name="ColB4" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC4" name="ColC4" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD4" name="ColD4" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE4" name="ColE4" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF4" name="ColF4" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG4" name="ColG4" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH4" name="ColH4" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">5</td>
+<td class="data-cell"><input type="text" id="ColA5" name="ColA5" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB5" name="ColB5" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC5" name="ColC5" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD5" name="ColD5" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE5" name="ColE5" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF5" name="ColF5" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG5" name="ColG5" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH5" name="ColH5" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">6</td>
+<td class="data-cell"><input type="text" id="ColA6" name="ColA6" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB6" name="ColB6" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC6" name="ColC6" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD6" name="ColD6" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE6" name="ColE6" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF6" name="ColF6" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG6" name="ColG6" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH6" name="ColH6" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">7</td>
+<td class="data-cell"><input type="text" id="ColA7" name="ColA7" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB7" name="ColB7" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC7" name="ColC7" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD7" name="ColD7" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE7" name="ColE7" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF7" name="ColF7" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG7" name="ColG7" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH7" name="ColH7" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">8</td>
+<td class="data-cell"><input type="text" id="ColA8" name="ColA8" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB8" name="ColB8" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC8" name="ColC8" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD8" name="ColD8" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE8" name="ColE8" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF8" name="ColF8" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG8" name="ColG8" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH8" name="ColH8" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">9</td>
+<td class="data-cell"><input type="text" id="ColA9" name="ColA9" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB9" name="ColB9" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC9" name="ColC9" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD9" name="ColD9" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE9" name="ColE9" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF9" name="ColF9" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG9" name="ColG9" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH9" name="ColH9" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">10</td>
+<td class="data-cell"><input type="text" id="ColA10" name="ColA10" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB10" name="ColB10" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC10" name="ColC10" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD10" name="ColD10" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE10" name="ColE10" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF10" name="ColF10" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG10" name="ColG10" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH10" name="ColH10" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">11</td>
+<td class="data-cell"><input type="text" id="ColA11" name="ColA11" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB11" name="ColB11" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC11" name="ColC11" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD11" name="ColD11" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE11" name="ColE11" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF11" name="ColF11" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG11" name="ColG11" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH11" name="ColH11" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">12</td>
+<td class="data-cell"><input type="text" id="ColA12" name="ColA12" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB12" name="ColB12" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC12" name="ColC12" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD12" name="ColD12" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE12" name="ColE12" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF12" name="ColF12" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG12" name="ColG12" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH12" name="ColH12" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">13</td>
+<td class="data-cell"><input type="text" id="ColA13" name="ColA13" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB13" name="ColB13" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC13" name="ColC13" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD13" name="ColD13" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE13" name="ColE13" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF13" name="ColF13" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG13" name="ColG13" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH13" name="ColH13" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">14</td>
+<td class="data-cell"><input type="text" id="ColA14" name="ColA14" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB14" name="ColB14" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC14" name="ColC14" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD14" name="ColD14" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE14" name="ColE14" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF14" name="ColF14" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG14" name="ColG14" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH14" name="ColH14" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">15</td>
+<td class="data-cell"><input type="text" id="ColA15" name="ColA15" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB15" name="ColB15" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC15" name="ColC15" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD15" name="ColD15" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE15" name="ColE15" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF15" name="ColF15" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG15" name="ColG15" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH15" name="ColH15" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">16</td>
+<td class="data-cell"><input type="text" id="ColA16" name="ColA16" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB16" name="ColB16" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC16" name="ColC16" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD16" name="ColD16" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE16" name="ColE16" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF16" name="ColF16" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG16" name="ColG16" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH16" name="ColH16" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">17</td>
+<td class="data-cell"><input type="text" id="ColA17" name="ColA17" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB17" name="ColB17" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC17" name="ColC17" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD17" name="ColD17" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE17" name="ColE17" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF17" name="ColF17" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG17" name="ColG17" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH17" name="ColH17" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">18</td>
+<td class="data-cell"><input type="text" id="ColA18" name="ColA18" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB18" name="ColB18" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC18" name="ColC18" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD18" name="ColD18" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE18" name="ColE18" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF18" name="ColF18" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG18" name="ColG18" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH18" name="ColH18" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">19</td>
+<td class="data-cell"><input type="text" id="ColA19" name="ColA19" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB19" name="ColB19" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC19" name="ColC19" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD19" name="ColD19" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE19" name="ColE19" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF19" name="ColF19" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG19" name="ColG19" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH19" name="ColH19" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">20</td>
+<td class="data-cell"><input type="text" id="ColA20" name="ColA20" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB20" name="ColB20" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC20" name="ColC20" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD20" name="ColD20" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE20" name="ColE20" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF20" name="ColF20" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG20" name="ColG20" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH20" name="ColH20" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">21</td>
+<td class="data-cell"><input type="text" id="ColA21" name="ColA21" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB21" name="ColB21" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC21" name="ColC21" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD21" name="ColD21" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE21" name="ColE21" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF21" name="ColF21" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG21" name="ColG21" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH21" name="ColH21" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">22</td>
+<td class="data-cell"><input type="text" id="ColA22" name="ColA22" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB22" name="ColB22" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC22" name="ColC22" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD22" name="ColD22" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE22" name="ColE22" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF22" name="ColF22" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG22" name="ColG22" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH22" name="ColH22" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">23</td>
+<td class="data-cell"><input type="text" id="ColA23" name="ColA23" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB23" name="ColB23" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC23" name="ColC23" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD23" name="ColD23" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE23" name="ColE23" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF23" name="ColF23" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG23" name="ColG23" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH23" name="ColH23" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">24</td>
+<td class="data-cell"><input type="text" id="ColA24" name="ColA24" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB24" name="ColB24" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC24" name="ColC24" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD24" name="ColD24" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE24" name="ColE24" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF24" name="ColF24" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG24" name="ColG24" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH24" name="ColH24" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">25</td>
+<td class="data-cell"><input type="text" id="ColA25" name="ColA25" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB25" name="ColB25" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC25" name="ColC25" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD25" name="ColD25" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE25" name="ColE25" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF25" name="ColF25" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG25" name="ColG25" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH25" name="ColH25" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">26</td>
+<td class="data-cell"><input type="text" id="ColA26" name="ColA26" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB26" name="ColB26" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC26" name="ColC26" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD26" name="ColD26" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE26" name="ColE26" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF26" name="ColF26" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG26" name="ColG26" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH26" name="ColH26" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">27</td>
+<td class="data-cell"><input type="text" id="ColA27" name="ColA27" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB27" name="ColB27" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC27" name="ColC27" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD27" name="ColD27" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE27" name="ColE27" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF27" name="ColF27" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG27" name="ColG27" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH27" name="ColH27" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">28</td>
+<td class="data-cell"><input type="text" id="ColA28" name="ColA28" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB28" name="ColB28" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC28" name="ColC28" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD28" name="ColD28" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE28" name="ColE28" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF28" name="ColF28" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG28" name="ColG28" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH28" name="ColH28" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">29</td>
+<td class="data-cell"><input type="text" id="ColA29" name="ColA29" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB29" name="ColB29" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC29" name="ColC29" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD29" name="ColD29" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE29" name="ColE29" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF29" name="ColF29" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG29" name="ColG29" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH29" name="ColH29" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">30</td>
+<td class="data-cell"><input type="text" id="ColA30" name="ColA30" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB30" name="ColB30" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC30" name="ColC30" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD30" name="ColD30" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE30" name="ColE30" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF30" name="ColF30" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG30" name="ColG30" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH30" name="ColH30" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">31</td>
+<td class="data-cell"><input type="text" id="ColA31" name="ColA31" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB31" name="ColB31" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC31" name="ColC31" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD31" name="ColD31" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE31" name="ColE31" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF31" name="ColF31" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG31" name="ColG31" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH31" name="ColH31" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">32</td>
+<td class="data-cell"><input type="text" id="ColA32" name="ColA32" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB32" name="ColB32" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC32" name="ColC32" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD32" name="ColD32" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE32" name="ColE32" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF32" name="ColF32" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG32" name="ColG32" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH32" name="ColH32" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">33</td>
+<td class="data-cell"><input type="text" id="ColA33" name="ColA33" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB33" name="ColB33" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC33" name="ColC33" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD33" name="ColD33" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE33" name="ColE33" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF33" name="ColF33" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG33" name="ColG33" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH33" name="ColH33" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">34</td>
+<td class="data-cell"><input type="text" id="ColA34" name="ColA34" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB34" name="ColB34" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC34" name="ColC34" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD34" name="ColD34" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE34" name="ColE34" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF34" name="ColF34" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG34" name="ColG34" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH34" name="ColH34" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">35</td>
+<td class="data-cell"><input type="text" id="ColA35" name="ColA35" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB35" name="ColB35" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC35" name="ColC35" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD35" name="ColD35" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE35" name="ColE35" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF35" name="ColF35" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG35" name="ColG35" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH35" name="ColH35" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">36</td>
+<td class="data-cell"><input type="text" id="ColA36" name="ColA36" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB36" name="ColB36" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC36" name="ColC36" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD36" name="ColD36" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE36" name="ColE36" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF36" name="ColF36" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG36" name="ColG36" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH36" name="ColH36" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">37</td>
+<td class="data-cell"><input type="text" id="ColA37" name="ColA37" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB37" name="ColB37" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC37" name="ColC37" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD37" name="ColD37" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE37" name="ColE37" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF37" name="ColF37" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG37" name="ColG37" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH37" name="ColH37" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">38</td>
+<td class="data-cell"><input type="text" id="ColA38" name="ColA38" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB38" name="ColB38" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC38" name="ColC38" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD38" name="ColD38" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE38" name="ColE38" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF38" name="ColF38" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG38" name="ColG38" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH38" name="ColH38" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">39</td>
+<td class="data-cell"><input type="text" id="ColA39" name="ColA39" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB39" name="ColB39" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC39" name="ColC39" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD39" name="ColD39" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE39" name="ColE39" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF39" name="ColF39" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG39" name="ColG39" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH39" name="ColH39" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">40</td>
+<td class="data-cell"><input type="text" id="ColA40" name="ColA40" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB40" name="ColB40" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC40" name="ColC40" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD40" name="ColD40" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE40" name="ColE40" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF40" name="ColF40" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG40" name="ColG40" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH40" name="ColH40" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">41</td>
+<td class="data-cell"><input type="text" id="ColA41" name="ColA41" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB41" name="ColB41" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC41" name="ColC41" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD41" name="ColD41" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE41" name="ColE41" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF41" name="ColF41" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG41" name="ColG41" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH41" name="ColH41" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">42</td>
+<td class="data-cell"><input type="text" id="ColA42" name="ColA42" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB42" name="ColB42" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC42" name="ColC42" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD42" name="ColD42" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE42" name="ColE42" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF42" name="ColF42" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG42" name="ColG42" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH42" name="ColH42" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">43</td>
+<td class="data-cell"><input type="text" id="ColA43" name="ColA43" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB43" name="ColB43" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC43" name="ColC43" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD43" name="ColD43" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE43" name="ColE43" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF43" name="ColF43" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG43" name="ColG43" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH43" name="ColH43" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">44</td>
+<td class="data-cell"><input type="text" id="ColA44" name="ColA44" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB44" name="ColB44" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC44" name="ColC44" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD44" name="ColD44" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE44" name="ColE44" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF44" name="ColF44" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG44" name="ColG44" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH44" name="ColH44" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">45</td>
+<td class="data-cell"><input type="text" id="ColA45" name="ColA45" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB45" name="ColB45" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC45" name="ColC45" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD45" name="ColD45" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE45" name="ColE45" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF45" name="ColF45" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG45" name="ColG45" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH45" name="ColH45" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">46</td>
+<td class="data-cell"><input type="text" id="ColA46" name="ColA46" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB46" name="ColB46" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC46" name="ColC46" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD46" name="ColD46" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE46" name="ColE46" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF46" name="ColF46" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG46" name="ColG46" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH46" name="ColH46" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">47</td>
+<td class="data-cell"><input type="text" id="ColA47" name="ColA47" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB47" name="ColB47" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC47" name="ColC47" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD47" name="ColD47" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE47" name="ColE47" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF47" name="ColF47" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG47" name="ColG47" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH47" name="ColH47" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">48</td>
+<td class="data-cell"><input type="text" id="ColA48" name="ColA48" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB48" name="ColB48" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC48" name="ColC48" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD48" name="ColD48" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE48" name="ColE48" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF48" name="ColF48" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG48" name="ColG48" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH48" name="ColH48" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">49</td>
+<td class="data-cell"><input type="text" id="ColA49" name="ColA49" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB49" name="ColB49" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC49" name="ColC49" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD49" name="ColD49" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE49" name="ColE49" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF49" name="ColF49" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG49" name="ColG49" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH49" name="ColH49" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+<tr><td class="num-cell">50</td>
+<td class="data-cell"><input type="text" id="ColA50" name="ColA50" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColB50" name="ColB50" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColC50" name="ColC50" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColD50" name="ColD50" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColE50" name="ColE50" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColF50" name="ColF50" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColG50" name="ColG50" maxlength="50" onkeypress="if(event.keyCode==34){return false}" /></td>
+<td class="data-cell"><input type="text" id="ColH50" name="ColH50" maxlength="100" onkeypress="if(event.keyCode==34){return false}" /></td>
+</tr>
+
+  </table><!-- end #dataTable -->
+  </div><!-- end tableScroll -->
+  </div><!-- end overflow-x -->
+</td>
+</tr>
+
+<!-- ===== COMMENTS ROW ===== -->
+<tr>
+<td colspan="2" style="padding:6px 8px; text-align:left;">
+  <b>Sender&rsquo;s Comments or Additional Information</b><br/>
+  <textarea cols="130" rows="2" name="Comments" id="Comments"
+    onkeypress="if(event.keyCode==34){return false}"
+    onkeyup="AutoGrowTextArea(this)"
+    onchange="this.value=RWS(this.value)"
+    style="width:98%;"></textarea>
+  <p style="margin:4px 0;"><small><span class="style17"><b>Attach CSV data file to message?&nbsp;</b></span>
+    <input name="AddAttachment" type="radio"
+           onclick="document.getElementById('DoAttach').value=this.value"
+           value="true" /> Yes&nbsp;&nbsp;
+    <input name="AddAttachment" type="radio"
+           onclick="document.getElementById('DoAttach').value=this.value"
+           value="false" checked="checked" /> No
+    <input name="DoAttach"      type="hidden" id="DoAttach"      value="" />
+    <input name="attached_file" type="hidden" id="attached_file" value="" />
+    <textarea name="attached_text" cols="1" rows="1" id="attached_text" style="display:none;"></textarea>
+  </small></p>
+</td>
+</tr>
+
+<!-- ===== SUBMIT ROW ===== -->
+<tr>
+<td colspan="2" style="padding:6px 8px; text-align:left;">
+  <input id="Submit" name="Submit" value="Submit" type="submit" onclick="ExportData()" />
+  &nbsp;
+  <input value="Reset Form" name="ResetForm" type="reset" />
+  &nbsp;
+  <input type="button" value="Save Form Data"  onclick="SaveData()" />
+  &nbsp;
+  <input type="button" value="Export to CSV"   onclick="ExportData('file')" />
+  <input name="testCall"       type="hidden" id="testCall"       value="{MsgSender}" />
+  <input name="Templateversion" type="hidden" id="Templateversion"
+         value="PH Customizable Form v1.1" />
+  &nbsp;&nbsp;<small style="color:#666;">PH Customizable Form Ver 1.1 | PAREDN DX1PRD</small>
+</td>
+</tr>
+
+</tbody>
+</table><!-- end main table -->
+</td></tr></tbody>
+</table><!-- end outer table -->
+</form>
+</div>
+
+<script>
+window.addEventListener('load', function InitializeReportReset() {
+    /* 2026-09-25: Capture initial report values that native reset cannot restore after script updates; returns nothing. */
+    var ids = ["DoAttach"];
+    var fields = [];
+    var initialValues = [];
+    /* Capture only the confirmed report fields after the form's existing initialization. */
+    for (var i = 0; i < ids.length; i++) {
+        fields.push(document.getElementById(ids[i]));
+        initialValues.push(fields[i].value);
+    }
+    fields[0].form.addEventListener('reset', function RestoreReportReset(event) {
+        /* Restore hidden report values before native reset completes; returns nothing. */
+        if (event.defaultPrevented) return;
+        for (var i = 0; i < fields.length; i++) fields[i].value = initialValues[i];
+    });
+});
+</script>
+</body></html>

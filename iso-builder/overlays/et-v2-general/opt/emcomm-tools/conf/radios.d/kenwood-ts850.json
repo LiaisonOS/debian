@@ -1,0 +1,19 @@
+{
+  "id": "kenwood-ts850",
+  "vendor": "Kenwood",
+  "model": "TS-850",
+  "bands": [
+    "HF"
+  ],
+  "rigctrl": {
+    "id": "2009",
+    "baud": "4800",
+    "ptt": "RIG",
+    "conf": "dcd_type=NONE"
+  },
+  "notes": [
+    "CAT via the Kenwood IF-232C (USB-serial adapter). Set the radio's CAT/COM speed to 4800 baud.",
+    "Audio via a SignaLink USB (TI PCM2904 codec). PTT is keyed over CAT (RIG) — no VOX needed.",
+    "The SignaLink and IF-232C are auto-detected by LiaisonOS (ET_AUDIO / ET_CAT udev rules)."
+  ]
+}
