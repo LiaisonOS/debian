@@ -135,7 +135,15 @@
     </div>
 
     <div class="whats-new">
-      <p class="whats-new-title">Nouveautés de la v2.4.8.5</p>
+      <p class="whats-new-title">Nouveautés de la v2.4.9</p>
+      <ul>
+          <li><strong>VARA HF 4.9.3 et VARA FM 4.4.3 — mise à jour importante.</strong> LiaisonOS inclut maintenant les dernières versions des modems audio VARA HF et VARA FM, testées sur les ondes. Ce sont des mises à jour importantes : assurez-vous que toutes les stations avec qui vous trafiquez roulent des versions à jour de VARA. <strong>VarAC</strong> passe aussi à la version <strong>17.1.9</strong>.</li>
+          <li><strong>Mesh25 1.1 — fini les lignes perdues en silence.</strong> Chaque ligne de clavardage porte maintenant un numéro par station et par salon (affiché après l'heure, p. ex. <em>#67</em>). Quand une ligne se perd sur les ondes, Mesh25 l'indique, la redemande tout seul et la remet à sa place, marquée <em>late</em>, quand elle revient &mdash; toute station qui l'a peut la renvoyer, et la signature de l'auteur prouve toujours qui l'a écrite. La nouvelle commande <strong>SMA#n</strong> est le « répétez » du clavardage : on vous demande votre #67, vous tapez <strong>SMA#67</strong> et elle repart. Fermer Mesh25 envoie maintenant un <strong>QRT</strong>, pour que les autres stations vous voient quitter. <a href="mesh25_fr.html" style="color:#5ab887; font-weight:600;">En savoir plus sur Mesh25 &rarr;</a></li>
+          <li><strong>Mesh25 — une fréquence chargée ralentit d'elle-même.</strong> Mesh25 écoute maintenant avant de parler, retient votre ligne quand la fréquence est occupée (affichée <em>⏳ waiting</em>), l'envoie dans un moment libre, partage les ondes équitablement avec les autres stations et reprend son rythme quand ça se calme. Sur un réseau chargé, plusieurs lignes en attente partent ensemble dans une seule trame. Sur un réseau normal, rien ne change : votre ligne part dès que vous appuyez sur Envoyer.</li>
+          <li><strong>Mesh25 — jour J.</strong> Toutes les stations d'un réseau Mesh25 doivent rouler Mesh25 1.1 (LiaisonOS 2.4.9) &mdash; une station restée en 1.0 affiche les nouveaux numéros de ligne en texte brut. Mettez toutes vos stations à jour ensemble.</li>
+          <li><strong>Tableau de bord — votre choix de radio survit maintenant à un redémarrage.</strong> Passer d'une radio à l'autre (par exemple un portatif avec TNC KISS et votre radio de base) est maintenant mémorisé sur votre clé USB de persistance dès que vous appuyez sur <strong>Apply</strong>. Avant, un redémarrage ramenait la radio de votre dernière « Sauvegarde sur USB », et la radio pouvait démarrer sans CAT/PTT.</li>
+      </ul>
+      <p class="whats-new-title" style="margin-top: 1rem;">Précédemment dans la v2.4.8.5</p>
       <ul>
           <li><strong>Mesh25 — la carte réseau passe entièrement hors ligne.</strong> La carte « qui-entend-qui » affiche maintenant un vrai fond de carte géographique tiré des mêmes jeux de tuiles hors ligne que le reste de LiaisonOS &mdash; lus directement sur le disque, sans serveur de cartes et sans Internet. Cliquez sur une station pour voir le nom et la localité de l'opérateur selon la base d'indicatifs embarquée. Un nouveau bouton <strong>Tuiles</strong> liste les régions installées sur votre système, montre ce qui est disponible, et vous laisse choisir laquelle afficher. Les anciens éléments QRZ.com et Google&nbsp;Maps sont retirés : tout ce dont la carte a besoin se trouve maintenant sur la machine, ce qui est le but d'une station de terrain. <a href="mesh25_fr.html" style="color:#5ab887; font-weight:600;">En savoir plus sur Mesh25 &rarr;</a></li>
           <li><strong>TNC KISS Direwolf — la fenêtre du moniteur fonctionne de nouveau.</strong> Le moniteur Direwolf lisait le mauvais fichier journal et s'ouvrait vide; il affiche maintenant la sortie du décodeur en direct &mdash; niveaux audio, PTT et trames décodées &mdash; dans le terminal natif de LiaisonOS. Une vérification interne qui sondait le TNC chaque seconde, inondait ce journal de lignes « Attached to KISS TCP client » et le faisait grossir sans limite, a aussi été désactivée. Même correctif pour le mode Digipeater paquet.</li>
@@ -160,18 +168,18 @@
       </ul>
     </div>
 
-    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.8.5.iso">
+    <a class="dl-primary" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.9.iso">
       <div class="dl-primary-icon">⬇</div>
       <div class="dl-primary-meta">
         <p class="dl-primary-label">Dernière version</p>
-        <p class="dl-primary-filename">liaisonos-debian13-v2.4.8.5.iso</p>
+        <p class="dl-primary-filename">liaisonos-debian13-v2.4.9.iso</p>
         <p class="dl-primary-info">~4.7 GB &nbsp;&middot;&nbsp; Publiée <span id="rel-date"></span></p>
       </div>
       <span class="dl-primary-arrow">→</span>
     </a>
 
     <div class="stats">
-      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.8.5</p></div>
+      <div class="stat-card"><p class="stat-label">Version</p><p class="stat-val">2.4.9</p></div>
       <div class="stat-card"><p class="stat-label">Base</p><p class="stat-val">Debian 13</p></div>
       <div class="stat-card"><p class="stat-label">Architecture</p><p class="stat-val">x86_64</p></div>
       <div class="stat-card"><p class="stat-label">Licence</p><p class="stat-val">Ms-PL</p></div>
@@ -179,8 +187,8 @@
     </div>
 
     <div class="checksum-row">
-      <span class="checksum-label">SHA256 - v2.4.8.5</span>
-      <span class="checksum-val" id="hashval">298a25330c78c80f7ab1113997617dc4f112b29500a019d1e26c2f20b42ff501</span>
+      <span class="checksum-label">SHA256 - v2.4.9</span>
+      <span class="checksum-val" id="hashval">8bf74b1e0a28750db477070799b0d8004edfd0c34aa272d0844131e0f8b8326d</span>
       <button class="copy-btn" onclick="copyHash('hashval')">Copier</button>
     </div>
 
@@ -196,10 +204,10 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="fname">liaisonos-debian13-v2.4.8.5.iso</span><span class="badge-latest">latest</span></td>
+          <td><span class="fname">liaisonos-debian13-v2.4.9.iso</span><span class="badge-latest">latest</span></td>
           <td>~4.7 GB</td>
           <td id="tbl-date"></td>
-          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.8.5.iso">⬇ Télécharger</a></td>
+          <td><a class="dl-btn" href="https://releases.liaisonos.com/ISO/liaisonos-debian13-v2.4.9.iso">⬇ Télécharger</a></td>
         </tr>
         <tr>
           <td><span class="fname">LiaisonGPS.apk</span><span class="badge-latest">v1.5</span></td>

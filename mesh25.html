@@ -202,6 +202,43 @@
   </div>
 
   <div class="section">
+    <h2 class="section-title">New in <span>1.1</span></h2>
+    <p>Mesh25 1.1 ships with <strong>LiaisonOS 2.4.9</strong>. Packet radio can lose a frame without anyone noticing &mdash; 1.1 makes every loss visible, recovers it, and keeps a busy frequency usable. Full details are in Mesh25's own Help (<strong>F1</strong>).</p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-card-icon">🔢</div>
+        <div class="feature-card-title">Numbered lines, nothing lost in silence</div>
+        <div class="feature-card-desc">Every line shows its number after the time (#67). A missing line is shown in place, requested automatically, and drops back into its spot marked <em>late</em> &mdash; resent by its author or any station that has it, still signed by the author.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">🔁</div>
+        <div class="feature-card-title">SMA#n &mdash; say again</div>
+        <div class="feature-card-desc">Someone asks for your #67? Type <strong>SMA#67</strong> (or a range, SMA#60-67) and the line goes out again. Stations that missed it fill it in; the others ignore it. Nothing is resent unless someone asks.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">👋</div>
+        <div class="feature-card-title">QRT on close</div>
+        <div class="feature-card-desc">Closing Mesh25, or stopping its mode, signs you off on the air: the other stations see <em>QRT</em> in your rooms and your call grays out in their list until you're heard again.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">⏳</div>
+        <div class="feature-card-title">A busy frequency slows down by itself</div>
+        <div class="feature-card-desc">Mesh25 listens before it talks, holds your line while the frequency is busy, sends it at a clear moment, shares the air fairly between stations, and speeds up again when it calms down.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">📦</div>
+        <div class="feature-card-title">Several lines, one frame</div>
+        <div class="feature-card-desc">On a busy net, lines waiting to go leave together in one frame under one signature &mdash; less airtime for the same traffic. On a quiet net, each line goes out the moment you press Send.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">⚠️</div>
+        <div class="feature-card-title">Flag day</div>
+        <div class="feature-card-desc">Every station on a net must run Mesh25 1.1: a station still on 1.0 shows the new line numbers as raw text. Update all your stations together.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
     <h2 class="section-title">How it <span>works</span></h2>
     <p>Mesh25 speaks the same radio language as every other packet application — <strong>AX.25 frames over a KISS TNC</strong> — so it runs with a sound-card TNC (Direwolf), a USB KISS TNC, or a Bluetooth KISS radio. It is a single self-contained program: no extra services, no internet dependency.</p>
     <p>Every message can be <strong>cryptographically signed</strong> with the sender's key, so you can trust that a message really came from the callsign it claims. Mesh25 uses <strong>Ed25519</strong>, a fast, modern signature scheme. Keys are <em>public</em> — they prove identity, they don't hide the text (amateur radio must stay in the clear). The first time you hear a station, its key is learned automatically; if that key ever changes, you get an alert.</p>

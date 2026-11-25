@@ -202,6 +202,43 @@
   </div>
 
   <div class="section">
+    <h2 class="section-title">Nouveau dans la <span>1.1</span></h2>
+    <p>Mesh25 1.1 arrive avec <strong>LiaisonOS 2.4.9</strong>. La radio par paquet peut perdre une trame sans que personne s'en aperçoive &mdash; la 1.1 rend chaque perte visible, la récupère, et garde une fréquence chargée utilisable. Tous les détails sont dans l'aide de Mesh25 (<strong>F1</strong>).</p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-card-icon">🔢</div>
+        <div class="feature-card-title">Lignes numérotées, rien ne se perd en silence</div>
+        <div class="feature-card-desc">Chaque ligne affiche son numéro après l'heure (#67). Une ligne manquante est indiquée à sa place, redemandée automatiquement, et reprend sa position marquée <em>late</em> &mdash; renvoyée par son auteur ou par toute station qui l'a, toujours signée par l'auteur.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">🔁</div>
+        <div class="feature-card-title">SMA#n &mdash; répétez</div>
+        <div class="feature-card-desc">On vous demande votre #67? Tapez <strong>SMA#67</strong> (ou une plage, SMA#60-67) et la ligne repart. Les stations qui l'ont manquée la complètent; les autres l'ignorent. Rien n'est renvoyé si personne ne le demande.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">👋</div>
+        <div class="feature-card-title">QRT à la fermeture</div>
+        <div class="feature-card-desc">Fermer Mesh25, ou arrêter son mode, vous annonce QRT sur les ondes : les autres stations voient <em>QRT</em> dans vos salons et votre indicatif passe au gris dans leur liste jusqu'à ce qu'on vous entende de nouveau.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">⏳</div>
+        <div class="feature-card-title">Une fréquence chargée ralentit d'elle-même</div>
+        <div class="feature-card-desc">Mesh25 écoute avant de parler, retient votre ligne pendant que la fréquence est occupée, l'envoie dans un moment libre, partage les ondes équitablement entre les stations et reprend son rythme quand ça se calme.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">📦</div>
+        <div class="feature-card-title">Plusieurs lignes, une seule trame</div>
+        <div class="feature-card-desc">Sur un réseau chargé, les lignes en attente partent ensemble dans une seule trame, sous une seule signature &mdash; moins de temps d'antenne pour le même trafic. Sur un réseau calme, chaque ligne part dès que vous appuyez sur Envoyer.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">⚠️</div>
+        <div class="feature-card-title">Jour J</div>
+        <div class="feature-card-desc">Toutes les stations d'un réseau doivent rouler Mesh25 1.1 : une station restée en 1.0 affiche les nouveaux numéros de ligne en texte brut. Mettez toutes vos stations à jour ensemble.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
     <h2 class="section-title">Comment ça <span>marche</span></h2>
     <p>Mesh25 parle le même langage radio que toutes les autres applications paquet — des <strong>trames AX.25 via un TNC KISS</strong> — elle fonctionne donc avec un TNC à carte son (Direwolf), un TNC KISS USB ou une radio KISS Bluetooth. C'est un seul programme autonome : aucun service additionnel, aucune dépendance à Internet.</p>
     <p>Chaque message peut être <strong>signé cryptographiquement</strong> avec la clé de l'expéditeur, pour garantir qu'un message provient bien de l'indicatif qu'il annonce. Mesh25 utilise <strong>Ed25519</strong>, un schéma de signature moderne et rapide. Les clés sont <em>publiques</em> — elles prouvent l'identité, elles ne cachent pas le texte (la radio amateur doit rester en clair). À la première écoute d'une station, sa clé est apprise automatiquement; si cette clé change un jour, vous recevez une alerte.</p>
